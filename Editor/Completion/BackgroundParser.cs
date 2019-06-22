@@ -105,12 +105,8 @@ namespace MonoDevelop.Xml.Editor.Completion
 				return current.Task;
 			}
 
-			var lastSuccessful = lastSuccessfulOperation;
-			if (lastSuccessful != null && lastSuccessful.Snapshot.Version.VersionNumber < snapshot.Version.VersionNumber) {
-				return StartParseAsync (snapshot, lastSuccessful.Result, lastSuccessful.Snapshot, token);
-			}
-
-			return StartParseAsync (snapshot, default (T), null, token);
+			currentOperation = current = CreateParseOperation (snapshot);
+			return current.Task;
 		}
 
 		void BufferContentTypeChanged (object sender, ContentTypeChangedEventArgs e)
