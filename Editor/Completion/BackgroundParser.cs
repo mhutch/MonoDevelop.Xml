@@ -49,34 +49,65 @@ namespace MonoDevelop.Xml.Editor.Completion
 		{
 			var tokenSource = new CancellationTokenSource ();
 			var task = StartParseAsync (snapshot, tokenSource.Token);
-			var operation = new ParseOperation (task, snapshot, tokenSource);
+			var operation = new ParseOperation (this, task, snapshot, tokenSource);
 
 			#pragma warning disable VSTHRD110, VSTHRD105 // Observe result of async calls, Avoid method overloads that assume TaskScheduler.Current
 
 			//capture successful parses
-			task.ContinueWith ((t, parent) => {
-				((BackgroundParser<T>)parent).lastSuccessfulOperation = operation;
-			}, this, TaskContinuationOptions.OnlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously);
+			task.ContinueWith ((t, state) => {
+				var op = ((ParseOperation)state);
+				op.Parser.lastSuccessfulOperation = op;
+				try {
+					op.Parser.OnParseCompleted (op.Result, op.Snapshot);
+				} catch (Exception ex) {
+					op.Parser.OnUnhandledParseError (ex);
+				}
+			}, operation, TaskContinuationOptions.OnlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously);
 
 			//handle errors
-			task.ContinueWith ((t,parent) => {
-				try {
-					((BackgroundParser <T>)parent).OnUnhandledParseError (t.Exception);
-				} catch {}
-			}, this, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
+			task.ContinueWith ((t, state) => {
+				var op = ((ParseOperation)state);
+				op.Parser.HandleUnhandledParseError (t.Exception);
+			}, operation, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
 
 			#pragma warning restore VSTHRD110, VSTHRD105
 
 			return operation;
 		}
 
-		protected virtual void OnUnhandledParseError (Exception ex)
+		void HandleUnhandledParseError (Exception ex)
+		{
+			// ensure errors in error handlers don't crash us
+			try {
+				OnUnhandledParseError (ex);
+			} catch {
+				LastDitchLog (ex);
+			}
+		}
+
+		void LastDitchLog (Exception ex)
 		{
 			if (System.Diagnostics.Debugger.IsAttached) {
 				System.Diagnostics.Debugger.Break ();
 			} else {
 				Console.WriteLine (ex);
 			}
+		}
+
+		/// <summary>
+		/// Subclasses should override this to log exceptions into their framework of choice.
+		/// If they do not, it will simply break into any attached debugger or be printed to the console.
+		/// </summary>
+		protected virtual void OnUnhandledParseError (Exception ex)
+		{
+			LastDitchLog (ex);
+		}
+
+		public event EventHandler<ParseCompletedEventArgs<T>> ParseCompleted;
+
+		protected virtual void OnParseCompleted (T parseResult, ITextSnapshot2 snapshot)
+		{
+			ParseCompleted?.Invoke (this, new ParseCompletedEventArgs<T> (parseResult, snapshot));
 		}
 
 		ParseOperation currentOperation;
@@ -128,5 +159,17 @@ namespace MonoDevelop.Xml.Editor.Completion
 			Buffer.Properties.RemoveProperty (GetType ().Name);
 			Buffer = null;
 		}
+	}
+
+	public class ParseCompletedEventArgs<T> : EventArgs
+	{
+		public ParseCompletedEventArgs (T parseResult, ITextSnapshot2 snapshot)
+		{
+			ParseResult = parseResult;
+			Snapshot = snapshot;
+		}
+
+		public T ParseResult { get; }
+		public ITextSnapshot2 Snapshot { get; }
 	}
 }

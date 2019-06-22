@@ -19,8 +19,9 @@ namespace MonoDevelop.Xml.Editor.Completion
 			//if value is zero, the cancel method has not been called
 			int primaryOwnerCanceled;
 
-			public ParseOperation (Task<T> operation, ITextSnapshot2 snapshot, CancellationTokenSource tokenSource)
+			public ParseOperation (BackgroundParser<T> parser, Task<T> operation, ITextSnapshot2 snapshot, CancellationTokenSource tokenSource)
 			{
+				Parser = parser;
 				Task = operation;
 				Snapshot = snapshot;
 				this.tokenSource = tokenSource;
@@ -28,11 +29,13 @@ namespace MonoDevelop.Xml.Editor.Completion
 				primaryOwnerCanceled = 0;
 			}
 
+			public BackgroundParser<T> Parser { get; }
+
 			public Task<T> Task { get; }
 			public ITextSnapshot2 Snapshot { get; }
 
 			#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
-			public T Result => Task.IsCompleted ? Task.Result : default (T);
+			public T Result => Task.IsCompleted ? Task.Result : default;
 			#pragma warning restore VSTHRD002
 
 			public void Cancel ()
