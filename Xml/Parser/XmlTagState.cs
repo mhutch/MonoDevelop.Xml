@@ -126,16 +126,16 @@ namespace MonoDevelop.Xml.Parser
 
 			context.StateTag = FREE;
 
-			if (!element.IsNamed && (XmlChar.IsFirstNameChar (c) || XmlChar.IsWhitespace (c))) {
-				rollback = string.Empty;
-				return NameState;
-			}
-
 			if (context.CurrentStateLength > 1 && XmlChar.IsFirstNameChar (c)) {
 				rollback = string.Empty;
 				return AttributeState;
 			}
-			
+
+			if (!element.IsNamed && XmlChar.IsFirstNameChar (c)) {
+				rollback = string.Empty;
+				return NameState;
+			}
+
 			if (XmlChar.IsWhitespace (c))
 				return null;
 

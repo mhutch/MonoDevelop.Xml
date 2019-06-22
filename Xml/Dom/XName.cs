@@ -28,30 +28,28 @@ using System;
 
 namespace MonoDevelop.Xml.Dom
 {
-
 	public struct XName : IEquatable<XName>
 	{
-		readonly string prefix;
-		readonly string name;
-
 		public XName (string prefix, string name)
 		{
-			this.prefix = prefix;
-			this.name = name;
+			this.Prefix = prefix;
+			this.Name = name;
 		}
 
 		public XName (string name)
 		{
-			prefix = null;
-			this.name = name;
+			Prefix = null;
+			this.Name = name;
 		}
 
-		public string Prefix { get { return prefix; } }
-		public string Name { get { return name; } }
-		public string FullName { get { return prefix == null? name : prefix + ':' + name; } }
+		public static XName Empty => new XName (null);
 
-		public bool IsValid { get { return !string.IsNullOrEmpty (name); } }
-		public bool HasPrefix { get { return !string.IsNullOrEmpty (prefix); } }
+		public string Prefix { get; }
+		public string Name { get; }
+		public string FullName { get { return Prefix == null ? Name : Prefix + ':' + Name; } }
+
+		public bool IsValid { get { return !string.IsNullOrEmpty (Name); } }
+		public bool HasPrefix { get { return !string.IsNullOrEmpty (Prefix); } }
 
 		#region Equality
 
@@ -67,21 +65,21 @@ namespace MonoDevelop.Xml.Dom
 
 		public bool Equals (XName other)
 		{
-			return prefix == other.prefix && name == other.name;
+			return Prefix == other.Prefix && Name == other.Name;
 		}
 
 		public override bool Equals (object obj)
 		{
 			if (!(obj is XName))
 				return false;
-			return Equals ((XName) obj);
+			return Equals ((XName)obj);
 		}
 
 		public override int GetHashCode ()
 		{
 			int hash = 0;
-			if (prefix != null) hash += prefix.GetHashCode ();
-			if (name != null) hash += name.GetHashCode ();
+			if (Prefix != null) hash += Prefix.GetHashCode ();
+			if (Name != null) hash += Name.GetHashCode ();
 			return hash;
 		}
 
@@ -89,15 +87,15 @@ namespace MonoDevelop.Xml.Dom
 
 		public static bool Equals (XName a, XName b, bool ignoreCase)
 		{
-			var comp = ignoreCase? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-			return string.Equals (a.prefix, b.prefix, comp) && string.Equals (a.name, b.name, comp);
+			var comp = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+			return string.Equals (a.Prefix, b.Prefix, comp) && string.Equals (a.Name, b.Name, comp);
 		}
 
 		public override string ToString ()
 		{
 			if (!HasPrefix)
-				return name;
-			return prefix + ":" + name;
+				return Name;
+			return Prefix + ":" + Name;
 		}
 	}
 }

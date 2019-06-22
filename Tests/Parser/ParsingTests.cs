@@ -324,5 +324,17 @@ namespace MonoDevelop.Xml.Tests.Parser
 			Assert.True (g.IsSelfClosing);
 			Assert.AreEqual ("g", g.Name.Name);
 		}
+
+		[Test]
+		public void UnnamedElement ()
+		{
+			var parser = new TestXmlParser (CreateRootState (), true);
+			parser.Parse (@"
+<doc>
+	<a/>
+	<
+	<c/>
+</doc>");
+		}
 	}
 }
