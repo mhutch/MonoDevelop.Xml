@@ -35,6 +35,8 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 		protected ITextBuffer2 Buffer { get; private set; }
 
+		protected string TryGetFilePath () => Buffer.Properties.TryGetProperty<ITextDocument> (typeof (ITextDocument), out var doc) ? doc?.FilePath : null;
+
 		protected virtual void Initialize ()
 		{
 		}
