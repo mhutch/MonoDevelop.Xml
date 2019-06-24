@@ -228,5 +228,28 @@ namespace MonoDevelop.Xml.Editor.Completion
 		protected TParser GetParser () => BackgroundParser<TResult>.GetParser<TParser> ((ITextBuffer2)TextView.TextBuffer);
 
 		protected XmlParser GetSpineParser (SnapshotPoint point) => GetParser ().GetSpineParser (point);
+
+		protected string GetAttributeOrElementValueToCaret (XmlParser spineAtCaret, SnapshotPoint caretPosition)
+		{
+			int currentPosition = caretPosition.Position;
+			int lineStart = caretPosition.Snapshot.GetLineFromPosition (currentPosition).Start.Position;
+			int expressionStart = currentPosition - spineAtCaret.CurrentStateLength;
+			if (spineAtCaret.CurrentState is XmlAttributeValueState && GetAttributeValueDelimiter (spineAtCaret) != 0) {
+				expressionStart += 1;
+			}
+			int start = Math.Max (expressionStart, lineStart);
+			var expression = caretPosition.Snapshot.GetText (start, currentPosition - start);
+			return expression;
+		}
+
+		static char GetAttributeValueDelimiter (XmlParser parser)
+		{
+			var ctx = (IXmlParserContext)parser;
+			switch (ctx.StateTag) {
+			case XmlAttributeValueState.DOUBLEQUOTE: return '"';
+			case XmlAttributeValueState.SINGLEQUOTE: return '\'';
+			default: return (char)0;
+			}
+		}
 	}
 }

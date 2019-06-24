@@ -68,5 +68,11 @@ namespace MonoDevelop.Xml.Dom
 		public override string FriendlyPathRepresentation {
 			get { return "@" + Name.FullName; }
 		}
+
+		public TextSpan NameSpan => new TextSpan (Span.Start, Name.FullName.Length);
+
+		public int ValueOffset => Span.End - Value.Length - 1;
+
+		public TextSpan ValueSpan => new TextSpan (Span.End - Value.Length - 1, Value.Length);
 	}
 }

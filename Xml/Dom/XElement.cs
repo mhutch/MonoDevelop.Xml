@@ -134,5 +134,34 @@ namespace MonoDevelop.Xml.Dom
 			}
 		}
 
+		public int NameOffset => Span.Start + 1;
+
+		public TextSpan NameSpan => new TextSpan (Span.Start + 1, Name.FullName.Length);
+
+		public XElement GetNextSiblingElement ()
+		{
+			var node = NextSibling;
+			while (node != null) {
+				if (node is XElement nextElement) {
+					return nextElement;
+				}
+				node = node.NextSibling;
+			}
+			return null;
+		}
+
+		public IEnumerable<XElement> FollowingElements {
+			get {
+				var node = NextSibling;
+				while (node != null) {
+					if (node is XElement nextElement) {
+						yield return nextElement;
+					}
+					node = node.NextSibling;
+				}
+			}
+		}
+
+		public XElement ParentElement => Parent as XElement;
 	}
 }
