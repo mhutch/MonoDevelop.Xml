@@ -69,7 +69,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			if (item.Properties.TryGetProperty<ICompletionDocumentationProvider> (DocsKey, out var provider)) {
 				return provider.GetDocumentationAsync (session, item, token);
 			}
-			return null;
+			return Task.FromResult ((object)null);
 		}
 
 		class StringXmlDocumentationProvider : ICompletionDocumentationProvider
