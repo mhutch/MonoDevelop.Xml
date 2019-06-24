@@ -26,7 +26,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			TextView = textView;
 		}
 
-		public async Task<CompletionContext> GetCompletionContextAsync (
+		public async virtual Task<CompletionContext> GetCompletionContextAsync (
 			IAsyncCompletionSession session,
 			CompletionTrigger trigger,
 			SnapshotPoint triggerLocation,
@@ -73,7 +73,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			return CompletionContext.Empty;
 		}
 
-		public Task<object> GetDescriptionAsync (
+		public virtual Task<object> GetDescriptionAsync (
 			IAsyncCompletionSession session,
 			CompletionItem item,
 			CancellationToken token)
@@ -81,7 +81,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			return item.GetDocumentationAsync (session, token);
 		}
 
-		public CompletionStartData InitializeCompletion (CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token)
+		public virtual CompletionStartData InitializeCompletion (CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token)
 		{
 			var parser = BackgroundParser<TResult>.GetParser<TParser> ((ITextBuffer2)triggerLocation.Snapshot.TextBuffer);
 			var spine = parser.GetSpineParser (triggerLocation);
