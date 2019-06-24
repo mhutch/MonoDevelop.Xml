@@ -31,7 +31,7 @@ using NUnit.Framework;
 
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Parser;
-
+using System.Xml;
 
 namespace MonoDevelop.Xml.Tests.Parser
 {
@@ -113,7 +113,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 	<tag.a att1 >
 		<tag.b att2="" >
 			<tag.c att3 = ' 
-				<tag.d att4 = >
+				<tag.d $ att4 = >
 					<tag.e att5='' att6=' att7 = >
 						<tag.f id='$foo' />
 					</tag.e>
@@ -124,8 +124,18 @@ namespace MonoDevelop.Xml.Tests.Parser
 </doc>
 ",
 				delegate {
+					parser.AssertStateIs<XmlTagState> ();
+					Assert.IsFalse (parser.Nodes.Peek (1).IsComplete);
+					parser.AssertNodeDepth (6);
+					parser.AssertPath ("//doc/tag.a/tag.b/tag.c/tag.d");
+				},
+				delegate {
 					parser.AssertStateIs<XmlAttributeValueState> ();
 					parser.AssertNodeDepth (9);
+					Assert.IsTrue (parser.Nodes.Peek (3) is XElement eld && eld.Name.Name == "tag.d" && eld.IsComplete);
+					Assert.IsTrue (parser.Nodes.Peek (2) is XElement ele && ele.Name.Name == "tag.e" && !ele.IsComplete);
+					Assert.IsTrue (parser.Nodes.Peek (1) is XElement elf && elf.Name.Name == "tag.f" && !elf.IsComplete);
+					Assert.IsTrue (parser.Nodes.Peek () is XAttribute att && !att.IsComplete);
 					parser.AssertPath ("//doc/tag.a/tag.b/tag.c/tag.d/tag.e/tag.f/@id");
 				}
 			);

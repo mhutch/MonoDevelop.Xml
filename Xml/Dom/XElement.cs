@@ -54,7 +54,9 @@ namespace MonoDevelop.Xml.Dom
 
 		public XName Name { get; set; }
 
-		public override bool IsComplete { get { return base.IsComplete && IsNamed; } }
+		internal bool HasEndBracket { get; set; }
+
+		public override bool IsComplete => HasEndBracket && IsNamed;
 		public bool IsNamed { get { return Name.IsValid; } }
 
 		public XAttributeCollection Attributes { get; }

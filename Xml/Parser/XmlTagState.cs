@@ -59,7 +59,7 @@ namespace MonoDevelop.Xml.Parser
 		{
 			XElement element = context.Nodes.Peek () as XElement;
 			
-			if (element == null || element.IsComplete) {
+			if (element == null || element.IsEnded) {
 				var parent = element;
 				element = new XElement (context.Position - 2); // 2 == < + current char
 				element.Parent = parent;
@@ -82,7 +82,7 @@ namespace MonoDevelop.Xml.Parser
 				return Parent;
 			}
 			
-			Debug.Assert (!element.IsComplete);
+			Debug.Assert (!element.IsEnded);
 			
 			if (element.IsClosed && c != '>') {
 				if (char.IsWhiteSpace (c)) {
@@ -96,6 +96,7 @@ namespace MonoDevelop.Xml.Parser
 			
 			//if tag closed
 			if (c == '>') {
+				element.HasEndBracket = true;
 				if (context.StateTag == MAYBE_SELF_CLOSING) {
 					element.Close (element);
 				}

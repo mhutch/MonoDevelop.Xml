@@ -68,7 +68,7 @@ namespace MonoDevelop.Xml.Dom
 		}
 
 		/// <summary>
-		/// Whether this node is complete i.e. has a many end node, if applicable.
+		/// Whether this node is complete. Will be false if it was ended prematurely due to an error or EOF.
 		/// </summary>
 		public virtual bool IsComplete {
 			get { return IsEnded; }
