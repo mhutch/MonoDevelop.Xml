@@ -4,7 +4,7 @@ VisualStudioVersion = 16.0.28922.388
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MonoDevelop.Xml.Tests", "Tests\MonoDevelop.Xml.Tests.csproj", "{DFE2B715-A5AC-4C34-87F8-B71E67786341}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MonoDevelop.Xml", "Xml\MonoDevelop.Xml.csproj", "{DC05762C-0F2E-4238-BCFD-40347471B43A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MonoDevelop.Xml.Core", "Core\MonoDevelop.Xml.Core.csproj", "{DC05762C-0F2E-4238-BCFD-40347471B43A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonoDevelop.Xml.Editor", "Editor\MonoDevelop.Xml.Editor.csproj", "{21DCB152-D50D-48E9-B1AA-FB341192D88F}"
 EndProject
