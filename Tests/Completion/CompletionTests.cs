@@ -59,7 +59,7 @@ namespace MonoDevelop.Xml.Tests.Completion
 	[TestFixture]
 	public class CompletionTests : CompletionTestBase
 	{
-		public override IContentType ContentType => Catalog.ContentTypeRegistryService.GetContentType (CompletionTestContentType.Name);
+		protected override string ContentTypeName => CompletionTestContentType.Name;
 
 		[Test]
 		public async Task TestElementStartCompletion ()

@@ -3,24 +3,16 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Utilities;
 
 namespace MonoDevelop.Xml.Tests.EditorTestHelpers
 {
 	public abstract class CompletionTestBase : EditorTestBase
 	{
-		public abstract IContentType ContentType { get; }
-
-		public virtual ITextView CreateTextView (string documentText)
-		{
-			var buffer = Catalog.BufferFactoryService.CreateTextBuffer (documentText, ContentType);
-			return Catalog.TextViewFactory.CreateTextView (buffer);
-		}
-
 		public Task<CompletionContext> GetCompletionContext (string documentText, CompletionTriggerReason reason = CompletionTriggerReason.Invoke, char triggerChar = '\0', char caretMarker = '$')
 		{
 			var caretOffset = documentText.IndexOf (caretMarker);
