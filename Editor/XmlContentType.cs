@@ -30,8 +30,13 @@ namespace MonoDevelop.Xml.Editor
 	static class XmlContentType
 	{
 		[Export]
-		[Name (XmlContentTypeNames.Xml)]
+		[Name (XmlContentTypeNames.XmlCore)]
 		[BaseDefinition (StandardContentTypeNames.Code)]
+		public static readonly ContentTypeDefinition XmlCoreContentTypeDefinition = null;
+
+		[Export]
+		[Name (XmlContentTypeNames.Xml)]
+		[BaseDefinition (XmlContentTypeNames.XmlCore)]
 		public static readonly ContentTypeDefinition XmlContentTypeDefinition = null;
 
 		[Export]
@@ -63,6 +68,5 @@ namespace MonoDevelop.Xml.Editor
 		[FileExtension (".xsd")]
 		[ContentType (XmlContentTypeNames.Xsd)]
 		internal static FileExtensionToContentTypeDefinition XsdFileExtensionDefinition = null;
-
 	}
 }

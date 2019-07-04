@@ -1,4 +1,4 @@
-﻿// 
+// 
 // Copyright (C) Microsoft Corp. All rights reserved.
 // 
 // Permission is hereby granted, free of charge, to any person obtaining
@@ -25,6 +25,12 @@ namespace MonoDevelop.Xml.Editor
 {
 	public static class XmlContentTypeNames
 	{
+		/// <summary>
+		/// Content types that derive from this will inherit some basic functionality
+		/// without lighting up the full XML editor.
+		/// </summary>
+		public const string XmlCore = "xmlcore";
+
 		public const string Xml = "xml";
 		public const string Xslt = "xslt";
 		public const string Xsd = "xsd";
