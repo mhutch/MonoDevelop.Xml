@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,6 +11,7 @@ using System.Threading.Tasks;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Adornments;
 using Microsoft.VisualStudio.Text.Editor;
 
 using MonoDevelop.Xml.Dom;
@@ -24,6 +26,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 		public XmlCompletionSource (ITextView textView)
 		{
 			TextView = textView;
+			InitializeBuiltinItems ();
 		}
 
 		public async virtual Task<CompletionContext> GetCompletionContextAsync (
@@ -249,6 +252,90 @@ namespace MonoDevelop.Xml.Editor.Completion
 			case XmlAttributeValueState.DOUBLEQUOTE: return '"';
 			case XmlAttributeValueState.SINGLEQUOTE: return '\'';
 			default: return (char)0;
+			}
+		}
+
+		CompletionItem cdataItem, commentItem, prologItem;
+		CompletionItem[] entityItems;
+
+		void InitializeBuiltinItems ()
+		{
+			cdataItem = new CompletionItem ("![CDATA[", this, XmlImages.Directive)
+					.AddDocumentation ("XML character data")
+					.AddKind (XmlCompletionItemKind.CData);
+
+			commentItem = new CompletionItem ("!--", this, XmlImages.Directive)
+				.AddDocumentation ("XML comment")
+				.AddKind (XmlCompletionItemKind.Comment);
+
+			//TODO: commit $"?xml version=\"1.0\" encoding=\"{encoding}\" ?>"
+			prologItem = new CompletionItem ("?xml", this, XmlImages.Directive)
+				.AddDocumentation ("XML prolog")
+				.AddKind (XmlCompletionItemKind.Prolog);
+
+			entityItems = new CompletionItem[] {
+				EntityItem ("apos", "'"),
+				EntityItem ("quot", "\""),
+				EntityItem ("lt", "<"),
+				EntityItem ("gt", ">"),
+				EntityItem ("amp", "&"),
+			};
+
+			//TODO: need to tweak semicolon insertion fdor XmlCompletionItemKind.Entity
+			CompletionItem EntityItem (string name, string character) =>
+				new CompletionItem (name, this, XmlImages.Entity, ImmutableArray<CompletionFilter>.Empty, string.Empty, name, name, character, ImmutableArray<ImageElement>.Empty)
+				.AddEntityDocumentation (character)
+				.AddKind (XmlCompletionItemKind.Entity);
+		}
+
+		/// <summary>
+		/// Gets completion items for closing tags, comments, CDATA etc.
+		/// </summary>
+		/// <param name="stack"></param>
+		/// <param name="allowCData"></param>
+		/// <returns></returns>
+		protected IEnumerable<CompletionItem> GetMiscellaneousTags (NodeStack stack, bool allowCData = true)
+		{
+			if (allowCData) {
+				yield return cdataItem;
+			}
+
+			yield return commentItem;
+
+			foreach (var closingTag in GetClosingTags (stack)) {
+				yield return closingTag;
+			}
+		}
+
+		protected IEnumerable<CompletionItem> GetBuiltInEntityItems () => entityItems;
+
+		IEnumerable<CompletionItem> GetClosingTags (NodeStack stack)
+		{
+			var dedup = new HashSet<string> ();
+
+			//FIXME: search forward to see if tag's closed already
+			foreach (XObject ob in stack) {
+				var el = ob as XElement;
+				if (el == null)
+					continue;
+				if (!el.IsNamed || el.IsClosed)
+					yield break;
+
+				string name = el.Name.FullName;
+				if (!dedup.Add (name)) {
+					continue;
+				}
+
+				//first in the stack is the simple close
+				if (dedup.Count == 0) {
+					yield return new CompletionItem ("/" + name, this, XmlImages.ClosingTag)
+						.AddClosingElementDocumentation (el)
+						.AddKind (XmlCompletionItemKind.ClosingTag);
+				} else {
+					yield return new CompletionItem ("/" + name, this, XmlImages.ClosingTag)
+						.AddClosingElementDocumentation (el, true)
+						.AddKind (XmlCompletionItemKind.MultipleClosingTags);
+				}
 			}
 		}
 	}

@@ -56,7 +56,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 		internal void AddNamespace (string namespaceUri)
 		{
-			var item = new CompletionItem (namespaceUri, source, XmlImages.NamespaceImage);
+			var item = new CompletionItem (namespaceUri, source, XmlImages.Namespace);
 			items.Add (item);
 		}
 
@@ -80,20 +80,20 @@ namespace MonoDevelop.Xml.Editor.Completion
 			}
 			if (!names.Add (name))
 				return;
-			var item = new CompletionItem (name, source, XmlImages.AttributeImage);
+			var item = new CompletionItem (name, source, XmlImages.Attribute);
 			item.AddDocumentation (attribute.Annotation);
 			items.Add (item);
 		}
 		
 		public void AddAttributeValue (string valueText)
 		{
-			var item = new CompletionItem (valueText, source, XmlImages.AttributeValueImage);
+			var item = new CompletionItem (valueText, source, XmlImages.AttributeValue);
 			items.Add (item);
 		}
 		
 		public void AddAttributeValue (string valueText, XmlSchemaAnnotation annotation)
 		{
-			var item = new CompletionItem (valueText, source, XmlImages.AttributeValueImage);
+			var item = new CompletionItem (valueText, source, XmlImages.AttributeValue);
 			item.AddDocumentation (annotation);
 			items.Add (item);
 		}		
@@ -110,7 +110,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			if (prefix.Length > 0)
 				name = string.Concat (prefix, ":", name);
 
-			var item = new CompletionItem (name, source, XmlImages.ElementImage);
+			var item = new CompletionItem (name, source, XmlImages.Element);
 			item.AddDocumentation (documentation);
 			items.Add (item);
 		}
@@ -127,7 +127,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			if (prefix.Length > 0)
 				name = string.Concat (prefix, ":", name);
 
-			var item = new CompletionItem (name, source, XmlImages.ElementImage);
+			var item = new CompletionItem (name, source, XmlImages.Element);
 			item.AddDocumentation (annotation);
 			items.Add (item);
 		}
