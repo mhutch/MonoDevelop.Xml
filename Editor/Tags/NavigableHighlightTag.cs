@@ -12,14 +12,14 @@ namespace MonoDevelop.Xml.Editor.Tags
 	/// <remarks>
 	/// Unless you are writing code relating to reference or keyword highlighting, you should not be using
 	/// this type.</remarks>
-	public abstract class NavigableHighlightTag : TextMarkerTag
+	abstract class NavigableHighlightTag : TextMarkerTag
 	{
 		protected NavigableHighlightTag (string type) : base (type)
 		{
 		}
 	}
 
-	public class WrittenReferenceHighlightTag : NavigableHighlightTag
+	class WrittenReferenceHighlightTag : NavigableHighlightTag
 	{
 		internal const string TagId = "MarkerFormatDefinition/HighlightedWrittenReference";
 
@@ -31,7 +31,7 @@ namespace MonoDevelop.Xml.Editor.Tags
 		}
 	}
 
-	public class DefinitionHighlightTag : NavigableHighlightTag
+	class DefinitionHighlightTag : NavigableHighlightTag
 	{
 		internal const string TagId = "MarkerFormatDefinition/HighlightedDefinition";
 
@@ -43,7 +43,7 @@ namespace MonoDevelop.Xml.Editor.Tags
 		}
 	}
 
-	public class ReferenceHighlightTag : NavigableHighlightTag
+	class ReferenceHighlightTag : NavigableHighlightTag
 	{
 		internal const string TagId = "MarkerFormatDefinition/HighlightedReference";
 
