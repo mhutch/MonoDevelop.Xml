@@ -30,5 +30,6 @@ namespace MonoDevelop.Xml.Dom
 	{
 		XName Name { get; set; }
 		bool IsNamed { get; }
+		TextSpan NameSpan { get; }
 	}
 }

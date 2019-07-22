@@ -138,7 +138,7 @@ namespace MonoDevelop.Xml.Dom
 
 		public int NameOffset => Span.Start + 1;
 
-		public TextSpan NameSpan => new TextSpan (Span.Start + 1, Name.FullName.Length);
+		public TextSpan NameSpan => new TextSpan (Span.Start + 1, Name.Length);
 
 		public XElement GetNextSiblingElement ()
 		{

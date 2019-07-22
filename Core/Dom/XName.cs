@@ -51,6 +51,8 @@ namespace MonoDevelop.Xml.Dom
 		public bool IsValid { get { return !string.IsNullOrEmpty (Name); } }
 		public bool HasPrefix { get { return !string.IsNullOrEmpty (Prefix); } }
 
+		public int Length => (Name?.Length ?? 0) + (Prefix != null ? Prefix.Length + 1 : 0);
+
 		#region Equality
 
 		public static bool operator == (XName x, XName y)

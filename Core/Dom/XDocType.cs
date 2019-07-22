@@ -64,6 +64,8 @@ namespace MonoDevelop.Xml.Dom
 			get { return RootElement.IsValid; }
 		}
 
+		TextSpan INamedXObject.NameSpan => new TextSpan (Span.Start + 10, RootElement.Length);
+
 		public override string ToString ()
 		{
 			return string.Format("[DocType: RootElement='{0}', PublicFpi='{1}',  InternalDeclarationRegion='{2}', Uri='{3}']",

@@ -69,7 +69,7 @@ namespace MonoDevelop.Xml.Dom
 			get { return "@" + Name.FullName; }
 		}
 
-		public TextSpan NameSpan => new TextSpan (Span.Start, Name.FullName.Length);
+		public TextSpan NameSpan => new TextSpan (Span.Start, Name.Length);
 
 		public int ValueOffset => Span.End - Value.Length - 1;
 

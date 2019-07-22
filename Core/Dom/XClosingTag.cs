@@ -54,5 +54,7 @@ namespace MonoDevelop.Xml.Dom
 		public override string FriendlyPathRepresentation {
 			get { return "/" + Name.FullName; }
 		}
+
+		public TextSpan NameSpan => new TextSpan (Span.Start + 2, Name.Length);
 	}
 }
