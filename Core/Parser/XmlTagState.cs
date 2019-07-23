@@ -75,7 +75,7 @@ namespace MonoDevelop.Xml.Parser
 					context.LogError ("Unexpected '<' in tag '" + element.Name.FullName + "'.");
 					Close (element, context, context.Position - 1);
 				} else {
-					context.LogError ("Unexpected '<' in unnamed tag.");
+					context.LogError ("Tag has no name.", element.Span.Start);
 				}
 				
 				rollback = string.Empty;
