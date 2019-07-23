@@ -42,7 +42,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			}
 
 			//entity completion
-			if (typedCharacter == '&' && (spine.CurrentState is XmlRootState || spine.CurrentState is XmlAttributeValueState)) {
+			if (typedCharacter == '&' && (spine.CurrentState is XmlTextState || spine.CurrentState is XmlAttributeValueState)) {
 				return (XmlCompletionTrigger.Entity, 0);
 			}
 
