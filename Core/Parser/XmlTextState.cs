@@ -43,7 +43,7 @@ namespace MonoDevelop.Xml.Parser
 
 			if (c == '<') {
 				var node = (XText) context.Nodes.Pop ();
-				//statetag is the last non-whitepsace char
+				//statetag is the last non-whitespace char
 				node.End (context.StateTag);
 				if (context.BuildTree) {
 					((XContainer)context.Nodes.Peek ()).AddChildNode (node);

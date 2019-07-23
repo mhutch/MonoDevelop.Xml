@@ -98,7 +98,7 @@ namespace MonoDevelop.Xml.Parser
 
 			switch (context.StateTag) {
 			case FREE:
-				if (char.IsLetterOrDigit (c) || char.IsPunctuation (c)) {
+				if (!char.IsWhiteSpace (c) && !char.IsControl (c)) {
 					rollback = string.Empty;
 					return TextState;
 				}
