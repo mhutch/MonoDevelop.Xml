@@ -44,7 +44,7 @@ namespace MonoDevelop.Xml.Parser
 
 		public XmlRootState (XmlTagState tagState, XmlClosingTagState closingTagState)
 			: this (tagState, closingTagState, new XmlCommentState (), new XmlCDataState (),
-			  new XmlDocTypeState (), new XmlProcessingInstructionState ())
+			  new XmlDocTypeState (), new XmlProcessingInstructionState (), new XmlTextState ())
 		{ }
 
 		public XmlRootState (
@@ -53,14 +53,16 @@ namespace MonoDevelop.Xml.Parser
 			XmlCommentState commentState,
 			XmlCDataState cDataState,
 			XmlDocTypeState docTypeState,
-				XmlProcessingInstructionState processingInstructionState)
+			XmlProcessingInstructionState processingInstructionState,
+			XmlTextState textState)
 		{
-			this.TagState = tagState;
-			this.ClosingTagState = closingTagState;
-			this.CommentState = commentState;
-			this.CDataState = cDataState;
-			this.DocTypeState = docTypeState;
-			this.ProcessingInstructionState = processingInstructionState;
+			TagState = tagState;
+			ClosingTagState = closingTagState;
+			CommentState = commentState;
+			CDataState = cDataState;
+			DocTypeState = docTypeState;
+			ProcessingInstructionState = processingInstructionState;
+			TextState = textState;
 
 			Adopt (TagState);
 			Adopt (ClosingTagState);
@@ -68,6 +70,7 @@ namespace MonoDevelop.Xml.Parser
 			Adopt (CDataState);
 			Adopt (DocTypeState);
 			Adopt (ProcessingInstructionState);
+			Adopt (TextState);
 		}
 
 		protected XmlTagState TagState { get; }
@@ -76,6 +79,7 @@ namespace MonoDevelop.Xml.Parser
 		protected XmlCDataState CDataState { get; }
 		protected XmlDocTypeState DocTypeState { get; }
 		protected XmlProcessingInstructionState ProcessingInstructionState { get; }
+		protected XmlTextState TextState { get; }
 
 		public override XmlParserState PushChar (char c, IXmlParserContext context, ref string rollback)
 		{
@@ -94,7 +98,11 @@ namespace MonoDevelop.Xml.Parser
 
 			switch (context.StateTag) {
 			case FREE:
-				//FIXME: handle entities?
+				if (char.IsLetterOrDigit (c) || char.IsPunctuation (c)) {
+					rollback = string.Empty;
+					return TextState;
+				}
+
 				return null;
 
 			case BRACKET:
