@@ -326,16 +326,11 @@ namespace MonoDevelop.Xml.Editor.Completion
 					continue;
 				}
 
-				//first in the stack is the simple close
-				if (dedup.Count == 0) {
-					yield return new CompletionItem ("/" + name, this, XmlImages.ClosingTag)
-						.AddClosingElementDocumentation (el)
-						.AddKind (XmlCompletionItemKind.ClosingTag);
-				} else {
-					yield return new CompletionItem ("/" + name, this, XmlImages.ClosingTag)
-						.AddClosingElementDocumentation (el, true)
-						.AddKind (XmlCompletionItemKind.MultipleClosingTags);
-				}
+				var item = new CompletionItem ("/" + name, this, XmlImages.ClosingTag)
+					.AddClosingElementDocumentation (el, dedup.Count > 1)
+					.AddKind (dedup.Count == 1? XmlCompletionItemKind.ClosingTag : XmlCompletionItemKind.MultipleClosingTags);
+				item.Properties.AddProperty (typeof (NodeStack), stack);
+				yield return item;
 			}
 		}
 	}

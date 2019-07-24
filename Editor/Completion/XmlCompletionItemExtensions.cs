@@ -72,13 +72,8 @@ namespace MonoDevelop.Xml.Editor.Completion
 			return item;
 		}
 
-		public static XmlCompletionItemKind? GetKind (this CompletionItem item)
-		{
-			if (item.Properties.TryGetProperty (KindKey, out XmlCompletionItemKind kind)) {
-				return kind;
-			}
-			return null;
-		}
+		public static bool TryGetKind (this CompletionItem item, out XmlCompletionItemKind kind)
+			=> item.Properties.TryGetProperty (KindKey, out kind);
 
 		public static Task<object> GetDocumentationAsync (this CompletionItem item, IAsyncCompletionSession session, CancellationToken token)
 		{
