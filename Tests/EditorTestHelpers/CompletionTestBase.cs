@@ -13,7 +13,7 @@ namespace MonoDevelop.Xml.Tests.EditorTestHelpers
 {
 	public abstract class CompletionTestBase : EditorTestBase
 	{
-		public Task<CompletionContext> GetCompletionContext (string documentText, CompletionTriggerReason reason = CompletionTriggerReason.Invoke, char triggerChar = '\0', char caretMarker = '$')
+		public Task<CompletionContext> GetCompletionContext (string documentText, CompletionTriggerReason reason = CompletionTriggerReason.Invoke, char triggerChar = '\0', char caretMarker = '$', string filename = default)
 		{
 			var caretOffset = documentText.IndexOf (caretMarker);
 			if (caretOffset < 0) {
@@ -21,7 +21,7 @@ namespace MonoDevelop.Xml.Tests.EditorTestHelpers
 			}
 			documentText = documentText.Substring (0, caretOffset) + documentText.Substring (caretOffset + 1);
 
-			var textView = CreateTextView (documentText);
+			var textView = CreateTextView (documentText, filename);
 			return GetCompletionContext (textView, caretOffset, reason, triggerChar);
 		}
 

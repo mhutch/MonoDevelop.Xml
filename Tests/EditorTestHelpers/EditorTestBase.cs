@@ -28,9 +28,12 @@ namespace MonoDevelop.Xml.Tests.EditorTestHelpers
 
 		public virtual IContentType ContentType => Catalog.ContentTypeRegistryService.GetContentType (ContentTypeName ?? StandardContentTypeNames.Text);
 
-		public virtual ITextView CreateTextView (string documentText)
+		public virtual ITextView CreateTextView (string documentText, string filename = null)
 		{
 			var buffer = Catalog.BufferFactoryService.CreateTextBuffer (documentText, ContentType);
+			if (filename != null) {
+				Catalog.TextDocumentFactoryService.CreateTextDocument (buffer, filename);
+			}
 			return Catalog.TextViewFactory.CreateTextView (buffer);
 		}
 	}
