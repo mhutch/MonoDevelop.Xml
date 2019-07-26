@@ -1,0 +1,3 @@
+[submodule "external/MiniEditor"]
+	path = external/MiniEditor
+	url = git://github.com/garuma/MiniEditor.git
