@@ -18,5 +18,7 @@ namespace MonoDevelop.Xml.Dom
 		public bool Contains (int offset) => offset >= Start && offset <= End;
 
 		public static TextSpan FromBounds (int start, int end) => new TextSpan (start, end - start);
+
+		public override string ToString () => $"({Start}-{End})";
 	}
 }
