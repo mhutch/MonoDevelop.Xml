@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -165,7 +166,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			List<XObject> nodePath,
 			CancellationToken token
 			)
-			=> Task.FromResult (CompletionContext.Empty);
+			=> Task.FromResult (CreateCompletionContext (GetBuiltInEntityItems ()));
 
 		protected virtual Task<CompletionContext> GetDeclarationCompletionsAsync (
 			IAsyncCompletionSession session,
@@ -173,7 +174,13 @@ namespace MonoDevelop.Xml.Editor.Completion
 			List<XObject> nodePath,
 			CancellationToken token
 			)
-			=> Task.FromResult (CompletionContext.Empty);
+			=> Task.FromResult (
+				CreateCompletionContext (
+					nodePath.Any (n => n is XElement)
+						? new [] { cdataItemWithBracket, commentItemWithBracket }
+						: new [] { commentItemWithBracket }
+					)
+				);
 
 		CompletionContext CreateCompletionContext (IEnumerable<CompletionItem> items)
 			=> new CompletionContext (ImmutableArray<CompletionItem>.Empty.AddRange (items), null, InitialSelectionHint.SoftSelection);
@@ -284,20 +291,34 @@ namespace MonoDevelop.Xml.Editor.Completion
 		}
 
 		CompletionItem cdataItem, commentItem, prologItem;
+		CompletionItem cdataItemWithBracket, commentItemWithBracket, prologItemWithBracket;
 		CompletionItem[] entityItems;
 
 		void InitializeBuiltinItems ()
 		{
-			cdataItem = new CompletionItem ("![CDATA[", this, XmlImages.Directive)
+			cdataItem = new CompletionItem ("![CDATA[", this, XmlImages.Declaration)
 					.AddDocumentation ("XML character data")
 					.AddKind (XmlCompletionItemKind.CData);
 
-			commentItem = new CompletionItem ("!--", this, XmlImages.Directive)
+			commentItem = new CompletionItem ("!--", this, XmlImages.Declaration)
 				.AddDocumentation ("XML comment")
 				.AddKind (XmlCompletionItemKind.Comment);
 
 			//TODO: commit $"?xml version=\"1.0\" encoding=\"{encoding}\" ?>"
-			prologItem = new CompletionItem ("?xml", this, XmlImages.Directive)
+			prologItem = new CompletionItem ("?xml", this, XmlImages.Declaration)
+				.AddDocumentation ("XML prolog")
+				.AddKind (XmlCompletionItemKind.Prolog);
+
+			cdataItemWithBracket = new CompletionItem ("<![CDATA[", this, XmlImages.Declaration)
+					.AddDocumentation ("XML character data")
+					.AddKind (XmlCompletionItemKind.CData);
+
+			commentItemWithBracket = new CompletionItem ("<!--", this, XmlImages.Declaration)
+				.AddDocumentation ("XML comment")
+				.AddKind (XmlCompletionItemKind.Comment);
+
+			//TODO: commit $"?xml version=\"1.0\" encoding=\"{encoding}\" ?>"
+			prologItemWithBracket = new CompletionItem ("<?xml", this, XmlImages.Declaration)
 				.AddDocumentation ("XML prolog")
 				.AddKind (XmlCompletionItemKind.Prolog);
 
