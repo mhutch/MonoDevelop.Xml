@@ -46,24 +46,23 @@ namespace MonoDevelop.MSBuild.Editor.SmartIndent
 
 			//calculate the delta between the previous line's expected and actual indent
 			int? previousIndentDelta = null;
-			XmlParserState previousLineParserState = null;
 
 			//FIXME: make this work with tabs
 			if (tabsToSpaces) {
 				// find a preceding non-empty line so we don't get confused by blank lines with virtual indents
 				var previousLine = GetPreviousNonEmptyLine (line);
 				if (previousLine != null) {
-					var previousExpectedIndent = GetLineExpectedIndent (previousLine, parser, indentSize, out previousLineParserState);
+					var previousExpectedIndent = GetLineExpectedIndent (previousLine, parser, indentSize);
 					var previousActualIndent = GetLineActualIndent (previousLine);
 					previousIndentDelta = previousActualIndent - previousExpectedIndent;
 				}
 			}
 
-			var indent = GetLineExpectedIndent (line, parser, indentSize, out var parserState);
+			var indent = GetLineExpectedIndent (line, parser, indentSize);
 
 			// if the previous non-blank line was in the same state and had a different indent than
 			// expected, the user has manually corrected it, so re-apply the same delta to this line.
-			if (previousIndentDelta.HasValue && previousLineParserState == parserState) {
+			if (previousIndentDelta.HasValue) {
 				indent = Math.Max (0, indent + previousIndentDelta.Value);
 			}
 
@@ -94,26 +93,45 @@ namespace MonoDevelop.MSBuild.Editor.SmartIndent
 			for (int i = start; i < start + length; i++) {
 				if (snapshot[i] == ' ') {
 					actualIndent++;
+				} else {
+					break;
 				}
 			}
 			return actualIndent;
 		}
 
-		protected virtual int GetLineExpectedIndent (ITextSnapshotLine line, TParser parser, int indentSize, out XmlParserState state)
+		protected virtual int GetLineExpectedIndent (ITextSnapshotLine line, TParser parser, int indentSize)
 		{
-			var spine = parser.GetSpineParser (line.Start);
-			state = spine.CurrentState;
+			//create a lightweight tree parser, which will actually close nodes
+			var startParser = parser.GetSpineParser (line.Start);
+			var startNodes = startParser.Nodes.ToList ();
+			var startState = startParser.CurrentState;
+			startNodes.Reverse ();
 
-			int indent = indentSize * spine.Nodes.OfType<XElement> ().Count ();
+			var endNodes = parser.GetSpineParser (line.End).Nodes.ToList ();
+			endNodes.Reverse ();
 
-			switch (state) {
-			case XmlRootState _:
-				break;
-			default:
-				indent += indentSize;
-				break;
+			//count the number of elements in the stack at the start of the line
+			//which were not closed by the end of the line
+			int depth = 0;
+
+			//first node is the xdocument, skip it
+			for (int i = 1; i < startNodes.Count; i++) {
+				if (i == endNodes.Count || !(startNodes[i] is XElement) || startNodes[i] != endNodes[i]) {
+					break;
+				}
+				depth++;
 			}
 
+			//if inside a tag state, indent a level further
+			while (startState != null) {
+				if (startState is XmlTagState) {
+					depth ++;
+				}
+				startState = startState.Parent;
+			}
+
+			int indent = indentSize * depth;
 			return indent;
 		}
 	}

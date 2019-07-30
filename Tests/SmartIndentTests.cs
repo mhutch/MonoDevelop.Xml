@@ -25,9 +25,10 @@ namespace MonoDevelop.Xml.Tests
 		[TestCase ("<a>|", 4)] // single indent inside one element
 		[TestCase ("<a b=''|", 8)] // double indent in element attributes
 		[TestCase ("<a>\n    <b>|", 8)] // double indent when 2 elements deep
-		[TestCase ("<a>\n    <b>|</b>", 8)] //test result is same with closing element on line
 		[TestCase ("<a>\n<b>|", 4)] // respect user correction on previous line
 		[TestCase ("<a>\n  <b>|", 6)] // respect user correction on previous line
+		[TestCase ("<a>\n    <b>|</b>\n</a>", 4)] // tag close on current line deindents
+		[TestCase ("<a>\n    <b><c>|</c></b>\n</a>", 4)] // double tag close
 		public void TestSmartIndent (string doc, int expectedIndent)
 		{
 			var caretPos = doc.IndexOf ('|');
@@ -36,7 +37,7 @@ namespace MonoDevelop.Xml.Tests
 				caretPos++;
 			} else {
 				caretPos = doc.Length;
-				doc = doc + "\n";
+				doc += "\n";
 			}
 
 			var textView = CreateTextView (doc);
