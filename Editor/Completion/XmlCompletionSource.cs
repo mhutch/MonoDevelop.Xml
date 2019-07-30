@@ -36,10 +36,15 @@ namespace MonoDevelop.Xml.Editor.Completion
 			SnapshotSpan applicableToSpan,
 			CancellationToken token)
 		{
+			var reason = ConvertReason (trigger.Reason, trigger.Character);
+			if (reason == null) {
+				return CompletionContext.Empty;
+			}
+
 			var parser = BackgroundParser<TResult>.GetParser<TParser> ((ITextBuffer2)triggerLocation.Snapshot.TextBuffer);
 			var spine = parser.GetSpineParser (triggerLocation);
 
-			var triggerResult = await Task.Run (() => XmlCompletionTriggering.GetTrigger (spine, trigger.Character), token).ConfigureAwait (false);
+			var triggerResult = await Task.Run (() => XmlCompletionTriggering.GetTrigger (spine, reason.Value, trigger.Character), token).ConfigureAwait (false);
 
 			if (triggerResult.kind != XmlCompletionTrigger.None) {
 				List<XObject> nodePath = GetNodePath (spine, triggerLocation.Snapshot);
@@ -76,6 +81,22 @@ namespace MonoDevelop.Xml.Editor.Completion
 			return CompletionContext.Empty;
 		}
 
+		static XmlTriggerReason? ConvertReason (CompletionTriggerReason reason, char typedChar)
+		{
+			switch (reason) {
+			case CompletionTriggerReason.Insertion:
+				if (typedChar != '\0')
+					return XmlTriggerReason.TypedChar;
+				break;
+			case CompletionTriggerReason.Backspace:
+				return XmlTriggerReason.Backspace;
+			case CompletionTriggerReason.Invoke:
+			case CompletionTriggerReason.InvokeAndCommitIfUnique:
+				return XmlTriggerReason.Invocation;
+			}
+			return null;
+		}
+
 		public virtual Task<object> GetDescriptionAsync (
 			IAsyncCompletionSession session,
 			CompletionItem item,
@@ -86,6 +107,11 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 		public virtual CompletionStartData InitializeCompletion (CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token)
 		{
+			var reason = ConvertReason (trigger.Reason, trigger.Character);
+			if (reason == null) {
+				return CompletionStartData.DoesNotParticipateInCompletion;
+			}
+
 			var parser = BackgroundParser<TResult>.GetParser<TParser> ((ITextBuffer2)triggerLocation.Snapshot.TextBuffer);
 			var spine = parser.GetSpineParser (triggerLocation);
 
@@ -94,7 +120,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				spine.CurrentState, spine.CurrentStateLength, trigger.Character, trigger
 			);
 
-			var (kind, length) = XmlCompletionTriggering.GetTrigger (spine, trigger.Character);
+			var (kind, length) = XmlCompletionTriggering.GetTrigger (spine, reason.Value, trigger.Character);
 			if (kind != XmlCompletionTrigger.None) {
 				return new CompletionStartData (CompletionParticipation.ProvidesItems, new SnapshotSpan (triggerLocation.Snapshot, triggerLocation.Position - length, length));
 			}

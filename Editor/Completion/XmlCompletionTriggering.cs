@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.VisualStudio.Text;
+using System.Diagnostics;
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Parser;
 
@@ -10,10 +10,12 @@ namespace MonoDevelop.Xml.Editor.Completion
 	class XmlCompletionTriggering
 	{
 		//FIXME: the length should do a readahead to capture the whole token
-		public static (XmlCompletionTrigger kind, int length) GetTrigger (XmlParser spine, char typedCharacter)
+		public static (XmlCompletionTrigger kind, int length) GetTrigger (XmlParser spine, XmlTriggerReason reason, char typedCharacter)
 		{
 			int stateTag = ((IXmlParserContext)spine).StateTag;
-			bool isExplicit = typedCharacter == '\0';
+			bool isExplicit = reason == XmlTriggerReason.Invocation;
+			bool isTypedChar = reason == XmlTriggerReason.TypedChar;
+			Debug.Assert (!isTypedChar || typedCharacter == '\0');
 
 			// explicit invocation in element name
 			if (isExplicit && spine.CurrentState is XmlNameState && spine.Nodes.Peek () is XElement el && !el.IsNamed) {
@@ -21,19 +23,17 @@ namespace MonoDevelop.Xml.Editor.Completion
 				return (XmlCompletionTrigger.Element, length);
 			}
 
-			//typed angle bracket in free space
-			if (typedCharacter == '<' && spine.CurrentState is XmlRootState && stateTag == XmlRootState.BRACKET) {
-				return (XmlCompletionTrigger.ElementWithBracket, 0);
+			//auto trigger after < in free space
+			if (spine.CurrentState is XmlRootState && stateTag == XmlRootState.BRACKET) {
+				return (XmlCompletionTrigger.Element, 0);
 			}
 
 			//explicit invocation in free space
-			if (isExplicit && spine.CurrentState is XmlRootState && stateTag == XmlRootState.FREE) {
+			if (isExplicit && (
+				spine.CurrentState is XmlTextState
+				|| (spine.CurrentState is XmlRootState && stateTag == XmlRootState.FREE)
+			)) {
 				return (XmlCompletionTrigger.ElementWithBracket, 0);
-			}
-
-			// trigger on typing <
-			if (typedCharacter == '<' && spine.CurrentState is XmlRootState) {
-				return (XmlCompletionTrigger.Element, 0);
 			}
 
 			// trigger on explicit invocation after <
@@ -67,17 +67,17 @@ namespace MonoDevelop.Xml.Editor.Completion
 				return (XmlCompletionTrigger.Attribute, 0);
 			}
 
-			//attribute value completion on quote
+			//attribute value completion
 			if (spine.CurrentState is XmlAttributeValueState) {
-				if (isExplicit) {
-					var kind = (stateTag & XmlAttributeValueState.TagMask);
-					if (kind == XmlAttributeValueState.DOUBLEQUOTE || kind == XmlAttributeValueState.SINGLEQUOTE) {
+				var kind = stateTag & XmlAttributeValueState.TagMask;
+				if (kind == XmlAttributeValueState.DOUBLEQUOTE || kind == XmlAttributeValueState.SINGLEQUOTE) {
+					//auto trigger on quote regardless
+					if (spine.CurrentStateLength == 1) {
+						return (XmlCompletionTrigger.AttributeValue, 0);
+					}
+					if (isExplicit) {
 						return (XmlCompletionTrigger.AttributeValue, spine.CurrentStateLength - 1);
 					}
-				}
-				//trigger on typing opening quote
-				else if (spine.CurrentStateLength == 1 && (typedCharacter == '\'' || typedCharacter =='"')) {
-					return (XmlCompletionTrigger.AttributeValue, 0);
 				}
 			}
 
@@ -95,5 +95,12 @@ namespace MonoDevelop.Xml.Editor.Completion
 		Entity,
 		DocType,
 		DocTypeOrCData
+	}
+
+	public enum XmlTriggerReason
+	{
+		Invocation,
+		TypedChar,
+		Backspace
 	}
 }
