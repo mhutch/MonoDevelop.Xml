@@ -1,4 +1,6 @@
-using System;
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.ComponentModel.Composition;
@@ -11,7 +13,6 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 using MonoDevelop.Xml.Dom;
-using MonoDevelop.Xml.Editor;
 using MonoDevelop.Xml.Editor.Completion;
 using MonoDevelop.Xml.Tests.EditorTestHelpers;
 using NUnit.Framework;
@@ -51,7 +52,7 @@ namespace MonoDevelop.Xml.Tests.Completion
 		{
 			var item = new CompletionItem (includeBracket? "<Hello" : "Hello", this);
 			var items = ImmutableArray<CompletionItem>.Empty;
-			items = items.Add (item);
+			items = items.Add (item).AddRange (GetMiscellaneousTags (triggerLocation, nodePath, includeBracket));
 			return Task.FromResult (new CompletionContext (items));
 		}
 	}
@@ -65,24 +66,27 @@ namespace MonoDevelop.Xml.Tests.Completion
 		public async Task TestElementStartCompletion ()
 		{
 			var result = await GetCompletionContext ("<$");
-			Assert.AreEqual (1, result.Items.Length);
-			Assert.AreEqual ("Hello", result.Items[0].DisplayText);
+			result.AssertNonEmpty ();
+			result.AssertContains ("Hello");
+			result.AssertContains ("!--");
 		}
 
 		[Test]
 		public async Task TestRootCompletion ()
 		{
 			var result = await GetCompletionContext ("$");
-			Assert.AreEqual (1, result.Items.Length);
-			Assert.AreEqual ("<Hello", result.Items[0].DisplayText);
+			result.AssertNonEmpty ();
+			result.AssertContains ("<Hello");
+			result.AssertContains ("<!--");
 		}
 
 		[Test]
 		public async Task TestElementNameCompletionInvocation ()
 		{
 			var result = await GetCompletionContext ("<foo$");
-			Assert.AreEqual (1, result.Items.Length);
-			Assert.AreEqual ("Hello", result.Items[0].DisplayText);
+			result.AssertNonEmpty ();
+			result.AssertContains ("Hello");
+			result.AssertContains ("!--");
 		}
 
 		protected override (EditorEnvironment, EditorCatalog) InitializeEnvironment () => TestEnvironment.EnsureInitialized ();
