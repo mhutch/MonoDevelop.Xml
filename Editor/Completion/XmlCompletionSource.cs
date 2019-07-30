@@ -330,7 +330,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				EntityItem ("amp", "&"),
 			};
 
-			//TODO: need to tweak semicolon insertion fdor XmlCompletionItemKind.Entity
+			//TODO: need to tweak semicolon insertion dor XmlCompletionItemKind.Entity
 			CompletionItem EntityItem (string name, string character) =>
 				new CompletionItem (name, this, XmlImages.Entity, ImmutableArray<CompletionFilter>.Empty, string.Empty, name, name, character, ImmutableArray<ImageElement>.Empty)
 				.AddEntityDocumentation (character)
@@ -340,35 +340,34 @@ namespace MonoDevelop.Xml.Editor.Completion
 		/// <summary>
 		/// Gets completion items for closing tags, comments, CDATA etc.
 		/// </summary>
-		/// <param name="stack"></param>
-		/// <param name="allowCData"></param>
-		/// <returns></returns>
-		protected IEnumerable<CompletionItem> GetMiscellaneousTags (NodeStack stack, bool allowCData = true)
+		protected IEnumerable<CompletionItem> GetMiscellaneousTags (SnapshotPoint triggerLocation, NodeStack stack, bool includeBracket, bool allowCData = false)
 		{
 			if (stack.Count == 0 & triggerLocation.GetContainingLine().LineNumber == 0) {
 				yield return includeBracket? prologItemWithBracket : prologItem;
 			}
+
 			if (allowCData) {
-				yield return cdataItem;
+				yield return includeBracket ? cdataItemWithBracket : cdataItem;
 			}
 
-			yield return commentItem;
+			yield return includeBracket ? commentItemWithBracket : commentItem;
 
-			foreach (var closingTag in GetClosingTags (stack)) {
+			foreach (var closingTag in GetClosingTags (stack, includeBracket)) {
 				yield return closingTag;
 			}
 		}
 
 		protected IEnumerable<CompletionItem> GetBuiltInEntityItems () => entityItems;
 
-		IEnumerable<CompletionItem> GetClosingTags (NodeStack stack)
+		IEnumerable<CompletionItem> GetClosingTags (NodeStack stack, bool includeBracket)
 		{
 			var dedup = new HashSet<string> ();
 
+			var prefix = includeBracket ? "</" : "/";
+
 			//FIXME: search forward to see if tag's closed already
 			foreach (XObject ob in stack) {
-				var el = ob as XElement;
-				if (el == null)
+				if (!(ob is XElement el))
 					continue;
 				if (!el.IsNamed || el.IsClosed)
 					yield break;
@@ -378,7 +377,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 					continue;
 				}
 
-				var item = new CompletionItem ("/" + name, this, XmlImages.ClosingTag)
+				var item = new CompletionItem (prefix + name, this, XmlImages.ClosingTag)
 					.AddClosingElementDocumentation (el, dedup.Count > 1)
 					.AddKind (dedup.Count == 1? XmlCompletionItemKind.ClosingTag : XmlCompletionItemKind.MultipleClosingTags);
 				item.Properties.AddProperty (typeof (NodeStack), stack);
