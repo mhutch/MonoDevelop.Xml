@@ -15,6 +15,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			int stateTag = ((IXmlParserContext)spine).StateTag;
 			bool isExplicit = reason == XmlTriggerReason.Invocation;
 			bool isTypedChar = reason == XmlTriggerReason.TypedChar;
+			bool isBackspace = reason == XmlTriggerReason.Backspace;
 			Debug.Assert (!isTypedChar || typedCharacter == '\0');
 
 			// explicit invocation in element name
@@ -28,22 +29,9 @@ namespace MonoDevelop.Xml.Editor.Completion
 				return (XmlCompletionTrigger.Element, 0);
 			}
 
-			//explicit invocation in free space
-			if (isExplicit && (
-				spine.CurrentState is XmlTextState
-				|| (spine.CurrentState is XmlRootState && stateTag == XmlRootState.FREE)
-			)) {
-				return (XmlCompletionTrigger.ElementWithBracket, 0);
-			}
-
 			// trigger on explicit invocation after <
 			if (isExplicit && spine.CurrentState is XmlRootState && stateTag == XmlRootState.BRACKET) {
 				return (XmlCompletionTrigger.Element, 0);
-			}
-
-			//entity completion
-			if (typedCharacter == '&' && (spine.CurrentState is XmlTextState || spine.CurrentState is XmlAttributeValueState)) {
-				return (XmlCompletionTrigger.Entity, 0);
 			}
 
 			//doctype/cdata completion, explicit trigger after <! or type ! after <
@@ -79,6 +67,38 @@ namespace MonoDevelop.Xml.Editor.Completion
 						return (XmlCompletionTrigger.AttributeValue, spine.CurrentStateLength - 1);
 					}
 				}
+			}
+
+			//entity completion
+			if (spine.CurrentState is XmlTextState || spine.CurrentState is XmlAttributeValueState) {
+				if (typedCharacter == '&')
+					return (XmlCompletionTrigger.Entity, 0);
+
+				var text = ((IXmlParserContext)spine).KeywordBuilder;
+
+				if (isBackspace && text[text.Length-1] == '&') {
+					return (XmlCompletionTrigger.Entity, 0);
+				}
+
+				if (isExplicit) {
+					for (int i = 0; i < text.Length; i++) {
+						var c = text[text.Length - i - 1];
+						if (c == '&') {
+							return (XmlCompletionTrigger.Entity, i);
+						}
+						if (!XmlChar.IsNameChar (c)) {
+							break;
+						}
+					}
+				}
+			}
+
+			//explicit invocation in free space
+			if (isExplicit && (
+				spine.CurrentState is XmlTextState
+				|| (spine.CurrentState is XmlRootState && stateTag == XmlRootState.FREE)
+			)) {
+				return (XmlCompletionTrigger.ElementWithBracket, 0);
 			}
 
 			return (XmlCompletionTrigger.None, 0);

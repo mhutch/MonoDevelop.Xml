@@ -36,6 +36,11 @@ namespace MonoDevelop.Xml.Tests.Completion
 		[TestCase ("<foo ", XmlCompletionTrigger.Attribute)]
 		[TestCase ("<foo bar", XmlCompletionTrigger.Attribute, 3)]
 		[TestCase ("", '&', XmlCompletionTrigger.Entity)]
+		[TestCase ("&", XmlCompletionTrigger.Entity)]
+		[TestCase ("&", 'a', XmlCompletionTrigger.None)]
+		[TestCase ("&", XmlTriggerReason.Backspace, XmlCompletionTrigger.Entity)]
+		[TestCase ("&blah", XmlCompletionTrigger.Entity, 4)]
+		[TestCase ("&blah", XmlTriggerReason.Backspace, XmlCompletionTrigger.None)]
 		[TestCase ("<foo ", '&', XmlCompletionTrigger.None)]
 		[TestCase ("<foo bar='", '&', XmlCompletionTrigger.Entity)]
 		[TestCase ("<", '!', XmlCompletionTrigger.DocTypeOrCData, 2)]
@@ -50,9 +55,11 @@ namespace MonoDevelop.Xml.Tests.Completion
 		[TestCase ("<foo bar=", '\'', XmlCompletionTrigger.AttributeValue)]
 		[TestCase ("<foo bar='wxyz", XmlCompletionTrigger.AttributeValue, 4)]
 		[TestCase ("<foo bar=wxyz", XmlCompletionTrigger.None)]
+		[TestCase ("<foo bar=wxyz", XmlTriggerReason.Backspace, XmlCompletionTrigger.None)]
+		[TestCase ("<foo bar=wxyz", "'", XmlCompletionTrigger.None)]
 		public void TriggerTests (object[] args)
 		{
-			//firstarg is the doc
+			//first arg is the doc
 			string doc = (string)args[0];
 
 			XmlTriggerReason reason;
