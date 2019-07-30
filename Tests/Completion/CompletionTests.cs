@@ -49,7 +49,7 @@ namespace MonoDevelop.Xml.Tests.Completion
 			bool includeBracket,
 			CancellationToken token)
 		{
-			var item = new CompletionItem ("Hello", this);
+			var item = new CompletionItem (includeBracket? "<Hello" : "Hello", this);
 			var items = ImmutableArray<CompletionItem>.Empty;
 			items = items.Add (item);
 			return Task.FromResult (new CompletionContext (items));
@@ -67,6 +67,14 @@ namespace MonoDevelop.Xml.Tests.Completion
 			var result = await GetCompletionContext ("<$");
 			Assert.AreEqual (1, result.Items.Length);
 			Assert.AreEqual ("Hello", result.Items[0].DisplayText);
+		}
+
+		[Test]
+		public async Task TestRootCompletion ()
+		{
+			var result = await GetCompletionContext ("$");
+			Assert.AreEqual (1, result.Items.Length);
+			Assert.AreEqual ("<Hello", result.Items[0].DisplayText);
 		}
 
 		[Test]
