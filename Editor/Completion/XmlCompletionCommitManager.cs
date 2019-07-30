@@ -12,7 +12,6 @@ using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.Text;
 using MonoDevelop.Xml.Dom;
-using MonoDevelop.Xml.Parser;
 
 namespace MonoDevelop.Xml.Editor.Completion
 {
@@ -45,7 +44,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				return CommitResult.Handled;
 			}
 
-			LoggingService.LogWarning ($"MSBuild commit manager did not handle unknown special completion kind {kind}");
+			LoggingService.LogWarning ($"XML commit manager did not handle unknown special completion kind {kind}");
 			return CommitResult.Unhandled;
 		}
 
@@ -61,16 +60,16 @@ namespace MonoDevelop.Xml.Editor.Completion
 		void InsertClosingTags (IAsyncCompletionSession session, ITextBuffer buffer, CompletionItem item)
 		{
 			var insertTillName = item.InsertText.Substring (1);
-			var stack = item.Properties.GetProperty<NodeStack> (typeof (NodeStack));
-			var elements = stack.OfType<XElement> ().TakeWhile (t => {
-				if (insertTillName == null) {
-					return false;
+			var stack = item.Properties.GetProperty<List<XObject>> (typeof (List<XObject>));
+			var elements = new List<XElement> ();
+			for (int i = stack.Count - 1; i >= 0; i--) {
+				if (stack[i] is XElement el) {
+					elements.Add (el);
+					if (el.Name.FullName == insertTillName) {
+						break;
+					}
 				}
-				if (t.Name.FullName == insertTillName) {
-					insertTillName = null;
-				}
-				return true;
-			}).ToList ();
+			}
 
 			ITextSnapshot snapshot = buffer.CurrentSnapshot;
 			var span = session.ApplicableToSpan.GetSpan (snapshot);

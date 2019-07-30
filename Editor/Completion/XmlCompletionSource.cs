@@ -340,9 +340,9 @@ namespace MonoDevelop.Xml.Editor.Completion
 		/// <summary>
 		/// Gets completion items for closing tags, comments, CDATA etc.
 		/// </summary>
-		protected IEnumerable<CompletionItem> GetMiscellaneousTags (SnapshotPoint triggerLocation, NodeStack stack, bool includeBracket, bool allowCData = false)
+		protected IEnumerable<CompletionItem> GetMiscellaneousTags (SnapshotPoint triggerLocation, List<XObject> nodePath, bool includeBracket, bool allowCData = false)
 		{
-			if (stack.Count == 0 & triggerLocation.GetContainingLine().LineNumber == 0) {
+			if (nodePath.Count == 0 & triggerLocation.GetContainingLine().LineNumber == 0) {
 				yield return includeBracket? prologItemWithBracket : prologItem;
 			}
 
@@ -352,21 +352,22 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 			yield return includeBracket ? commentItemWithBracket : commentItem;
 
-			foreach (var closingTag in GetClosingTags (stack, includeBracket)) {
+			foreach (var closingTag in GetClosingTags (nodePath, includeBracket)) {
 				yield return closingTag;
 			}
 		}
 
 		protected IEnumerable<CompletionItem> GetBuiltInEntityItems () => entityItems;
 
-		IEnumerable<CompletionItem> GetClosingTags (NodeStack stack, bool includeBracket)
+		IEnumerable<CompletionItem> GetClosingTags (List<XObject> nodePath, bool includeBracket)
 		{
 			var dedup = new HashSet<string> ();
 
 			var prefix = includeBracket ? "</" : "/";
 
 			//FIXME: search forward to see if tag's closed already
-			foreach (XObject ob in stack) {
+			for (int i = nodePath.Count - 1; i >= 0; i--) {
+				var ob = nodePath[i];
 				if (!(ob is XElement el))
 					continue;
 				if (!el.IsNamed || el.IsClosed)
@@ -380,7 +381,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				var item = new CompletionItem (prefix + name, this, XmlImages.ClosingTag)
 					.AddClosingElementDocumentation (el, dedup.Count > 1)
 					.AddKind (dedup.Count == 1? XmlCompletionItemKind.ClosingTag : XmlCompletionItemKind.MultipleClosingTags);
-				item.Properties.AddProperty (typeof (NodeStack), stack);
+				item.Properties.AddProperty (typeof (List<XObject>), nodePath);
 				yield return item;
 			}
 		}
