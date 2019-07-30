@@ -48,21 +48,20 @@ namespace MonoDevelop.Xml.Parser
 		
 		public XmlTagState (XmlAttributeState attributeState, XmlNameState nameState)
 		{
-			this.AttributeState = attributeState;
-			this.NameState = nameState;
+			AttributeState = attributeState;
+			NameState = nameState;
 			
-			Adopt (this.AttributeState);
-			Adopt (this.NameState);
+			Adopt (AttributeState);
+			Adopt (NameState);
 		}
 		
 		public override XmlParserState PushChar (char c, IXmlParserContext context, ref string rollback)
 		{
-			XElement element = context.Nodes.Peek () as XElement;
+			var element = context.Nodes.Peek () as XElement;
 			
 			if (element == null || element.IsEnded) {
 				var parent = element;
-				element = new XElement (context.Position - 2); // 2 == < + current char
-				element.Parent = parent;
+				element = new XElement (context.Position - 2) { Parent = parent }; // 2 == < + current char
 				context.Nodes.Push (element);
 				if (context.BuildTree) {
 					var parentContainer = (XContainer)context.Nodes.Peek (element.IsClosed ? 0 : 1);

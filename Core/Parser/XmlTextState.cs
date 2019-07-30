@@ -36,6 +36,7 @@ namespace MonoDevelop.Xml.Parser
 		{
 			if (context.CurrentStateLength == 1) {
 				context.Nodes.Push (new XText (context.Position - 1));
+				// StateTag is tracking the last non-whitespace char
 				context.StateTag = context.Position;
 			}
 
@@ -43,8 +44,11 @@ namespace MonoDevelop.Xml.Parser
 
 			if (c == '<') {
 				var node = (XText) context.Nodes.Pop ();
-				//statetag is the last non-whitespace char
-				node.End (context.StateTag);
+
+				//trim the text down to the node length and add it
+				context.KeywordBuilder.Length = context.StateTag - node.Span.Start;
+				node.End (context.KeywordBuilder.ToString ());
+
 				if (context.BuildTree) {
 					((XContainer)context.Nodes.Peek ()).AddChildNode (node);
 				}
@@ -52,9 +56,11 @@ namespace MonoDevelop.Xml.Parser
 				return Parent;
 			}
 
-			if (!char.IsWhiteSpace (c)) {
+			if (!XmlChar.IsWhitespace (c)) {
 				context.StateTag = context.Position;
 			}
+
+			context.KeywordBuilder.Append (c);
 			
 			return null;
 		}

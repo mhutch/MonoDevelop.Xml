@@ -11,8 +11,26 @@ namespace MonoDevelop.Xml.Dom
 		protected XText () { }
 		protected override XObject NewInstance () { return new XText (); }
 
+		public string Text { get; private set; }
+
 		public override string FriendlyPathRepresentation {
-			get { return "[TEXT]"; }
+			get { return Ellipsize (Text, 20); }
 		}
+
+		public void End (string text)
+		{
+			Text = text;
+			Span = new TextSpan (Span.Start, text.Length);
+		}
+
+		protected override void ShallowCopyFrom (XObject copyFrom)
+		{
+			var other = (XText)copyFrom;
+			Text = other.Text;
+			base.ShallowCopyFrom (copyFrom);
+		}
+
+		static string Ellipsize (string s, int length)
+			=> s.Length < length - 3 ? s : s.Substring (0, length - 3) + "...";
 	}
 }

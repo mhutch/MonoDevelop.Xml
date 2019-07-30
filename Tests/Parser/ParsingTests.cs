@@ -370,6 +370,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 			var t = el.LastChild as XText;
 			Assert.NotNull (t);
 			Assert.AreEqual ("abc defg", docTxt.Substring (t.Span.Start, t.Span.Length));
+			Assert.AreEqual ("abc defg", t.Text);
 		}
 	}
 }

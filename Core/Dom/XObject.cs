@@ -38,14 +38,14 @@ namespace MonoDevelop.Xml.Dom
 
 		protected XObject (TextSpan span)
 		{
-			this.Span = span;
+			Span = span;
 		}
 
 		public XObject Parent { get; internal protected set; }
 
 		public IEnumerable<XNode> Parents {
 			get {
-				XNode next = Parent as XNode;
+				var next = Parent as XNode;
 				while (next != null) {
 					yield return next;
 					next = next.Parent as XNode;
@@ -53,11 +53,11 @@ namespace MonoDevelop.Xml.Dom
 			}
 		}
 
-		public TextSpan Span { get; private set; }
+		public TextSpan Span { get; protected set; }
 
-		public void End (int end)
+		public void End (int offset)
 		{
-			Span = TextSpan.FromBounds (Span.Start, end);
+			Span = TextSpan.FromBounds (Span.Start, offset);
 		}
 
 		/// <summary>
