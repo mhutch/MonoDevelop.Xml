@@ -345,6 +345,9 @@ namespace MonoDevelop.Xml.Editor.Completion
 		/// <returns></returns>
 		protected IEnumerable<CompletionItem> GetMiscellaneousTags (NodeStack stack, bool allowCData = true)
 		{
+			if (stack.Count == 0 & triggerLocation.GetContainingLine().LineNumber == 0) {
+				yield return includeBracket? prologItemWithBracket : prologItem;
+			}
 			if (allowCData) {
 				yield return cdataItem;
 			}
