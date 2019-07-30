@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -23,7 +24,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 	{
 		protected ITextView TextView { get; }
 
-		public XmlCompletionSource (ITextView textView)
+		protected XmlCompletionSource (ITextView textView)
 		{
 			TextView = textView;
 			InitializeBuiltinItems ();
@@ -44,19 +45,19 @@ namespace MonoDevelop.Xml.Editor.Completion
 			var parser = BackgroundParser<TResult>.GetParser<TParser> ((ITextBuffer2)triggerLocation.Snapshot.TextBuffer);
 			var spine = parser.GetSpineParser (triggerLocation);
 
-			var triggerResult = await Task.Run (() => XmlCompletionTriggering.GetTrigger (spine, reason.Value, trigger.Character), token).ConfigureAwait (false);
+			var (kind, _) = await Task.Run (() => XmlCompletionTriggering.GetTrigger (spine, reason.Value, trigger.Character), token).ConfigureAwait (false);
 
-			if (triggerResult.kind != XmlCompletionTrigger.None) {
+			if (kind != XmlCompletionTrigger.None) {
 				List<XObject> nodePath = GetNodePath (spine, triggerLocation.Snapshot);
 
-				switch (triggerResult.kind) {
+				switch (kind) {
 				case XmlCompletionTrigger.Element:
 				case XmlCompletionTrigger.ElementWithBracket:
 					//TODO: if it's on the first line and there's no XML declaration, add <"?xml version=\"1.0\" encoding=\"{encoding}\" ?>";
 					//TODO: if it's on the first or second line and there's no DTD declaration, add the DTDs, or at least <!DOCTYPE
 					//TODO: add closing tags // AddCloseTag (list, spine.Nodes);
 					//TODO: add snippets // MonoDevelop.Ide.CodeTemplates.CodeTemplateService.AddCompletionDataForFileName (DocumentContext.Name, list);
-					return await GetElementCompletionsAsync (session, triggerLocation, nodePath, triggerResult.kind == XmlCompletionTrigger.ElementWithBracket, token);
+					return await GetElementCompletionsAsync (session, triggerLocation, nodePath, kind == XmlCompletionTrigger.ElementWithBracket, token);
 
 				case XmlCompletionTrigger.Attribute:
 					IAttributedXObject attributedOb = (spine.Nodes.Peek () as IAttributedXObject) ?? spine.Nodes.Peek (1) as IAttributedXObject;
@@ -72,9 +73,8 @@ namespace MonoDevelop.Xml.Editor.Completion
 					return await GetEntityCompletionsAsync (session, triggerLocation, nodePath, token);
 
 				case XmlCompletionTrigger.DocType:
-				case XmlCompletionTrigger.DocTypeOrCData:
-					// we delegate adding the CDATA completion to the subclass as only it knows whether character data is valid in that position
-					return await GetDocTypeCompletionsAsync (session, triggerLocation, nodePath, triggerResult.kind == XmlCompletionTrigger.DocTypeOrCData, token);
+				case XmlCompletionTrigger.DeclarationOrCDataOrComment:
+					return await GetDeclarationCompletionsAsync (session, triggerLocation, nodePath, token);
 				}
 			}
 
@@ -167,14 +167,16 @@ namespace MonoDevelop.Xml.Editor.Completion
 			)
 			=> Task.FromResult (CompletionContext.Empty);
 
-		protected virtual Task<CompletionContext> GetDocTypeCompletionsAsync (
+		protected virtual Task<CompletionContext> GetDeclarationCompletionsAsync (
 			IAsyncCompletionSession session,
 			SnapshotPoint triggerLocation,
 			List<XObject> nodePath,
-			bool includeCData,
 			CancellationToken token
 			)
 			=> Task.FromResult (CompletionContext.Empty);
+
+		CompletionContext CreateCompletionContext (IEnumerable<CompletionItem> items)
+			=> new CompletionContext (ImmutableArray<CompletionItem>.Empty.AddRange (items), null, InitialSelectionHint.SoftSelection);
 
 		protected List<XObject> GetNodePath (XmlParser spine, ITextSnapshot snapshot)
 		{

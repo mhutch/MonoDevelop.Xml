@@ -12,8 +12,8 @@ namespace MonoDevelop.Xml.Editor.Completion
 		public static readonly ImageElement Attribute = new ImageElement (new ImageId ());
 		public static readonly ImageElement AttributeValue = new ImageElement (new ImageId ());
 		public static readonly ImageElement Namespace = new ImageElement (new ImageId ());
-		public static readonly ImageElement Directive = new ImageElement (new ImageId ());
-		public static readonly ImageElement Entity = Directive;
+		public static readonly ImageElement Declaration = new ImageElement (new ImageId ());
+		public static readonly ImageElement Entity = Declaration;
 		public static ImageElement ClosingTag = Element;
 	}
 }
