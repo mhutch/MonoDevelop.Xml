@@ -49,9 +49,9 @@ namespace MonoDevelop.Xml.Editor.Completion
 					}
 				}
 			case XmlCompletionItemKind.Element: {
-					string insertionText = $"{item.InsertText}></{item.InsertText}>";
+					string insertionText = $"{item.InsertText}></{item.InsertText.Trim (new char[] { '<', '>' })}>";
 					Insert (session, buffer, insertionText);
-					ShiftCaret (session, item.InsertText.Length + 3, XmlCaretDirection.Left);
+					ShiftCaret (session, item.InsertText.Trim (new char[] { '<', '>' }).Length + 3, XmlCaretDirection.Left);
 					return CommitResult.Handled;
 				}
 			case XmlCompletionItemKind.Attribute: {
@@ -155,12 +155,6 @@ namespace MonoDevelop.Xml.Editor.Completion
 					session.TextView.Caret.MoveToNextCaretPosition ();
 				}
 				return;
-			case XmlCaretDirection.Top:
-				//TO DO
-				throw new ArgumentException ($"Unsupported value '{caretDirection}'");
-			case XmlCaretDirection.Down:
-				//TO DO
-				throw new ArgumentException ($"Unsupported value '{caretDirection}'");
 			}
 			return;
 		}

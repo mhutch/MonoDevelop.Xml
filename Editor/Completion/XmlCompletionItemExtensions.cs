@@ -190,8 +190,6 @@ namespace MonoDevelop.Xml.Editor.Completion
 	public enum XmlCaretDirection
 	{
 		Left,
-		Right,
-		Top,
-		Down
+		Right
 	}
 }
