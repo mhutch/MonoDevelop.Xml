@@ -38,10 +38,39 @@ namespace MonoDevelop.Xml.Editor.Completion
 			}
 
 			switch (kind) {
+			case XmlCompletionItemKind.SelfClosingElement: {
+					if (typedChar != '>') {
+						string insertionText = $"{item.InsertText}/>";
+						Insert (session, buffer, insertionText);
+						ShiftCaret (session, 2, XmlCaretDirection.Left);
+						return CommitResult.Handled;
+					} else {
+						return CommitResult.Unhandled;
+					}
+				}
+			case XmlCompletionItemKind.Element: {
+					string insertionText = $"{item.InsertText}></{item.InsertText}>";
+					Insert (session, buffer, insertionText);
+					ShiftCaret (session, item.InsertText.Length + 3, XmlCaretDirection.Left);
+					return CommitResult.Handled;
+				}
+			case XmlCompletionItemKind.Attribute: {
+					string insertionText = $"{item.InsertText}=" + @"""""";
+					Insert (session, buffer, insertionText);
+					ShiftCaret (session, 1, XmlCaretDirection.Left);
+					return CommitResult.Handled;
+				}
+			case XmlCompletionItemKind.AttributeValue: {
+					string insertionText = $"{item.InsertText}";
+					Insert (session, buffer, insertionText);
+					ShiftCaret (session, 0, XmlCaretDirection.Right);
+					return CommitResult.Handled;
+				}
 			case XmlCompletionItemKind.MultipleClosingTags:
-			case XmlCompletionItemKind.ClosingTag:
-				InsertClosingTags (session, buffer, item);
-				return CommitResult.Handled;
+			case XmlCompletionItemKind.ClosingTag: {
+					InsertClosingTags (session, buffer, item);
+					return CommitResult.Handled;
+				}
 			}
 
 			LoggingService.LogWarning ($"XML commit manager did not handle unknown special completion kind {kind}");
@@ -111,6 +140,29 @@ namespace MonoDevelop.Xml.Editor.Completion
 			var bufferEdit = buffer.CreateEdit ();
 			bufferEdit.Replace (span, sb.ToString ());
 			bufferEdit.Apply ();
+		}
+
+		private static void ShiftCaret (IAsyncCompletionSession session, int len, XmlCaretDirection caretDirection)
+		{
+			switch (caretDirection) {
+			case XmlCaretDirection.Left:
+				for (int i = 0; i < len; i++) {
+					session.TextView.Caret.MoveToPreviousCaretPosition ();
+				}
+				return;
+			case XmlCaretDirection.Right:
+				for (int i = 0; i < len; i++) {
+					session.TextView.Caret.MoveToNextCaretPosition ();
+				}
+				return;
+			case XmlCaretDirection.Top:
+				//TO DO
+				return;
+			case XmlCaretDirection.Down:
+				//TO DO
+				return;
+			}
+			return;
 		}
 	}
 }
