@@ -16,7 +16,9 @@ namespace MonoDevelop.Xml.Editor.Completion
 			bool isExplicit = reason == XmlTriggerReason.Invocation;
 			bool isTypedChar = reason == XmlTriggerReason.TypedChar;
 			bool isBackspace = reason == XmlTriggerReason.Backspace;
-			Debug.Assert (!isTypedChar || typedCharacter == '\0');
+			if (isTypedChar) {
+				Debug.Assert (typedCharacter != '\0');
+			}
 
 			// explicit invocation in element name
 			if (isExplicit && spine.CurrentState is XmlNameState && spine.Nodes.Peek () is XElement el && !el.IsNamed) {

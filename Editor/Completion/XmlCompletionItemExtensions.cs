@@ -177,6 +177,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 	public enum XmlCompletionItemKind
 	{
 		Element,
+		SelfClosingElement,
 		Attribute,
 		AttributeValue,
 		CData,
@@ -185,5 +186,10 @@ namespace MonoDevelop.Xml.Editor.Completion
 		Entity,
 		ClosingTag,
 		MultipleClosingTags
+	}
+	public enum XmlCaretDirection
+	{
+		Left,
+		Right
 	}
 }
