@@ -110,13 +110,13 @@ namespace MonoDevelop.Xml.Editor.Completion
 			if (replaceFirstIndent) {
 				if (thisLine.LineNumber > 0) {
 					var prevLine = snapshot.GetLineFromLineNumber (thisLine.LineNumber - 1);
-					span = new SnapshotSpan (prevLine.EndIncludingLineBreak, span.End);
+					span = new SnapshotSpan (prevLine.EndIncludingLineBreak, span.End + 1);
 				} else {
-					span = new SnapshotSpan (thisLine.Start, span.End);
+					span = new SnapshotSpan (thisLine.Start, span.End + 1);
 				}
 			} else {
 				//extend the span back a char, it doesn't include the <
-				span = new SnapshotSpan (span.Start - 1, span.Length + 1);
+				span = new SnapshotSpan (span.Start - 1, span.Length + 1 + 1);
 			}
 
 			var newLine = snapshot.GetText (thisLine.End, thisLine.EndIncludingLineBreak - thisLine.End);
