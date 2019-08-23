@@ -13,6 +13,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 using MonoDevelop.Xml.Dom;
+using MonoDevelop.Xml.Editor;
 using MonoDevelop.Xml.Editor.Completion;
 using MonoDevelop.Xml.Tests.EditorTestHelpers;
 using NUnit.Framework;
@@ -25,7 +26,7 @@ namespace MonoDevelop.Xml.Tests.Completion
 
 		[Export]
 		[Name (Name)]
-		[BaseDefinition (StandardContentTypeNames.Code)]
+		[BaseDefinition (XmlContentTypeNames.XmlCore)]
 		public static readonly ContentTypeDefinition XmlCompletionTestContentTypeDefinition = null;
 	}
 
