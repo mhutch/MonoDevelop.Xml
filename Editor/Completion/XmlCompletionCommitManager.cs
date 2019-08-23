@@ -88,7 +88,10 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 		void InsertClosingTags (IAsyncCompletionSession session, ITextBuffer buffer, CompletionItem item)
 		{
-			var insertTillName = item.InsertText.Substring (1);
+			// completion may or may not include it depending how it was triggered
+			bool includesBracket = item.InsertText[0] == '<';
+
+			var insertTillName = item.InsertText.Substring (includesBracket? 2 : 1);
 			var stack = item.Properties.GetProperty<List<XObject>> (typeof (List<XObject>));
 			var elements = new List<XElement> ();
 			for (int i = stack.Count - 1; i >= 0; i--) {
@@ -103,6 +106,11 @@ namespace MonoDevelop.Xml.Editor.Completion
 			ITextSnapshot snapshot = buffer.CurrentSnapshot;
 			var span = session.ApplicableToSpan.GetSpan (snapshot);
 
+			// extend the span back to include the <, this logic assumes it's included
+			if (!includesBracket) {
+				span = new SnapshotSpan (span.Start - 1, span.Length + 1);
+			}
+
 			// if this completion is the first thing on the current line, reindent the current line
 			var thisLine = snapshot.GetLineFromPosition (span.Start);
 			var thisLineFirstNonWhitespaceOffset = thisLine.GetFirstNonWhitespaceOffset ();
@@ -110,13 +118,10 @@ namespace MonoDevelop.Xml.Editor.Completion
 			if (replaceFirstIndent) {
 				if (thisLine.LineNumber > 0) {
 					var prevLine = snapshot.GetLineFromLineNumber (thisLine.LineNumber - 1);
-					span = new SnapshotSpan (prevLine.EndIncludingLineBreak, span.End);
+					span = new SnapshotSpan (prevLine.End, span.End);
 				} else {
 					span = new SnapshotSpan (thisLine.Start, span.End);
 				}
-			} else {
-				//extend the span back a char, it doesn't include the <
-				span = new SnapshotSpan (span.Start - 1, span.Length + 1);
 			}
 
 			var newLine = snapshot.GetText (thisLine.End, thisLine.EndIncludingLineBreak - thisLine.End);
