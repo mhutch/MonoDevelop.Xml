@@ -4,6 +4,8 @@ using Microsoft.VisualStudio.MiniEditor;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Editor.Commanding;
+using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Threading;
 using Microsoft.VisualStudio.Utilities;
@@ -48,5 +50,11 @@ namespace MonoDevelop.Xml.Tests.Completion
 
 		public JoinableTaskContext JoinableTaskContext
 			=> Host.GetService<JoinableTaskContext> ();
+
+		public IEditorOperationsFactoryService OperationsFactory
+			=> Host.GetService<IEditorOperationsFactoryService> ();
+
+		public IEditorCommandHandlerServiceFactory CommandServiceFactory
+			=> Host.GetService<IEditorCommandHandlerServiceFactory> ();
 	}
 }

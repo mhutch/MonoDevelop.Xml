@@ -3,7 +3,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.Text;
@@ -15,11 +14,8 @@ namespace MonoDevelop.Xml.Tests.EditorTestHelpers
 	{
 		public Task<CompletionContext> GetCompletionContext (string documentText, CompletionTriggerReason reason = CompletionTriggerReason.Invoke, char triggerChar = '\0', char caretMarker = '$', string filename = default)
 		{
-			var caretOffset = documentText.IndexOf (caretMarker);
-			if (caretOffset < 0) {
-				throw new ArgumentException ("Document does not contain a caret marker", nameof (documentText));
-			}
-			documentText = documentText.Substring (0, caretOffset) + documentText.Substring (caretOffset + 1);
+			int caretOffset;
+			(documentText, caretOffset) = ExtractCaret (documentText, caretMarker);
 
 			var textView = CreateTextView (documentText, filename);
 			return GetCompletionContext (textView, caretOffset, reason, triggerChar);
