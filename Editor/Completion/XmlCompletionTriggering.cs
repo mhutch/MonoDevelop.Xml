@@ -21,14 +21,19 @@ namespace MonoDevelop.Xml.Editor.Completion
 			}
 
 			// explicit invocation in element name
-			if (isExplicit && spine.CurrentState is XmlNameState && spine.Nodes.Peek () is XElement el && !el.IsNamed) {
+			if (isExplicit && spine.CurrentState is XmlNameState && spine.CurrentState.Parent is XmlTagState) {
 				int length = spine.CurrentStateLength;
 				return (XmlCompletionTrigger.Element, length);
 			}
 
 			//auto trigger after < in free space
-			if (spine.CurrentState is XmlRootState && stateTag == XmlRootState.BRACKET) {
+			if ((isTypedChar || isBackspace) && spine.CurrentState is XmlRootState && stateTag == XmlRootState.BRACKET) {
 				return (XmlCompletionTrigger.Element, 0);
+			}
+
+			//auto trigger after typing first char after <
+			if (isTypedChar && spine.CurrentStateLength == 1 && spine.CurrentState is XmlNameState && spine.CurrentState.Parent is XmlTagState) {
+				return (XmlCompletionTrigger.Element, 1);
 			}
 
 			// trigger on explicit invocation after <

@@ -22,6 +22,7 @@ namespace MonoDevelop.Xml.Tests.Completion
 		[TestCase ("", XmlCompletionTrigger.ElementWithBracket)]
 		[TestCase("<", XmlCompletionTrigger.Element)]
 		[TestCase("", XmlTriggerReason.Backspace, XmlCompletionTrigger.None)]
+		[TestCase("<", 'a', XmlCompletionTrigger.Element, 1)]
 		[TestCase("<abc", XmlCompletionTrigger.Element, 3)]
 		[TestCase("<abc", XmlTriggerReason.Backspace, XmlCompletionTrigger.None)]
 		[TestCase("<", XmlTriggerReason.Backspace, XmlCompletionTrigger.Element)]
