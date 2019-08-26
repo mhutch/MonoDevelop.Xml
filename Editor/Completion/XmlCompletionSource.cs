@@ -54,9 +54,15 @@ namespace MonoDevelop.Xml.Editor.Completion
 				switch (kind) {
 				case XmlCompletionTrigger.Element:
 				case XmlCompletionTrigger.ElementWithBracket:
-					//TODO: if it's on the first line and there's no XML declaration, add <"?xml version=\"1.0\" encoding=\"{encoding}\" ?>";
+					// if we're completing an existing element, remove it from the path
+					// so we don't get completions for its children instead
+					if (nodePath.Count > 0) {
+						var lastNode = nodePath[nodePath.Count - 1] as XElement;
+						if (lastNode != null && lastNode.Name.Length == applicableToSpan.Length) {
+							nodePath.RemoveAt (nodePath.Count - 1);
+						}
+					}
 					//TODO: if it's on the first or second line and there's no DTD declaration, add the DTDs, or at least <!DOCTYPE
-					//TODO: add closing tags // AddCloseTag (list, spine.Nodes);
 					//TODO: add snippets // MonoDevelop.Ide.CodeTemplates.CodeTemplateService.AddCompletionDataForFileName (DocumentContext.Name, list);
 					return await GetElementCompletionsAsync (session, triggerLocation, nodePath, kind == XmlCompletionTrigger.ElementWithBracket, token);
 
