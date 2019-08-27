@@ -17,6 +17,8 @@ namespace MonoDevelop.Xml.Editor.Completion
 {
 	class XmlCompletionCommitManager : IAsyncCompletionCommitManager
 	{
+		static readonly char[] commitChars = { '>', '/', '=' };
+
 		readonly XmlCompletionCommitManagerProvider provider;
 
 		public XmlCompletionCommitManager (XmlCompletionCommitManagerProvider provider)
@@ -24,12 +26,14 @@ namespace MonoDevelop.Xml.Editor.Completion
 			this.provider = provider;
 		}
 
-		public IEnumerable<char> PotentialCommitCharacters => Array.Empty<char> ();
+		public IEnumerable<char> PotentialCommitCharacters => commitChars;
 
 		public bool ShouldCommitCompletion (IAsyncCompletionSession session, SnapshotPoint location, char typedChar, CancellationToken token)
 		{
-			return false;
+			return Array.IndexOf (commitChars, typedChar) > -1;
 		}
+
+		static CommitResult CommitSwallowChar = new CommitResult (true, CommitBehavior.SuppressFurtherTypeCharCommandHandlers);
 
 		public CommitResult TryCommit (IAsyncCompletionSession session, ITextBuffer buffer, CompletionItem item, char typedChar, CancellationToken token)
 		{
@@ -37,24 +41,51 @@ namespace MonoDevelop.Xml.Editor.Completion
 				return CommitResult.Unhandled;
 			}
 
+			var span = session.ApplicableToSpan.GetSpan (buffer.CurrentSnapshot);
+			bool wasTypedInFull = span.Length == item.InsertText.Length;
+
 			switch (kind) {
 			case XmlCompletionItemKind.SelfClosingElement: {
-					if (typedChar != '>') {
-						string insertionText = $"{item.InsertText}/>";
-						Insert (session, buffer, insertionText);
-						ShiftCaret (session, 2, XmlCaretDirection.Left);
-						return CommitResult.Handled;
-					} else {
+					//comitting self-closing element with > makes it non-self-closing
+					if (typedChar == '>') {
 						goto case XmlCompletionItemKind.Element;
 					}
+
+					string insertionText = $"{item.InsertText}/>";
+					Insert (session, buffer, insertionText);
+					ShiftCaret (session, 2, XmlCaretDirection.Left);
+
+					// don't insert double /
+					if (typedChar == '/' && !wasTypedInFull) {
+						return CommitSwallowChar;
+					}
+
+					return CommitResult.Handled;
 				}
 			case XmlCompletionItemKind.Element: {
+					//comitting completion with / makes the element self closing
+					if (typedChar == '/') {
+						goto case XmlCompletionItemKind.SelfClosingElement;
+					}
+
 					string insertionText = $"{item.InsertText}></{item.InsertText.Trim (new char[] { '<', '>' })}>";
 					Insert (session, buffer, insertionText);
 					ShiftCaret (session, item.InsertText.Trim (new char[] { '<', '>' }).Length + 3, XmlCaretDirection.Left);
+
+					// don't insert double >
+					if (typedChar == '>' && !wasTypedInFull) {
+						return CommitSwallowChar;
+					}
+
 					return CommitResult.Handled;
 				}
 			case XmlCompletionItemKind.Attribute: {
+					//completion shouldn't interfere with typing out in full
+					//this can be removed once we allow overtyping the inserted quotes
+					if (typedChar == '=' && wasTypedInFull) {
+						Insert (session, buffer, item.InsertText);
+						return CommitResult.Handled;
+					}
 					string insertionText = $"{item.InsertText}=\"\"";
 					Insert (session, buffer, insertionText);
 					ShiftCaret (session, 1, XmlCaretDirection.Left);
@@ -63,7 +94,6 @@ namespace MonoDevelop.Xml.Editor.Completion
 			case XmlCompletionItemKind.AttributeValue: {
 					string insertionText = $"{item.InsertText}";
 					Insert (session, buffer, insertionText);
-					ShiftCaret (session, 0, XmlCaretDirection.Right);
 					return CommitResult.Handled;
 				}
 			case XmlCompletionItemKind.MultipleClosingTags:
