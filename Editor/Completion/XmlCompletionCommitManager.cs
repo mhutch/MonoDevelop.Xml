@@ -51,9 +51,11 @@ namespace MonoDevelop.Xml.Editor.Completion
 						goto case XmlCompletionItemKind.Element;
 					}
 
+					ConsumeTrailingChar (ref span, '>');
+
 					string insertionText = $"{item.InsertText}/>";
-					Insert (session, buffer, insertionText);
-					ShiftCaret (session, 2, XmlCaretDirection.Left);
+					Insert (session, buffer, insertionText, span);
+					SetCaretSpanOffset (item.InsertText.Length - 2);
 
 					// don't insert double /
 					if (typedChar == '/' && !wasTypedInFull) {
@@ -68,9 +70,11 @@ namespace MonoDevelop.Xml.Editor.Completion
 						goto case XmlCompletionItemKind.SelfClosingElement;
 					}
 
-					string insertionText = $"{item.InsertText}></{item.InsertText.Trim (new char[] { '<', '>' })}>";
-					Insert (session, buffer, insertionText);
-					ShiftCaret (session, item.InsertText.Trim (new char[] { '<', '>' }).Length + 3, XmlCaretDirection.Left);
+					ConsumeTrailingChar (ref span, '>');
+
+					string insertionText = $"{item.InsertText}></{TrimLeadingBracket(item.InsertText)}>";
+					Insert (session, buffer, insertionText, span);
+					SetCaretSpanOffset (item.InsertText.Length + 1);
 
 					// don't insert double >
 					if (typedChar == '>' && !wasTypedInFull) {
@@ -83,17 +87,17 @@ namespace MonoDevelop.Xml.Editor.Completion
 					//completion shouldn't interfere with typing out in full
 					//this can be removed once we allow overtyping the inserted quotes
 					if (typedChar == '=' && wasTypedInFull) {
-						Insert (session, buffer, item.InsertText);
+						Insert (session, buffer, item.InsertText, span);
 						return CommitResult.Handled;
 					}
 					string insertionText = $"{item.InsertText}=\"\"";
-					Insert (session, buffer, insertionText);
-					ShiftCaret (session, 1, XmlCaretDirection.Left);
+					Insert (session, buffer, insertionText, span);
+					SetCaretSpanOffset (insertionText.Length - 1);
 					return CommitResult.Handled;
 				}
 			case XmlCompletionItemKind.AttributeValue: {
 					string insertionText = $"{item.InsertText}";
-					Insert (session, buffer, insertionText);
+					Insert (session, buffer, insertionText, span);
 					return CommitResult.Handled;
 				}
 			case XmlCompletionItemKind.MultipleClosingTags:
@@ -105,18 +109,32 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 			LoggingService.LogWarning ($"XML commit manager did not handle unknown special completion kind {kind}");
 			return CommitResult.Unhandled;
+
+			string TrimLeadingBracket (string s)
+				=> s[0] == '<' ? s.Substring (1) : s;
+
+			void SetCaretSpanOffset (int spanOffset)
+				=> session.TextView.Caret.MoveTo (new SnapshotPoint (buffer.CurrentSnapshot, span.Start + spanOffset));
 		}
 
-		void Insert (IAsyncCompletionSession session, ITextBuffer buffer, string text)
-		{
-			var span = session.ApplicableToSpan.GetSpan (buffer.CurrentSnapshot);
 
+
+		static void ConsumeTrailingChar (ref SnapshotSpan span, char charToConsume)
+		{
+			var snapshot = span.Snapshot;
+			if (snapshot.Length > span.End && snapshot[span.End] == charToConsume) {
+				span = new SnapshotSpan (snapshot, span.Start, span.Length + 1);
+			}
+		}
+
+		static void Insert (IAsyncCompletionSession session, ITextBuffer buffer, string text, SnapshotSpan span)
+		{
 			var bufferEdit = buffer.CreateEdit ();
 			bufferEdit.Replace (span, text);
 			bufferEdit.Apply ();
 		}
 
-		void InsertClosingTags (IAsyncCompletionSession session, ITextBuffer buffer, CompletionItem item)
+		static void InsertClosingTags (IAsyncCompletionSession session, ITextBuffer buffer, CompletionItem item)
 		{
 			// completion may or may not include it depending how it was triggered
 			bool includesBracket = item.InsertText[0] == '<';
@@ -172,26 +190,11 @@ namespace MonoDevelop.Xml.Editor.Completion
 				sb.Append ($"</{element.Name.FullName}>");
 			}
 
+			ConsumeTrailingChar (ref span, '>');
+
 			var bufferEdit = buffer.CreateEdit ();
 			bufferEdit.Replace (span, sb.ToString ());
 			bufferEdit.Apply ();
-		}
-
-		private static void ShiftCaret (IAsyncCompletionSession session, int len, XmlCaretDirection caretDirection)
-		{
-			switch (caretDirection) {
-			case XmlCaretDirection.Left:
-				for (int i = 0; i < len; i++) {
-					session.TextView.Caret.MoveToPreviousCaretPosition ();
-				}
-				return;
-			case XmlCaretDirection.Right:
-				for (int i = 0; i < len; i++) {
-					session.TextView.Caret.MoveToNextCaretPosition ();
-				}
-				return;
-			}
-			return;
 		}
 	}
 }
