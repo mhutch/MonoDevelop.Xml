@@ -12,6 +12,7 @@ using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.Text;
 using MonoDevelop.Xml.Dom;
+using MonoDevelop.Xml.Editor.Options;
 
 namespace MonoDevelop.Xml.Editor.Completion
 {
@@ -72,7 +73,10 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 					ConsumeTrailingChar (ref span, '>');
 
-					string insertionText = $"{item.InsertText}></{TrimLeadingBracket(item.InsertText)}>";
+					string insertionText = session.TextView.Options.GetAutoInsertClosingTag ()
+						? $"{item.InsertText}></{TrimLeadingBracket(item.InsertText)}>"
+						: $"{item.InsertText}>";
+
 					Insert (session, buffer, insertionText, span);
 					SetCaretSpanOffset (item.InsertText.Length + 1);
 
@@ -90,7 +94,11 @@ namespace MonoDevelop.Xml.Editor.Completion
 						Insert (session, buffer, item.InsertText, span);
 						return CommitResult.Handled;
 					}
-					string insertionText = $"{item.InsertText}=\"\"";
+
+					string insertionText = session.TextView.Options.GetAutoInsertAttributeValue ()
+						? $"{item.InsertText}=\"\""
+						: item.InsertText;
+
 					Insert (session, buffer, insertionText, span);
 					SetCaretSpanOffset (insertionText.Length - 1);
 					return CommitResult.Handled;
