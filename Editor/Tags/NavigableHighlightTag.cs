@@ -11,8 +11,10 @@ namespace MonoDevelop.Xml.Editor.Tags
 	/// </summary>
 	/// <remarks>
 	/// Unless you are writing code relating to reference or keyword highlighting, you should not be using
-	/// this type.</remarks>
-	abstract class NavigableHighlightTag : TextMarkerTag
+	/// this type.
+	/// Taggers that subclass HighlightReferencesTagger should use NavigableHighlightTag as their TagType.
+	/// </remarks>
+	public abstract class NavigableHighlightTag : TextMarkerTag
 	{
 		protected NavigableHighlightTag (string type) : base (type)
 		{
@@ -21,6 +23,7 @@ namespace MonoDevelop.Xml.Editor.Tags
 
 	class WrittenReferenceHighlightTag : NavigableHighlightTag
 	{
+		//NOTE: This re-uses the format defined by Roslyn. The TextMate occurences tagger does the same.
 		internal const string TagId = "MarkerFormatDefinition/HighlightedWrittenReference";
 
 		public static readonly WrittenReferenceHighlightTag Instance = new WrittenReferenceHighlightTag ();
@@ -33,6 +36,7 @@ namespace MonoDevelop.Xml.Editor.Tags
 
 	class DefinitionHighlightTag : NavigableHighlightTag
 	{
+		//NOTE: This re-uses the format defined by Roslyn. The TextMate occurences tagger does the same.
 		internal const string TagId = "MarkerFormatDefinition/HighlightedDefinition";
 
 		public static readonly DefinitionHighlightTag Instance = new DefinitionHighlightTag ();
@@ -45,6 +49,7 @@ namespace MonoDevelop.Xml.Editor.Tags
 
 	class ReferenceHighlightTag : NavigableHighlightTag
 	{
+		//NOTE: This re-uses the format defined by Roslyn. The TextMate occurences tagger does the same.
 		internal const string TagId = "MarkerFormatDefinition/HighlightedReference";
 
 		public static readonly ReferenceHighlightTag Instance = new ReferenceHighlightTag ();

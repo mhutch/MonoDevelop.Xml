@@ -17,9 +17,16 @@ using MonoDevelop.Xml.Editor.Tags;
 
 namespace MonoDevelop.Xml.Editor.HighlightReferences
 {
-	public abstract class HighlightReferencesTagger : ITagger<ITag>, IDisposable
+	/// <summary>
+	/// Base class for highlight references taggers. Subclasses need only implement GetReferencesAsync
+	/// and this will take care of triggering, clearing etc.
+	/// </summary>
+	/// <remarks>
+	/// Taggers that subclass HighlightReferencesTagger should use NavigableHighlightTag as their TagType.
+	/// </remarks
+	public abstract class HighlightReferencesTagger : ITagger<NavigableHighlightTag>, IDisposable
 	{
-		const int triggerDelayMilliseconds = 1000;
+		const int triggerDelayMilliseconds = 500;
 
 		readonly ITextView textView;
 		readonly JoinableTaskContext joinableTaskContext;
@@ -89,7 +96,7 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 
 		void LogInternalError (Exception ex)
 		{
-			LoggingService.LogWarning ("Internal error in highlight references: {ex}", ex);
+			LoggingService.LogWarning ($"Internal error in highlight references: {ex}", ex);
 		}
 
 		readonly object highlightsLocker = new object ();
@@ -117,10 +124,12 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 		}
 
 		SnapshotSpan GetHighlightedRange (ImmutableArray<(ReferenceUsage type, SnapshotSpan location)> spans)
-			=> new SnapshotSpan (
-				spans[0].location.Start,
-				spans[spans.Length - 1].location.End
-			);
+			=> spans.Length == 0
+				? new SnapshotSpan ()
+				: new SnapshotSpan (
+					spans[0].location.Start,
+					spans[spans.Length - 1].location.End
+				);
 
 		SnapshotSpan UnionNonEmpty (SnapshotSpan a, SnapshotSpan b)
 			=> a.IsEmpty? b : b.IsEmpty? a :
@@ -153,7 +162,7 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 
 		public event EventHandler<SnapshotSpanEventArgs> TagsChanged;
 
-		public IEnumerable<ITagSpan<ITag>> GetTags (NormalizedSnapshotSpanCollection spans)
+		public IEnumerable<ITagSpan<NavigableHighlightTag>> GetTags (NormalizedSnapshotSpanCollection spans)
 		{
 			//this may be assigned from another thread so capture a consistent value
 			var h = highlights;
@@ -168,7 +177,7 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 			foreach (var taggingSpan in spans) {
 				foreach (var (type, location) in highlights) {
 					if (location.IntersectsWith (taggingSpan)) {
-						yield return new TagSpan<ITag> (location, GetTag (type));
+						yield return new TagSpan<NavigableHighlightTag> (location, GetTag (type));
 					}
 				}
 			}
@@ -199,6 +208,7 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 			}
 			disposed = true;
 
+			cancelSource?.Cancel ();
 			textView.Caret.PositionChanged -= CaretPositionChanged;
 			textView.TextBuffer.ChangedLowPriority -= BufferChanged;
 			timer.Dispose ();
