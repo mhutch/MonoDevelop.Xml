@@ -13,28 +13,26 @@ using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Threading;
 
 using MonoDevelop.Xml.Editor.Completion;
-using MonoDevelop.Xml.Editor.Tags;
 
 namespace MonoDevelop.Xml.Editor.HighlightReferences
 {
 	/// <summary>
-	/// Base class for highlight references taggers. Subclasses need only implement GetReferencesAsync
-	/// and this will take care of triggering, clearing etc.
+	/// Base class for taggers that highlight based on caret location. Subclasses need only implement
+	/// GetHighlightsAsync and GetTagsAsync, and this will take care of triggering, clearing etc.
 	/// </summary>
-	/// <remarks>
-	/// Taggers that subclass HighlightReferencesTagger should use NavigableHighlightTag as their TagType.
-	/// </remarks
-	public abstract class HighlightReferencesTagger : ITagger<NavigableHighlightTag>, IDisposable
+	public abstract class HighlightTagger<TTag, TKind>
+		: ITagger<TTag>, IDisposable
+		where TTag : ITag
 	{
-		const int triggerDelayMilliseconds = 500;
+		const int triggerDelayMilliseconds = 200;
 
-		readonly ITextView textView;
+		protected ITextView TextView { get;  }
 		readonly JoinableTaskContext joinableTaskContext;
 		readonly Timer timer;
 
-		public HighlightReferencesTagger (ITextView textView, JoinableTaskContext joinableTaskContext)
+		protected HighlightTagger (ITextView textView, JoinableTaskContext joinableTaskContext)
 		{
-			this.textView = textView;
+			TextView = textView;
 			this.joinableTaskContext = joinableTaskContext;
 			textView.Caret.PositionChanged += CaretPositionChanged;
 			textView.TextBuffer.ChangedLowPriority += BufferChanged;
@@ -45,7 +43,7 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 		{
 			//if the caret moves within a highlight, we don't need to update anything
 			//as the highlight is still current
-			if (IsCaretInHighlight (e.NewPosition.BufferPosition)) {
+			if (IsStillValid (e.NewPosition.BufferPosition)) {
 				return;
 			}
 
@@ -66,21 +64,22 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 
 			Task.Run (async () => {
 				try {
-					var position = textView.Caret.Position.BufferPosition;
-					var newHighlights = await GetReferencesAsync (position, token);
+					var position = TextView.Caret.Position.BufferPosition;
+					var newHighlights = await GetHighlightsAsync (position, token);
+					sourceSpan = newHighlights.highlights.Length == 0? (SnapshotSpan?)null : newHighlights.sourceSpan;
 
-					ImmutableArray<(ReferenceUsage type, SnapshotSpan location)> oldHighlights;
+					ImmutableArray<(TKind kind, SnapshotSpan location)> oldHighlights;
 					lock (highlightsLocker) {
 						if (token.IsCancellationRequested) {
 							return;
 						}
 						oldHighlights = highlights;
-						highlights = newHighlights;
+						highlights = newHighlights.highlights;
 						highlightedSnapshot = position.Snapshot;
 					}
 
 					var oldSpan = GetHighlightedRange (highlights);
-					var newSpan = GetHighlightedRange (newHighlights);
+					var newSpan = GetHighlightedRange (newHighlights.highlights);
 					var updateSpan = UnionNonEmpty (MapToCurrentIfNonEmpty (position.Snapshot, oldSpan), newSpan);
 					if (updateSpan.IsEmpty) {
 						return;
@@ -96,12 +95,14 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 
 		void LogInternalError (Exception ex)
 		{
-			LoggingService.LogWarning ($"Internal error in highlight references: {ex}", ex);
+			LoggingService.LogWarning ($"Internal error in highlight tagger: {ex}", ex);
 		}
 
 		readonly object highlightsLocker = new object ();
-		ImmutableArray<(ReferenceUsage type, SnapshotSpan location)> highlights = ImmutableArray<(ReferenceUsage type, SnapshotSpan location)>.Empty;
+		ImmutableArray<(TKind kind, SnapshotSpan location)> highlights
+			= ImmutableArray<(TKind kind, SnapshotSpan location)>.Empty;
 		ITextSnapshot highlightedSnapshot;
+		SnapshotSpan? sourceSpan;
 
 		CancellationTokenSource cancelSource;
 
@@ -114,7 +115,7 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 					return;
 				}
 				span = GetHighlightedRange (highlights);
-				highlights = ImmutableArray<(ReferenceUsage type, SnapshotSpan location)>.Empty;
+				highlights = ImmutableArray<(TKind kind, SnapshotSpan location)>.Empty;
 			}
 
 			joinableTaskContext.Factory.Run (async delegate {
@@ -123,7 +124,7 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 			});
 		}
 
-		SnapshotSpan GetHighlightedRange (ImmutableArray<(ReferenceUsage type, SnapshotSpan location)> spans)
+		SnapshotSpan GetHighlightedRange (ImmutableArray<(TKind kind, SnapshotSpan location)> spans)
 			=> spans.Length == 0
 				? new SnapshotSpan ()
 				: new SnapshotSpan (
@@ -151,18 +152,36 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 			timer.Change (triggerDelayMilliseconds, Timeout.Infinite);
 		}
 
-		bool IsCaretInHighlight (SnapshotPoint caretPosition)
+		bool IsStillValid (SnapshotPoint caretPosition)
 		{
+			var sourceSpan = this.sourceSpan;
+			if (sourceSpan == null) {
+				return false;
+			}
+			if (sourceSpan.Value.Snapshot == caretPosition.Snapshot && ContainsInclusive (sourceSpan.Value, caretPosition)) {
+				return true;
+			}
+
+			if (!RemainsValidIfCaretMovesBetweenHighlights) {
+				return false;
+			}
+
 			var h = highlights;
 			if (h.Length == 0 || h[0].location.Snapshot != caretPosition.Snapshot) {
 				return false;
 			}
-			return h.BinarySearch ((ReferenceUsage.Other, new SnapshotSpan (caretPosition, 0)), IntersectionComparer.Instance) > -1;
+			var loc = (default (TKind), new SnapshotSpan (caretPosition, 0));
+			return h.BinarySearch (loc, IntersectionComparer.Instance) > -1;
 		}
+
+		static bool ContainsInclusive (SnapshotSpan span, SnapshotPoint point)
+			=> span.Start <= point.Position && point.Position <= span.End;
+
+		protected virtual bool RemainsValidIfCaretMovesBetweenHighlights => false;
 
 		public event EventHandler<SnapshotSpanEventArgs> TagsChanged;
 
-		public IEnumerable<ITagSpan<NavigableHighlightTag>> GetTags (NormalizedSnapshotSpanCollection spans)
+		public IEnumerable<ITagSpan<TTag>> GetTags (NormalizedSnapshotSpanCollection spans)
 		{
 			//this may be assigned from another thread so capture a consistent value
 			var h = highlights;
@@ -177,29 +196,24 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 			foreach (var taggingSpan in spans) {
 				foreach (var (type, location) in highlights) {
 					if (location.IntersectsWith (taggingSpan)) {
-						yield return new TagSpan<NavigableHighlightTag> (location, GetTag (type));
+						yield return new TagSpan<TTag> (location, GetTag (type));
 					}
 				}
 			}
 		}
 
-		protected abstract Task<ImmutableArray<(ReferenceUsage type, SnapshotSpan location)>> GetReferencesAsync (SnapshotPoint caretLocation, CancellationToken token);
+		protected abstract
+			Task<(SnapshotSpan sourceSpan, ImmutableArray<(TKind kind, SnapshotSpan location)> highlights)>
+			GetHighlightsAsync (SnapshotPoint caretLocation, CancellationToken token);
 
-		static NavigableHighlightTag GetTag (ReferenceUsage type)
-		{
-			switch (type) {
-			default:
-			case ReferenceUsage.Other:
-			case ReferenceUsage.Read:
-				return ReferenceHighlightTag.Instance;
-			case ReferenceUsage.Definition:
-				return DefinitionHighlightTag.Instance;
-			case ReferenceUsage.Write:
-				return WrittenReferenceHighlightTag.Instance;
-			}
-		}
+		protected abstract TTag GetTag (TKind kind);
 
-		bool disposed = false;
+		protected
+			(SnapshotSpan sourceSpan, ImmutableArray<(TKind kind, SnapshotSpan location)> highlights)
+			Empty
+			=> (default, ImmutableArray<(TKind kind, SnapshotSpan location)>.Empty);
+
+		bool disposed;
 
 		public void Dispose ()
 		{
@@ -207,21 +221,34 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 				return;
 			}
 			disposed = true;
+			GC.SuppressFinalize (this);
 
-			cancelSource?.Cancel ();
-			textView.Caret.PositionChanged -= CaretPositionChanged;
-			textView.TextBuffer.ChangedLowPriority -= BufferChanged;
-			timer.Dispose ();
+			Dispose (true);
+		}
+
+		protected virtual void Dispose (bool disposing)
+		{
+			if (disposing) {
+				cancelSource?.Cancel ();
+				TextView.Caret.PositionChanged -= CaretPositionChanged;
+				TextView.TextBuffer.ChangedLowPriority -= BufferChanged;
+				timer.Dispose ();
+			}
+		}
+
+		~HighlightTagger ()
+		{
+			Dispose (false);
 		}
 
 		/// <summary>
 		/// Considers items to be indentical if they intersect
 		/// </summary>
-		class IntersectionComparer : IComparer<(ReferenceUsage type, SnapshotSpan location)>
+		class IntersectionComparer : IComparer<(TKind kind, SnapshotSpan location)>
 		{
 			public static IntersectionComparer Instance { get; } = new IntersectionComparer ();
 
-			public int Compare ((ReferenceUsage type, SnapshotSpan location) x, (ReferenceUsage type, SnapshotSpan location) y)
+			public int Compare ((TKind kind, SnapshotSpan location) x, (TKind kind, SnapshotSpan location) y)
 			{
 				if (x.location.IntersectsWith (y.location)) {
 					return 0;
@@ -229,13 +256,5 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 				return x.location.Start.CompareTo (y.location.Start);
 			}
 		}
-	}
-
-	public enum ReferenceUsage
-	{
-		Other,
-		Write,
-		Definition,
-		Read
 	}
 }

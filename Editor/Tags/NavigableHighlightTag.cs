@@ -21,7 +21,7 @@ namespace MonoDevelop.Xml.Editor.Tags
 		}
 	}
 
-	class WrittenReferenceHighlightTag : NavigableHighlightTag
+	public sealed class WrittenReferenceHighlightTag : NavigableHighlightTag
 	{
 		//NOTE: This re-uses the format defined by Roslyn. The TextMate occurences tagger does the same.
 		internal const string TagId = "MarkerFormatDefinition/HighlightedWrittenReference";
@@ -34,7 +34,7 @@ namespace MonoDevelop.Xml.Editor.Tags
 		}
 	}
 
-	class DefinitionHighlightTag : NavigableHighlightTag
+	public sealed class DefinitionHighlightTag : NavigableHighlightTag
 	{
 		//NOTE: This re-uses the format defined by Roslyn. The TextMate occurences tagger does the same.
 		internal const string TagId = "MarkerFormatDefinition/HighlightedDefinition";
@@ -47,7 +47,7 @@ namespace MonoDevelop.Xml.Editor.Tags
 		}
 	}
 
-	class ReferenceHighlightTag : NavigableHighlightTag
+	public sealed class ReferenceHighlightTag : NavigableHighlightTag
 	{
 		//NOTE: This re-uses the format defined by Roslyn. The TextMate occurences tagger does the same.
 		internal const string TagId = "MarkerFormatDefinition/HighlightedReference";
