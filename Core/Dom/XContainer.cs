@@ -31,16 +31,14 @@ namespace MonoDevelop.Xml.Dom
 {
 	public abstract class XContainer : XNode
 	{
-		protected XContainer (int startOffset) : base (startOffset) {	}
+		protected XContainer (int startOffset) : base (startOffset) { }
 
-		XNode firstNode;
-		XNode lastChild;
-		public XNode FirstChild { get { return firstNode; } }
-		public XNode LastChild { get { return lastChild; } }
+		public XNode FirstChild { get; private set; }
+		public XNode LastChild { get; private set; }
 
 		public IEnumerable<XNode> Nodes {
 			get {
-				XNode next = firstNode;
+				XNode next = FirstChild;
 				while (next != null) {
 					yield return next;
 					next = next.NextSibling;
@@ -48,11 +46,11 @@ namespace MonoDevelop.Xml.Dom
 			}
 		}
 
-		public IEnumerable<XNode> AllDescendentNodes {
+		public virtual IEnumerable<XNode> AllDescendentNodes {
 			get {
 				foreach (XNode n in Nodes) {
 					yield return n;
-					XContainer c = n as XContainer;
+					var c = n as XContainer;
 					if (c != null)
 						foreach (XNode n2 in c.AllDescendentNodes)
 							yield return n2;
@@ -63,14 +61,14 @@ namespace MonoDevelop.Xml.Dom
 		public virtual void AddChildNode (XNode newChild)
 		{
 			newChild.Parent = this;
-			if (lastChild != null)
-				lastChild.NextSibling = newChild;
-			if (firstNode == null)
-				firstNode = newChild;
-			lastChild = newChild;
+			if (LastChild != null)
+				LastChild.NextSibling = newChild;
+			if (FirstChild == null)
+				FirstChild = newChild;
+			LastChild = newChild;
 		}
 
-		protected XContainer () {}
+		protected XContainer () { }
 
 		public override void BuildTreeString (StringBuilder builder, int indentLevel)
 		{

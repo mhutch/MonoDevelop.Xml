@@ -25,6 +25,7 @@
 // THE SOFTWARE.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace MonoDevelop.Xml.Dom
@@ -165,5 +166,22 @@ namespace MonoDevelop.Xml.Dom
 		}
 
 		public XElement ParentElement => Parent as XElement;
+
+		IEnumerable<XNode> WithClosingTag (IEnumerable<XNode> nodes)
+		{
+			foreach (var n in nodes) {
+				yield return n;
+			}
+			yield return ClosingTag;
+		}
+
+		public override IEnumerable<XNode> AllDescendentNodes {
+			get {
+				if (ClosingTag != null && ClosingTag != this) {
+					return WithClosingTag (base.AllDescendentNodes);
+				}
+				return base.AllDescendentNodes;
+			}
+		}
 	}
 }
