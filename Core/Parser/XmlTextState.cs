@@ -43,13 +43,13 @@ namespace MonoDevelop.Xml.Parser
 			//FIXME: handle entities?
 
 			if (c == '<') {
-				var node = (XText) context.Nodes.Pop ();
-
-				//trim the text down to the node length and add it
-				context.KeywordBuilder.Length = context.StateTag - node.Span.Start;
-				node.End (context.KeywordBuilder.ToString ());
-
 				if (context.BuildTree) {
+					var node = (XText)context.Nodes.Pop ();
+
+					//trim the text down to the node length and add it
+					context.KeywordBuilder.Length = context.StateTag - node.Span.Start;
+					node.End (context.KeywordBuilder.ToString ());
+
 					((XContainer)context.Nodes.Peek ()).AddChildNode (node);
 				}
 				rollback = string.Empty;
