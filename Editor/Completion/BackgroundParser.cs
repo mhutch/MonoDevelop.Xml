@@ -12,7 +12,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 	{
 		public static TParser GetParser<TParser> (ITextBuffer2 buffer) where TParser : BackgroundParser<T>, new()
 		{
-			var parser = buffer.Properties.GetOrCreateSingletonProperty (nameof (TParser), () => new TParser ());
+			var parser = buffer.Properties.GetOrCreateSingletonProperty (typeof (TParser), () => new TParser ());
 			//avoid capturing by calling this afterwards
 			if (parser.Buffer == null) {
 				parser.Initialize (buffer);
@@ -131,14 +131,14 @@ namespace MonoDevelop.Xml.Editor.Completion
 		/// <summary>
 		/// Get an existing completed or running parse task for the provided snapshot if available, or creates a new parse task.
 		/// </summary>
-		public Task<T> GetOrParseAsync (ITextSnapshot2 snapshot, CancellationToken token)
+		public Task<T> GetOrParseAsync (ITextSnapshot snapshot, CancellationToken token)
 		{
 			var current = currentOperation;
 			if (current != null && current.Snapshot == snapshot && current.RegisterAdditionalCancellationOwner (token)) {
 				return current.Task;
 			}
 
-			currentOperation = current = CreateParseOperation (snapshot);
+			currentOperation = current = CreateParseOperation ((ITextSnapshot2)snapshot);
 			return current.Task;
 		}
 
