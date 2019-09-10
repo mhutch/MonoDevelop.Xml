@@ -20,22 +20,35 @@ namespace MonoDevelop.Xml.Dom
 			return !obj.Name.HasPrefix && string.Equals (obj.Name.Name, name, comparison);
 		}
 
-		//FIXME: binary search
 		public static XObject FindNodeAtOffset (this XContainer container, int offset)
 		{
-			var node = container.AllDescendentNodes.FirstOrDefault (n => n.Span.Contains (offset));
-			if (node != null) {
-				if (node is IAttributedXObject attContainer) {
-					var att = attContainer.Attributes.FirstOrDefault (n => n.Span.Contains (offset));
-					if (att != null) {
-						return att;
+			while (container != null) {
+				XNode prev = null;
+				foreach (var node in container.Nodes) {
+					if (node.Span.Start > offset) {
+						container = prev as XContainer;
+						break;
 					}
+					if (node.Span.Contains (offset)) {
+						if (node is IAttributedXObject attContainer) {
+							foreach (var att in attContainer.Attributes) {
+								if (att.Span.Start > offset) {
+									break;
+								}
+								if (att.Span.Contains (offset)) {
+									return att;
+								}
+							}
+						}
+						return node;
+					}
+					if (node is XElement el && el.ClosingTag.Span.Contains (offset)) {
+						return el.ClosingTag;
+					}
+					prev = node;
 				}
 			}
-			if (node is XElement el && el.ClosingTag != null && el.ClosingTag.Span.Contains (offset)) {
-				return el.ClosingTag;
-			}
-			return node;
+			return null;
 		}
 
 		public static bool IsTrue (this XAttributeCollection attributes, string name)
