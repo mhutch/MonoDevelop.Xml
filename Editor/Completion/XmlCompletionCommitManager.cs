@@ -36,6 +36,8 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 		static CommitResult CommitSwallowChar = new CommitResult (true, CommitBehavior.SuppressFurtherTypeCharCommandHandlers);
 
+		static CommitResult CommitCancel = new CommitResult (true, CommitBehavior.CancelCommit);
+
 		public CommitResult TryCommit (IAsyncCompletionSession session, ITextBuffer buffer, CompletionItem item, char typedChar, CancellationToken token)
 		{
 			if (!item.TryGetKind (out var kind)) {
@@ -44,6 +46,12 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 			var span = session.ApplicableToSpan.GetSpan (buffer.CurrentSnapshot);
 			bool wasTypedInFull = span.Length == item.InsertText.Length;
+
+			//HACK disable committing with / if it's likely to match a closing tag
+			//as it prevents matching closing tags items
+			if (typedChar == '/' && span.Length <= 1) {
+				return CommitCancel;
+			}
 
 			switch (kind) {
 			case XmlCompletionItemKind.SelfClosingElement: {
