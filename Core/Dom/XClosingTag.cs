@@ -43,6 +43,18 @@ namespace MonoDevelop.Xml.Dom
 		protected XClosingTag () {}
 		protected override XObject NewInstance () { return new XClosingTag (); }
 
+		/// <summary>
+		/// Gets the element that this tag closes. May be null.
+		/// </summary>
+		public XElement GetElement ()
+		{
+			var possible = Parent as XElement;
+			if (possible != null && possible.ClosingTag == this) {
+				return possible;
+			}
+			return null;
+		}
+
 		protected override void ShallowCopyFrom (XObject copyFrom)
 		{
 			base.ShallowCopyFrom (copyFrom);
