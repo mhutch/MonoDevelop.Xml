@@ -96,6 +96,18 @@ namespace MonoDevelop.Xml.Parser
 							string.Format ("Closing tag '{0}' does not match any currently open tag.", ct.Name.FullName),
 							ct.Span
 						);
+						// add it into the tree anyway so it's accessible
+						if (context.BuildTree) {
+							var parent = context.Nodes.Peek () as XContainer;
+							if (parent != null) {
+								if (!parent.IsEnded) {
+									parent = context.Nodes.Count > 1? context.Nodes.Peek (1) as XContainer : null;
+								}
+								if (parent != null) {
+									parent.AddChildNode (ct);
+								}
+							}
+						}
 					}
 				} else {
 					context.LogError ("Closing tag ended prematurely.");
