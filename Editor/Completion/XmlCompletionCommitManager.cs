@@ -64,7 +64,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 					string insertionText = $"{item.InsertText}/>";
 					Insert (session, buffer, insertionText, span);
-					SetCaretSpanOffset (item.InsertText.Length - 2);
+					SetCaretSpanOffset (item.InsertText.Length);
 
 					// don't insert double /
 					if (typedChar == '/' && !wasTypedInFull) {
