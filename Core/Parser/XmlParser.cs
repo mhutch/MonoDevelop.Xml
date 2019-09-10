@@ -46,7 +46,9 @@ namespace MonoDevelop.Xml.Parser
 			CurrentState = rootState;
 			previousState = rootState;
 			BuildTree = buildTree;
-			Reset ();
+			keywordBuilder = new StringBuilder ();
+			Nodes = new NodeStack ();
+			Nodes.Push (RootState.CreateDocument ());
 		}
 
 		XmlParser (XmlParser copyFrom)
@@ -86,9 +88,10 @@ namespace MonoDevelop.Xml.Parser
 			previousState = RootState;
 			Position = 0;
 			stateTag = 0;
-			keywordBuilder = new StringBuilder ();
 			CurrentStateLength = 0;
-			Nodes = new NodeStack ();
+			keywordBuilder.Length = 0;
+			Diagnostics.Clear ();
+			Nodes.Clear ();
 			Nodes.Push (RootState.CreateDocument ());
 		}
 
