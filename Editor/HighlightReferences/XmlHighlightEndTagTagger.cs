@@ -30,19 +30,22 @@ namespace MonoDevelop.MSBuild.Editor.HighlightReferences
 			if (!XmlBackgroundParser.TryGetParser (TextView.TextBuffer, out parser)) {
 				throw new InvalidOperationException ("XmlCore TextView does not have an XML parser");
 			}
-			Console.WriteLine (parser);
 		}
 
 		protected async override
 			Task<(SnapshotSpan sourceSpan, ImmutableArray<(ITextMarkerTag kind, SnapshotSpan location)> highlights)>
 			GetHighlightsAsync (SnapshotPoint caretLocation, CancellationToken token)
 		{
+			// parser is not currently threadsafe
+			await JoinableTaskContext.Factory.SwitchToMainThreadAsync ();
+
 			var spine = parser.GetSpineParser (caretLocation);
 			if (!(spine.CurrentState is XmlNameState) || !(spine.CurrentState.Parent is XmlTagState || spine.CurrentState.Parent is XmlClosingTagState)) {
 				return Empty;
 			}
 
-			var parseResult = await parser.GetOrParseAsync (caretLocation.Snapshot, token);
+			var parseResult = await parser.GetOrParseAsync (caretLocation.Snapshot, token).ConfigureAwait (false);
+
 			var node = parseResult.XDocument.RootElement.FindNodeAtOffset (caretLocation.Position);
 
 			if (node is XElement element) {

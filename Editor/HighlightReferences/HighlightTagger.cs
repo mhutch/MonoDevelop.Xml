@@ -27,13 +27,13 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 		const int triggerDelayMilliseconds = 200;
 
 		protected ITextView TextView { get;  }
-		readonly JoinableTaskContext joinableTaskContext;
+		protected JoinableTaskContext JoinableTaskContext { get; }
 		readonly Timer timer;
 
 		protected HighlightTagger (ITextView textView, JoinableTaskContext joinableTaskContext)
 		{
 			TextView = textView;
-			this.joinableTaskContext = joinableTaskContext;
+			this.JoinableTaskContext = joinableTaskContext;
 			textView.Caret.PositionChanged += CaretPositionChanged;
 			textView.TextBuffer.ChangedLowPriority += BufferChanged;
 			timer = new Timer (TimerFired);
@@ -85,7 +85,7 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 						return;
 					}
 
-					await joinableTaskContext.Factory.SwitchToMainThreadAsync ();
+					await JoinableTaskContext.Factory.SwitchToMainThreadAsync ();
 					TagsChanged?.Invoke (this, new SnapshotSpanEventArgs (updateSpan));
 				} catch (Exception ex) {
 					LogInternalError (ex);
@@ -118,8 +118,8 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 				highlights = ImmutableArray<(TKind kind, SnapshotSpan location)>.Empty;
 			}
 
-			joinableTaskContext.Factory.Run (async delegate {
-				await joinableTaskContext.Factory.SwitchToMainThreadAsync ();
+			JoinableTaskContext.Factory.Run (async delegate {
+				await JoinableTaskContext.Factory.SwitchToMainThreadAsync ();
 				TagsChanged?.Invoke (this, new SnapshotSpanEventArgs (span));
 			});
 		}
