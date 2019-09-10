@@ -130,7 +130,8 @@ namespace MonoDevelop.Xml.Editor.Completion
 				=> s[0] == '<' ? s.Substring (1) : s;
 
 			void SetCaretSpanOffset (int spanOffset)
-				=> session.TextView.Caret.MoveTo (new SnapshotPoint (buffer.CurrentSnapshot, span.Start + spanOffset));
+				=> session.TextView.Caret.MoveTo (
+					new SnapshotPoint (buffer.CurrentSnapshot, span.Start.Position + spanOffset));
 		}
 
 
