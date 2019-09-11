@@ -37,7 +37,7 @@ namespace MonoDevelop.MSBuild.Editor.HighlightReferences
 			GetHighlightsAsync (SnapshotPoint caretLocation, CancellationToken token)
 		{
 			// parser is not currently threadsafe
-			await JoinableTaskContext.Factory.SwitchToMainThreadAsync ();
+			await JoinableTaskContext.Factory.SwitchToMainThreadAsync (token);
 
 			var spine = parser.GetSpineParser (caretLocation);
 			if (!(spine.CurrentState is XmlNameState) || !(spine.CurrentState.Parent is XmlTagState || spine.CurrentState.Parent is XmlClosingTagState)) {
