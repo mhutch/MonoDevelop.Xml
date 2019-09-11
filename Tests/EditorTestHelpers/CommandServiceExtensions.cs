@@ -15,7 +15,14 @@ namespace MonoDevelop.Xml.Tests.EditorTestHelpers
 		public static void Type (this IEditorCommandHandlerService commandService, string text)
 		{
 			foreach (var c in text) {
-				commandService.CheckAndExecute ((v, b) => new TypeCharCommandArgs (v, b, c));
+				switch (c) {
+				case '\n':
+					Enter (commandService);
+					break;
+				default:
+					commandService.CheckAndExecute ((v, b) => new TypeCharCommandArgs (v, b, c));
+					break;
+				}
 			}
 		}
 

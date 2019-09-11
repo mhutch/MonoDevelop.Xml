@@ -51,7 +51,8 @@ namespace MonoDevelop.Xml.Tests.Completion
 			bool includeBracket,
 			CancellationToken token)
 		{
-			var item = new CompletionItem (includeBracket? "<Hello" : "Hello", this);
+			var item = new CompletionItem (includeBracket? "<Hello" : "Hello", this)
+				.AddKind (XmlCompletionItemKind.Element);
 			var items = ImmutableArray<CompletionItem>.Empty;
 			items = items.Add (item).AddRange (GetMiscellaneousTags (triggerLocation, nodePath, includeBracket));
 			return Task.FromResult (new CompletionContext (items));

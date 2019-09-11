@@ -34,9 +34,9 @@ namespace MonoDevelop.Xml.Editor.Completion
 			return Array.IndexOf (commitChars, typedChar) > -1;
 		}
 
-		static CommitResult CommitSwallowChar = new CommitResult (true, CommitBehavior.SuppressFurtherTypeCharCommandHandlers);
+		static readonly CommitResult CommitSwallowChar = new CommitResult (true, CommitBehavior.SuppressFurtherTypeCharCommandHandlers);
 
-		static CommitResult CommitCancel = new CommitResult (true, CommitBehavior.CancelCommit);
+		static readonly CommitResult CommitCancel = new CommitResult (true, CommitBehavior.CancelCommit);
 
 		public CommitResult TryCommit (IAsyncCompletionSession session, ITextBuffer buffer, CompletionItem item, char typedChar, CancellationToken token)
 		{
@@ -48,7 +48,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			bool wasTypedInFull = span.Length == item.InsertText.Length;
 
 			//HACK disable committing with / if it's likely to match a closing tag
-			//as it prevents matching closing tags items
+			//as it prevents matching closing tag items
 			if (typedChar == '/' && span.Length <= 1) {
 				return CommitCancel;
 			}
@@ -73,28 +73,6 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 					return CommitResult.Handled;
 				}
-			case XmlCompletionItemKind.Element: {
-					//comitting completion with / makes the element self closing
-					if (typedChar == '/') {
-						goto case XmlCompletionItemKind.SelfClosingElement;
-					}
-
-					ConsumeTrailingChar (ref span, '>');
-
-					string insertionText = session.TextView.Options.GetAutoInsertClosingTag ()
-						? $"{item.InsertText}></{TrimLeadingBracket(item.InsertText)}>"
-						: $"{item.InsertText}>";
-
-					Insert (session, buffer, insertionText, span);
-					SetCaretSpanOffset (item.InsertText.Length + 1);
-
-					// don't insert double >
-					if (typedChar == '>' && !wasTypedInFull) {
-						return CommitSwallowChar;
-					}
-
-					return CommitResult.Handled;
-				}
 			case XmlCompletionItemKind.Attribute: {
 					//completion shouldn't interfere with typing out in full
 					//this can be removed once we allow overtyping the inserted quotes
@@ -111,9 +89,9 @@ namespace MonoDevelop.Xml.Editor.Completion
 					SetCaretSpanOffset (insertionText.Length - 1);
 					return CommitResult.Handled;
 				}
+			case XmlCompletionItemKind.Element:
 			case XmlCompletionItemKind.AttributeValue: {
-					string insertionText = $"{item.InsertText}";
-					Insert (session, buffer, insertionText, span);
+					Insert (session, buffer, item.InsertText, span);
 					return CommitResult.Handled;
 				}
 			case XmlCompletionItemKind.MultipleClosingTags:

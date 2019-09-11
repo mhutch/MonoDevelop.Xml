@@ -133,5 +133,29 @@ namespace MonoDevelop.Xml.Tests.Completion
 					}
 				);
 		}
+
+		[Test]
+		public void CommitElementWithEnter ()
+		{
+			TestCommands (
+@"<foo>$",
+@"<foo><Hello$",
+					(s) => {
+						s.Type ("<He\n");
+					}
+				);
+		}
+
+		[Test]
+		public void CommitElementWithBracket()
+		{
+			TestCommands (
+@"<foo>$",
+@"<foo><Hello>$</Hello>",
+					(s) => {
+						s.Type ("<He>");
+					}
+				);
+		}
 	}
 }
