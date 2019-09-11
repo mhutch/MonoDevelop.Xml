@@ -7,7 +7,6 @@
 
   <ItemGroup>
     <Compile Remove="BaseXmlEditorExtension.cs" />
-    <Compile Remove="XmlDocumentParser.cs" />
     <Compile Remove="XmlEditorOptions.cs" />
     <Compile Remove="XmlExpandSelectionHandler.cs" />
     <Compile Remove="XmlParsedDocument.cs" />
@@ -16,7 +15,6 @@
 
   <ItemGroup>
     <None Include="BaseXmlEditorExtension.cs" />
-    <None Include="XmlDocumentParser.cs" />
     <None Include="XmlEditorOptions.cs" />
     <None Include="XmlExpandSelectionHandler.cs" />
     <None Include="XmlParsedDocument.cs" />
