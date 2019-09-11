@@ -23,10 +23,9 @@ namespace MonoDevelop.Xml.Dom
 		public static XObject FindNodeAtOffset (this XContainer container, int offset)
 		{
 			while (container != null) {
-				XNode prev = null;
+				XNode lastNodeBeforeOffset = null;
 				foreach (var node in container.Nodes) {
 					if (node.Span.Start > offset) {
-						container = prev as XContainer;
 						break;
 					}
 					if (node.Span.Contains (offset)) {
@@ -45,8 +44,9 @@ namespace MonoDevelop.Xml.Dom
 					if (node is XElement el && el.ClosingTag is XClosingTag ct && ct.Span.Contains (offset)) {
 						return ct;
 					}
-					prev = node;
+					lastNodeBeforeOffset = node;
 				}
+				container = lastNodeBeforeOffset as XContainer;
 			}
 			return null;
 		}
