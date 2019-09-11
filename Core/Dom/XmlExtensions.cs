@@ -42,8 +42,8 @@ namespace MonoDevelop.Xml.Dom
 						}
 						return node;
 					}
-					if (node is XElement el && el.ClosingTag.Span.Contains (offset)) {
-						return el.ClosingTag;
+					if (node is XElement el && el.ClosingTag is XClosingTag ct && ct.Span.Contains (offset)) {
+						return ct;
 					}
 					prev = node;
 				}
