@@ -30,9 +30,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-using MonoDevelop.Xml.Editor.Completion;
 using MonoDevelop.Xml.Dom;
+using MonoDevelop.Xml.Editor.Completion;
 using MonoDevelop.Xml.Parser;
+
 using NUnit.Framework;
 
 namespace MonoDevelop.Xml.Tests.Parser
@@ -68,17 +69,19 @@ namespace MonoDevelop.Xml.Tests.Parser
 			}
 		}
 
-		public void Parse (string doc, params Action[] asserts)
-		{
-			Parse (doc, '$', asserts);
-		}
-		
-		public void Parse (string doc, char trigger, params Action[] asserts)
+		public void Parse (string doc, params Action[] asserts) => Parse (doc, '$', false, asserts);
+
+		public void Parse (string doc, char trigger, params Action[] asserts) => Parse (doc, '$', false, asserts);
+
+		public void Parse (string doc, char trigger, bool preserveWindowsNewlines, params Action[] asserts)
 		{
 			Assert.AreEqual (Position, 0);
 			int assertNo = 0;
 			for (int i = 0; i < doc.Length; i++) {
 				char c = doc[i];
+				if (c == '\r' && !preserveWindowsNewlines) {
+					continue;
+				}
 				if (c == trigger) {
 					if (i + 1 < doc.Length && doc [i + 1] == trigger) {
 						Push (c);
