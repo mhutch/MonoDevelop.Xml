@@ -359,7 +359,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 </doc>";
 
 			var parser = new TestXmlParser (CreateRootState (), true);
-			parser.Parse (docTxt);
+			parser.Parse (docTxt, preserveWindowsNewlines: true);
 			parser.AssertErrorCount (0);
 
 			var el = (((XDocument)parser.Nodes.Peek ()).RootElement)?.FirstChild as XElement;

@@ -98,7 +98,7 @@ namespace MonoDevelop.Xml.Parser
 
 			switch (context.StateTag) {
 			case FREE:
-				if (!char.IsWhiteSpace (c) && !char.IsControl (c)) {
+				if (!XmlChar.IsWhitespace (c)) {
 					rollback = string.Empty;
 					return TextState;
 				}

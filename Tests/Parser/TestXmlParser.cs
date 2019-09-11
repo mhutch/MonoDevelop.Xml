@@ -71,9 +71,9 @@ namespace MonoDevelop.Xml.Tests.Parser
 
 		public void Parse (string doc, params Action[] asserts) => Parse (doc, '$', false, asserts);
 
-		public void Parse (string doc, char trigger, params Action[] asserts) => Parse (doc, '$', false, asserts);
+		public void Parse (string doc, char trigger, params Action[] asserts) => Parse (doc, trigger, false, asserts);
 
-		public void Parse (string doc, char trigger, bool preserveWindowsNewlines, params Action[] asserts)
+		public void Parse (string doc, char trigger = '$', bool preserveWindowsNewlines = false, params Action[] asserts)
 		{
 			Assert.AreEqual (Position, 0);
 			int assertNo = 0;
