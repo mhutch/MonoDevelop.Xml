@@ -87,7 +87,7 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 
 					await JoinableTaskContext.Factory.SwitchToMainThreadAsync (token);
 					TagsChanged?.Invoke (this, new SnapshotSpanEventArgs (updateSpan));
-				} catch (Exception ex) {
+				} catch (Exception ex) when (!(ex is OperationCanceledException && token.IsCancellationRequested)) {
 					LogInternalError (ex);
 				}
 			}, token);
