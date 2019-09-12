@@ -110,8 +110,8 @@ namespace MonoDevelop.Xml.Editor.Completion
 				}
 			case XmlCompletionItemKind.Attribute: {
 					//completion shouldn't interfere with typing out in full
-					//this can be removed once we allow overtyping the inserted quotes
-					if (typedChar == '=' && wasTypedInFull) {
+					//TODO insert overtypeable quotes after the =
+					if (typedChar == '=') {
 						Insert (session, buffer, item.InsertText, span);
 						return CommitResult.Handled;
 					}

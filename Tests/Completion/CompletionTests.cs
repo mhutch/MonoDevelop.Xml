@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.ComponentModel.Composition;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
@@ -56,6 +57,25 @@ namespace MonoDevelop.Xml.Tests.Completion
 			var items = ImmutableArray<CompletionItem>.Empty;
 			items = items.Add (item).AddRange (GetMiscellaneousTags (triggerLocation, nodePath, includeBracket));
 			return Task.FromResult (new CompletionContext (items));
+		}
+
+		protected override Task<CompletionContext> GetAttributeCompletionsAsync (
+			IAsyncCompletionSession session,
+			SnapshotPoint triggerLocation,
+			List<XObject> nodePath,
+			IAttributedXObject attributedObject,
+			Dictionary<string, string> existingAtts,
+			CancellationToken token)
+		{
+			if (nodePath.LastOrDefault () is XElement xel && xel.NameEquals ("Hello", true)) {
+				var item = new CompletionItem ("There", this)
+					.AddKind (XmlCompletionItemKind.Attribute);
+				var items = ImmutableArray<CompletionItem>.Empty;
+				items = items.Add (item);
+				return Task.FromResult (new CompletionContext (items));
+			}
+
+			return Task.FromResult (CompletionContext.Empty);
 		}
 	}
 

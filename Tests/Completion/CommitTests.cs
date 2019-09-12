@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Linq;
 using Microsoft.VisualStudio.MiniEditor;
 using Microsoft.VisualStudio.Text.Editor.Commanding;
 using Microsoft.VisualStudio.Text.Editor.Commanding.Commands;
@@ -136,31 +137,25 @@ namespace MonoDevelop.Xml.Tests.Completion
 				);
 		}
 
-		[Test]
-		public void CommitElementWithEnter ()
+		void TestTypeCommands (string before, string after, string typeChars)
 		{
-			TestCommands (
-@"<foo>$",
-@"<foo><Hello$",
-					(s) => {
-						s.Type ("<He\n");
-					}
-				);
+			// between each separate action, TestCommands will wait for any active completion session to compute its items
+			var actions = typeChars.Split ('^').Select (t => { Action<IEditorCommandHandlerService> a = (s) => s.Type (t); return a; });
+			TestCommands (before, after, actions);
 		}
 
 		[Test]
-		public void CommitElementWithBracket()
-		{
-			TestCommands (
-@"<foo>$",
-@"<foo><Hello>$</Hello>",
-					// split this, we need the completion items to have been computed before committing
-					// and TestCommands will make sure the session completion is updated after each action
-					commands: new Action<IEditorCommandHandlerService>[] {
-						s => s.Type ("<He"),
-						s => s.Type (">")
-					}
-				);
-		}
+		[TestCase ("<he\n", "<foo><Hello$")]
+		[TestCase ("<he^>", "<foo><Hello>$</Hello>")]
+		[TestCase ("<He^ ", "<foo><Hello $")]
+		[TestCase ("<He^<", "<foo><He<$")]
+		public void CommitElement (string typeChars, string after) => TestTypeCommands ("<foo>$", after, typeChars);
+
+		[Test]
+		[TestCase (" T\n", "<Hello There=\"$\"")]
+		[TestCase (" T^=", "<Hello There=$")]
+		[TestCase (" Th^<", "<Hello Th<$")]
+		[TestCase (" Th^ ", "<Hello Th $")]
+		public void CommitAttribute (string typeChars, string after) => TestTypeCommands ("<Hello$", after, typeChars);
 	}
 }
