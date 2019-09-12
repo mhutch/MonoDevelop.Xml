@@ -70,7 +70,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			task.ContinueWith ((t, state) => {
 				var op = ((ParseOperation)state);
 				op.Parser.HandleUnhandledParseError (t.Exception);
-			}, operation, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
+			}, operation, tokenSource.Token, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
 
 			#pragma warning restore VSTHRD110, VSTHRD105
 
