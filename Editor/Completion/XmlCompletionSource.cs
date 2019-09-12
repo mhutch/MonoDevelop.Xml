@@ -51,6 +51,8 @@ namespace MonoDevelop.Xml.Editor.Completion
 			if (kind != XmlCompletionTrigger.None) {
 				List<XObject> nodePath = GetNodePath (spine, triggerLocation.Snapshot);
 
+				session.Properties.AddProperty (typeof (XmlCompletionTrigger), kind);
+
 				switch (kind) {
 				case XmlCompletionTrigger.Element:
 				case XmlCompletionTrigger.ElementWithBracket:
