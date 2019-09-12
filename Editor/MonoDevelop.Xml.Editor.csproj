@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
@@ -23,8 +23,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Core\MonoDevelop.Xml.Core.csproj" />
-    <PackageReference Include="Microsoft.VisualStudio.Language.Intellisense" Version="16.2.45" />
-    <PackageReference Include="Microsoft.VisualStudio.Language.StandardClassification" Version="16.2.45" />
+    <PackageReference Include="Microsoft.VisualStudio.Language.Intellisense" Version="16.4.66" />
+    <PackageReference Include="Microsoft.VisualStudio.Language.StandardClassification" Version="16.4.66" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading" Version="16.3.52" />
   </ItemGroup>
 
 </Project>
