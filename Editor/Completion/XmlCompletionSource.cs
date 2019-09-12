@@ -46,7 +46,8 @@ namespace MonoDevelop.Xml.Editor.Completion
 			var parser = BackgroundParser<TResult>.GetParser<TParser> ((ITextBuffer2)triggerLocation.Snapshot.TextBuffer);
 			var spine = parser.GetSpineParser (triggerLocation);
 
-			var (kind, _) = await Task.Run (() => XmlCompletionTriggering.GetTrigger (spine, reason.Value, trigger.Character), token).ConfigureAwait (false);
+			// FIXME: cache the value from InitializeCompletion somewhere?
+			var (kind, _) = XmlCompletionTriggering.GetTrigger (spine, reason.Value, trigger.Character);
 
 			if (kind != XmlCompletionTrigger.None) {
 				List<XObject> nodePath = GetNodePath (spine, triggerLocation.Snapshot);

@@ -80,7 +80,6 @@ namespace MonoDevelop.Xml.Tests.EditorTestHelpers
 				filename);
 		}
 
-
 		public void TestCommands (
 			string beforeDocumentText, int beforeCaretOffset,
 			string afterDocumentText, int afterCaretOffset,

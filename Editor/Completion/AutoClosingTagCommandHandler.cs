@@ -132,7 +132,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 					completionSession = CompletionBroker.TriggerCompletion (args.TextView, trigger, location, token);
 				}
 
-				completionSession.OpenOrUpdate (trigger, location, token);
+				completionSession?.OpenOrUpdate (trigger, location, token);
 			}
 
 			return;
