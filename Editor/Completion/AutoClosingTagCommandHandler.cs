@@ -3,6 +3,7 @@
 
 using System;
 using System.ComponentModel.Composition;
+
 using Microsoft.VisualStudio.Commanding;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
@@ -10,6 +11,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Editor.Commanding.Commands;
 using Microsoft.VisualStudio.Utilities;
+
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Editor.Options;
 
@@ -23,7 +25,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 	class AutoClosingTagCommandHandler : IChainedCommandHandler<TypeCharCommandArgs>
 	{
 		[Import]
-		readonly IAsyncCompletionBroker completionBroker;
+		internal IAsyncCompletionBroker CompletionBroker { get; set; }
 
 		const string Name = "Closing Tag Completion";
 
@@ -109,7 +111,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			// Since we cannot update the ApplicableToSpan at this point, we explicitly dismiss and
 			// re-trigger completion instead.
 
-			var completionSession = completionBroker.GetSession (args.TextView);
+			var completionSession = CompletionBroker.GetSession (args.TextView);
 			if (completionSession != null) {
 				completionSession.Dismiss ();
 			}
@@ -125,9 +127,9 @@ namespace MonoDevelop.Xml.Editor.Completion
 				var location = args.TextView.Caret.Position.BufferPosition;
 				var token = executionContext.OperationContext.UserCancellationToken;
 
-				completionSession = completionBroker.GetSession (args.TextView);
+				completionSession = CompletionBroker.GetSession (args.TextView);
 				if (completionSession == null) {
-					completionSession = completionBroker.TriggerCompletion (args.TextView, trigger, location, token);
+					completionSession = CompletionBroker.TriggerCompletion (args.TextView, trigger, location, token);
 				}
 
 				completionSession.OpenOrUpdate (trigger, location, token);

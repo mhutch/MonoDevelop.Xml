@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading;
 
@@ -11,6 +10,7 @@ using Microsoft.CodeAnalysis.Text.Shared.Extensions;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.Text;
+
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Editor.Options;
 
@@ -103,9 +103,6 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 			LoggingService.LogWarning ($"XML commit manager did not handle unknown special completion kind {kind}");
 			return CommitResult.Unhandled;
-
-			string TrimLeadingBracket (string s)
-				=> s[0] == '<' ? s.Substring (1) : s;
 
 			void SetCaretSpanOffset (int spanOffset)
 				=> session.TextView.Caret.MoveTo (
