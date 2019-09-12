@@ -96,8 +96,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
 
 			(CompletionItem completionItem, PatternMatch? patternMatch) bestMatch;
 			if (patternMatcher.HasInvalidPattern) {
-				// In a rare edge case where the pattern is invalid (e.g. it is just punctuation), see if any items match directly what user typed.
-				bestMatch = filterFilteredList.FirstOrDefault (n => string.Equals (n.completionItem.FilterText, filterText, StringComparison.OrdinalIgnoreCase));
+				// In a rare edge case where the pattern is invalid (e.g. it is just punctuation), see if any items contain what user typed.
+				bestMatch = filterFilteredList.FirstOrDefault (n => n.completionItem.FilterText.IndexOf (filterText, 0, StringComparison.OrdinalIgnoreCase) > -1);
 			} else {
 				// 99.% cases fall here
 				bestMatch = filterFilteredList.OrderByDescending (n => n.Item2.HasValue).ThenBy (n => n.Item2).FirstOrDefault ();
