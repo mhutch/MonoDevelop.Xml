@@ -11,15 +11,14 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.Core.Imaging;
+using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.PatternMatching;
 using Microsoft.VisualStudio.Utilities;
-using MonoDevelop.Xml.Editor;
 
-namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implementation
+namespace MonoDevelop.Xml.Editor.Completion
 {
 	[Export (typeof (IAsyncCompletionItemManagerProvider))]
 	[Name (nameof(XmlCompletionItemManagerProvider))]

@@ -31,9 +31,14 @@ namespace MonoDevelop.Xml.Editor.Completion
 				return (XmlCompletionTrigger.Element, 0);
 			}
 
-			//auto trigger after typing first char after <
-			if (isTypedChar && spine.CurrentStateLength == 1 && spine.CurrentState is XmlNameState && spine.CurrentState.Parent is XmlTagState) {
-				return (XmlCompletionTrigger.Element, 1);
+			//auto trigger after typing first char after < or fist char of attribute
+			if (isTypedChar && spine.CurrentStateLength == 1 && spine.CurrentState is XmlNameState && XmlChar.IsFirstNameChar (typedCharacter)) {
+				if (spine.CurrentState.Parent is XmlTagState) {
+					return (XmlCompletionTrigger.Element, 1);
+				}
+				if (spine.CurrentState.Parent is XmlAttributeState) {
+					return (XmlCompletionTrigger.Attribute, 1);
+				}
 			}
 
 			// trigger on explicit invocation after <

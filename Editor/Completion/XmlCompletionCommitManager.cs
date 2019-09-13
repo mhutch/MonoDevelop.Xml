@@ -10,6 +10,8 @@ using Microsoft.CodeAnalysis.Text.Shared.Extensions;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.BraceCompletion;
+using Microsoft.VisualStudio.Text.Editor;
 
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Editor.Options;
@@ -19,7 +21,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 	class XmlCompletionCommitManager : IAsyncCompletionCommitManager
 	{
 		static readonly char[] allCommitChars = { '>', '/', '=', ' ', ';', '"', '\'' };
-		static readonly char[] attributeCommitChars = { '>', '/', '=' };
+		static readonly char[] attributeCommitChars = { '>', '/', '=', ' ' };
 		static readonly char[] tagCommitChars = { '>', '/', ' ' };
 		static readonly char[] entityCommitChars = { ';' };
 		static readonly char[] attributeValueCommitChars = { '"', '\'' };
@@ -109,19 +111,48 @@ namespace MonoDevelop.Xml.Editor.Completion
 					return CommitResult.Handled;
 				}
 			case XmlCompletionItemKind.Attribute: {
-					//completion shouldn't interfere with typing out in full
-					//TODO insert overtypeable quotes after the =
-					if (typedChar == '=') {
+					// simple handling if it might interfere with typing or auto attributes are disabled
+					if (typedChar == '=' || typedChar == ' ' || !session.TextView.Options.GetAutoInsertAttributeValue ()) {
 						Insert (session, buffer, item.InsertText, span);
 						return CommitResult.Handled;
 					}
 
-					string insertionText = session.TextView.Options.GetAutoInsertAttributeValue ()
-						? $"{item.InsertText}=\"\""
-						: item.InsertText;
+					//FIXME get this from options
+					char quoteChar = typedChar == '\'' ? '\'' : '"';
 
-					Insert (session, buffer, insertionText, span);
-					SetCaretSpanOffset (insertionText.Length - 1);
+					var braceManager = GetBraceManager (session.TextView);
+
+					// if we don't have a brace manager, insert the entire =""
+					if (braceManager == null) {
+						Insert (session, buffer, $"{item.InsertText}={quoteChar}{quoteChar}", span);
+						SetCaretSpanOffset (item.InsertText.Length + 2);
+						//but if the user typed the quote char we're inserting, swallow it so they don't end up mismatched
+						if (typedChar == quoteChar) {
+							return CommitSwallowChar;
+						}
+						return CommitResult.Handled;
+					}
+
+					//we have a brace manager, so insert without the quotes
+					Insert (session, buffer, $"{item.InsertText}=", span);
+					SetCaretSpanOffset (item.InsertText.Length + 1);
+
+
+					// if the user typed a quote char, let it through and the brace manager will add an overtypeable sibling
+					if (typedChar == '"' || typedChar == '\'') {
+						return CommitResult.Handled;
+					}
+
+					// before and after we insert the quote char, notify the brace manager so we get an overtypeable sibling
+					braceManager.PreTypeChar (quoteChar, out bool handled);
+					if (!handled) {
+						var edit = buffer.CreateEdit ();
+						edit.Insert (session.TextView.Caret.Position.BufferPosition, quoteChar.ToString ());
+						edit.Apply ();
+						braceManager.PostTypeChar (quoteChar);
+					}
+
+					//and allow the char the user types go between the quotes
 					return CommitResult.Handled;
 				}
 			case XmlCompletionItemKind.Element:
@@ -144,7 +175,8 @@ namespace MonoDevelop.Xml.Editor.Completion
 					new SnapshotPoint (buffer.CurrentSnapshot, span.Start.Position + spanOffset));
 		}
 
-
+		IBraceCompletionManager GetBraceManager (ITextView view)
+			=> view.Properties.TryGetProperty ("BraceCompletionManager", out IBraceCompletionManager manager) && manager.Enabled ? manager : null;
 
 		static void ConsumeTrailingChar (ref SnapshotSpan span, char charToConsume)
 		{

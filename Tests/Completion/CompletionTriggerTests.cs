@@ -35,6 +35,7 @@ namespace MonoDevelop.Xml.Tests.Completion
 		[TestCase ("<foo", ' ', XmlCompletionTrigger.Attribute)]
 		[TestCase ("<foo bar='1'   ", ' ', XmlCompletionTrigger.Attribute)]
 		[TestCase ("<foo ", XmlCompletionTrigger.Attribute)]
+		[TestCase ("<foo a", XmlCompletionTrigger.Attribute, 1)]
 		[TestCase ("<foo bar", XmlCompletionTrigger.Attribute, 3)]
 		[TestCase ("", '&', XmlCompletionTrigger.Entity)]
 		[TestCase ("&", XmlCompletionTrigger.Entity)]
