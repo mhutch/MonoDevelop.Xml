@@ -27,15 +27,16 @@ namespace MonoDevelop.MSBuild.Editor.HighlightReferences
 			)
 			: base (textView, provider.JoinableTaskContext)
 		{
-			if (!XmlBackgroundParser.TryGetParser (TextView.TextBuffer, out parser)) {
-				throw new InvalidOperationException ("XmlCore TextView does not have an XML parser");
-			}
 		}
 
 		protected async override
 			Task<(SnapshotSpan sourceSpan, ImmutableArray<(ITextMarkerTag kind, SnapshotSpan location)> highlights)>
 			GetHighlightsAsync (SnapshotPoint caretLocation, CancellationToken token)
 		{
+			if (!XmlBackgroundParser.TryGetParser (TextView.TextBuffer, out parser)) {
+				return Empty;
+			}
+
 			// parser is not currently threadsafe
 			await JoinableTaskContext.Factory.SwitchToMainThreadAsync (token);
 
