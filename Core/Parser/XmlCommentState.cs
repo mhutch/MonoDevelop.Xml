@@ -60,7 +60,7 @@ namespace MonoDevelop.Xml.Parser
 						((XContainer) context.Nodes.Peek ()).AddChildNode (comment);
 					}
 					
-					rollback = string.Empty;
+					rollback = null;
 					return Parent;
 				} else {
 					context.LogWarning ("The string '--' should not appear within comments.");
