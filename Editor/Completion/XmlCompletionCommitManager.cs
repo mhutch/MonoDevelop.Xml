@@ -126,30 +126,33 @@ namespace MonoDevelop.Xml.Editor.Completion
 					if (braceManager == null) {
 						Insert (session, buffer, $"{item.InsertText}={quoteChar}{quoteChar}", span);
 						SetCaretSpanOffset (item.InsertText.Length + 2);
-						//but if the user typed the quote char we're inserting, swallow it so they don't end up mismatched
-						if (typedChar == quoteChar) {
-							return CommitSwallowChar;
-						}
-						return CommitResult.Handled;
+						//explicitly trigger completion for the attribute value
+						RetriggerCompletion (session.TextView);
+						//if the user typed the quote char we're inserting, swallow it so they don't end up mismatched
+						return typedChar == quoteChar? CommitSwallowChar : CommitResult.Handled;
 					}
 
-					//we have a brace manager, so insert without the quotes
+					//we have a brace manager. first commit without the quotes.
 					Insert (session, buffer, $"{item.InsertText}=", span);
 					SetCaretSpanOffset (item.InsertText.Length + 1);
 
-
-					// if the user typed a quote char, let it through and the brace manager will add an overtypeable sibling
+					// if the user typed a quote char, simply let it through and the brace manager will add an overtypeable sibling
 					if (typedChar == '"' || typedChar == '\'') {
 						return CommitResult.Handled;
 					}
 
-					// before and after we insert the quote char, notify the brace manager so we get an overtypeable sibling
+					// we have to insert the quote, but worth with the brace manager so it inserts an overtypeable sibling
 					braceManager.PreTypeChar (quoteChar, out bool handled);
 					if (!handled) {
 						var edit = buffer.CreateEdit ();
 						edit.Insert (session.TextView.Caret.Position.BufferPosition, quoteChar.ToString ());
 						edit.Apply ();
 						braceManager.PostTypeChar (quoteChar);
+					}
+
+					//if there was no typed char, explicitly re-trigger completion for the attribute value
+					if (typedChar == '\0') {
+						RetriggerCompletion (session.TextView);
 					}
 
 					//and allow the char the user types go between the quotes
@@ -177,6 +180,14 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 		IBraceCompletionManager GetBraceManager (ITextView view)
 			=> view.Properties.TryGetProperty ("BraceCompletionManager", out IBraceCompletionManager manager) && manager.Enabled ? manager : null;
+
+		void RetriggerCompletion (ITextView textView)
+		{
+			System.Threading.Tasks.Task.Run (async () => {
+				await provider.JoinableTaskContext.Factory.SwitchToMainThreadAsync ();
+				provider.CommandServiceFactory.GetService (textView).Execute ((v, b) => new Microsoft.VisualStudio.Text.Editor.Commanding.Commands.InvokeCompletionListCommandArgs (v, b), null);
+			});
+		}
 
 		static void ConsumeTrailingChar (ref SnapshotSpan span, char charToConsume)
 		{
