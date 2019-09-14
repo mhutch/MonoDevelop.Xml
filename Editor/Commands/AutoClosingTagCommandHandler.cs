@@ -13,9 +13,10 @@ using Microsoft.VisualStudio.Text.Editor.Commanding.Commands;
 using Microsoft.VisualStudio.Utilities;
 
 using MonoDevelop.Xml.Dom;
+using MonoDevelop.Xml.Editor.Completion;
 using MonoDevelop.Xml.Editor.Options;
 
-namespace MonoDevelop.Xml.Editor.Completion
+namespace MonoDevelop.Xml.Editor.Commands
 {
 	[Name (Name)]
 	[Export (typeof (ICommandHandler))]
