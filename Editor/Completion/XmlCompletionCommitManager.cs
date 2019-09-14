@@ -168,6 +168,24 @@ namespace MonoDevelop.Xml.Editor.Completion
 					InsertClosingTags (session, buffer, item);
 					return CommitResult.Handled;
 				}
+			case XmlCompletionItemKind.Comment: {
+					// this should probably be handled with brace matching and a separate undo step
+					// but this is better than nothing
+					ConsumeTrailingChar (ref span, '>');
+					Insert (session, buffer, item.InsertText + "-->", span);
+					SetCaretSpanOffset (item.InsertText.Length);
+					return CommitResult.Handled;
+				}
+			case XmlCompletionItemKind.CData: {
+					// this should probably be handled with brace matching and a separate undo step
+					// but this is better than nothing
+					ConsumeTrailingChar (ref span, ']');
+					ConsumeTrailingChar (ref span, ']');
+					ConsumeTrailingChar (ref span, '>');
+					Insert (session, buffer, item.InsertText + "]]>", span);
+					SetCaretSpanOffset (item.InsertText.Length);
+					return CommitResult.Handled;
+				}
 			}
 
 			LoggingService.LogWarning ($"XML commit manager did not handle unknown special completion kind {kind}");
