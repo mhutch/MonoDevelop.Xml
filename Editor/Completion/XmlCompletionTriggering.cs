@@ -12,7 +12,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 		//FIXME: the length should do a readahead to capture the whole token
 		public static (XmlCompletionTrigger kind, int length) GetTrigger (XmlParser spine, XmlTriggerReason reason, char typedCharacter)
 		{
-			int stateTag = ((IXmlParserContext)spine).StateTag;
+			int stateTag = spine.GetContext ().StateTag;
 			bool isExplicit = reason == XmlTriggerReason.Invocation;
 			bool isTypedChar = reason == XmlTriggerReason.TypedChar;
 			bool isBackspace = reason == XmlTriggerReason.Backspace;
@@ -86,7 +86,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				if (typedCharacter == '&')
 					return (XmlCompletionTrigger.Entity, 0);
 
-				var text = ((IXmlParserContext)spine).KeywordBuilder;
+				var text = spine.GetContext ().KeywordBuilder;
 
 				if (isBackspace && text[text.Length-1] == '&') {
 					return (XmlCompletionTrigger.Entity, 0);

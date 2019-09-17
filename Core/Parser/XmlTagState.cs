@@ -71,10 +71,10 @@ namespace MonoDevelop.Xml.Parser
 			
 			if (c == '<') {
 				if (element.IsNamed) {
-					context.LogError ("Unexpected '<' in tag '" + element.Name.FullName + "'.");
+					context.Diagnostics?.LogError ("Unexpected '<' in tag '" + element.Name.FullName + "'.", context.Position);
 					Close (element, context, context.Position - 1);
 				} else {
-					context.LogError ("Tag has no name.", element.Span.Start);
+					context.Diagnostics?.LogError ("Tag has no name.", element.Span.Start);
 				}
 				
 				rollback = string.Empty;
@@ -85,10 +85,10 @@ namespace MonoDevelop.Xml.Parser
 			
 			if (element.IsClosed && c != '>') {
 				if (char.IsWhiteSpace (c)) {
-					context.LogWarning ("Unexpected whitespace after '/' in self-closing tag.");
+					context.Diagnostics?.LogWarning ("Unexpected whitespace after '/' in self-closing tag.", context.Position);
 					return null;
 				}
-				context.LogError ("Unexpected character '" + c + "' after '/' in self-closing tag.");
+				context.Diagnostics?.LogError ("Unexpected character '" + c + "' after '/' in self-closing tag.", context.Position);
 				context.Nodes.Pop ();
 				return Parent;
 			}
@@ -100,7 +100,7 @@ namespace MonoDevelop.Xml.Parser
 					element.Close (element);
 				}
 				if (!element.IsNamed) {
-					context.LogError ("Tag closed prematurely.");
+					context.Diagnostics?.LogError ("Tag closed prematurely.", context.Position);
 				} else {
 					Close (element, context, context.Position);
 				}
@@ -139,7 +139,7 @@ namespace MonoDevelop.Xml.Parser
 			if (XmlChar.IsWhitespace (c))
 				return null;
 
-			context.LogError ("Unexpected character '" + c + "' in tag.", context.Position - 1);
+			context.Diagnostics?.LogError ($"Unexpected character '{c}' in tag.", context.Position - 1);
 			context.StateTag = ATTEMPT_RECOVERY;
 			return null;
 		}

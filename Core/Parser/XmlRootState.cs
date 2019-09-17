@@ -26,6 +26,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
 using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
@@ -85,7 +86,7 @@ namespace MonoDevelop.Xml.Parser
 		{
 			if (c == '<') {
 				if (context.StateTag != FREE)
-					context.LogError (
+					context.Diagnostics?.LogError (
 						"Incomplete tag opening; encountered unexpected '<'.",
 						TextSpan.FromBounds (
 							context.Position - LengthFromOpenBracket (context) - 1,
@@ -165,7 +166,7 @@ namespace MonoDevelop.Xml.Parser
 				break;
 			}
 
-			context.LogError ("Incomplete tag opening; encountered unexpected character '" + c + "'.",
+			context.Diagnostics?.LogError ($"Incomplete tag opening; encountered unexpected character '{c}'.",
 				TextSpan.FromBounds (
 					context.Position - LengthFromOpenBracket (context),
 					context.Position));
@@ -194,6 +195,11 @@ namespace MonoDevelop.Xml.Parser
 		public virtual XDocument CreateDocument ()
 		{
 			return new XDocument ();
+		}
+
+		internal (XmlParserState currentState, int currentStateLength, int stateTag, XmlParserState previousState) GetStateForNode (XNode fromNode)
+		{
+			throw new NotImplementedException ();
 		}
 	}
 }

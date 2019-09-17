@@ -26,40 +26,32 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Collections.Generic;
+
 using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
 {
 	public static class XmlParserContextExtensions
 	{
-		public static void LogError (this IXmlParserContext ctx, string message)
+		public static void LogError (this ICollection<XmlDiagnosticInfo> ctx, string message, int offset)
 		{
-			ctx.Log (new XmlDiagnosticInfo (DiagnosticSeverity.Error, message, ctx.Position - 1));
+			ctx.Add (new XmlDiagnosticInfo (DiagnosticSeverity.Error, message, offset));
 		}
 
-		public static void LogWarning (this IXmlParserContext ctx, string message)
+		public static void LogWarning (this ICollection<XmlDiagnosticInfo> ctx, string message, int offset)
 		{
-			ctx.Log (new XmlDiagnosticInfo (DiagnosticSeverity.Warning, message, ctx.Position - 1));
+			ctx.Add (new XmlDiagnosticInfo (DiagnosticSeverity.Warning, message, offset));
 		}
 
-		public static void LogError (this IXmlParserContext ctx, string message, int offset)
+		public static void LogError (this ICollection<XmlDiagnosticInfo> ctx, string message, TextSpan span)
 		{
-			ctx.Log (new XmlDiagnosticInfo (DiagnosticSeverity.Error, message, offset));
+			ctx.Add (new XmlDiagnosticInfo (DiagnosticSeverity.Error, message, span));
 		}
 
-		public static void LogWarning (this IXmlParserContext ctx, string message, int offset)
+		public static void LogWarning (this ICollection<XmlDiagnosticInfo> ctx, string message, TextSpan span)
 		{
-			ctx.Log (new XmlDiagnosticInfo (DiagnosticSeverity.Warning, message, offset));
-		}
-
-		public static void LogError (this IXmlParserContext ctx, string message, TextSpan span)
-		{
-			ctx.Log (new XmlDiagnosticInfo (DiagnosticSeverity.Error, message, span));
-		}
-
-		public static void LogWarning (this IXmlParserContext ctx, string message, TextSpan span)
-		{
-			ctx.Log (new XmlDiagnosticInfo (DiagnosticSeverity.Warning, message, span));
+			ctx.Add (new XmlDiagnosticInfo (DiagnosticSeverity.Warning, message, span));
 		}
 	}
 }

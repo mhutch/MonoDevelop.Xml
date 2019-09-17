@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Parser;
 using NUnit.Framework;
@@ -50,7 +50,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 
 			var state = parser.CurrentState as XmlNameState;
 			Assert.NotNull (state);
-			return ((IXmlParserContext)parser).KeywordBuilder.ToString ();
+			return parser.GetContext ().KeywordBuilder.ToString ();
 		}
 	}
 }

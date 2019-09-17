@@ -158,9 +158,9 @@ namespace MonoDevelop.Xml.Parser
 			doc = (XDocType)context.Nodes.Pop ();
 			if (c == '<') {
 				rollback = string.Empty;
-				context.LogError ("Doctype ended prematurely.");
+				context.Diagnostics?.LogError ("Doctype ended prematurely.", context.Position);
 			} else if (c != '>') {
-				context.LogError ("Unexpected character '" + c +"' in doctype.");
+				context.Diagnostics?.LogError ("Unexpected character '" + c +"' in doctype.", context.Position);
 			}
 			
 			if (context.BuildTree) {

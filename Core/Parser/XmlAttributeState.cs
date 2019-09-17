@@ -1,4 +1,4 @@
-﻿﻿// 
+﻿// 
 // XmlAttributeState.cs
 // 
 // Author:
@@ -75,9 +75,9 @@ namespace MonoDevelop.Xml.Parser
 					//Got value, so end attribute
 					context.Nodes.Pop ();
 					att.End (context.Position - 1);
-					IAttributedXObject element = (IAttributedXObject) context.Nodes.Peek ();
+					var element = (IAttributedXObject) context.Nodes.Peek ();
 					if (element.Attributes.Get (att.Name, false) != null) {
-						context.LogError ("'" + att.Name + "' is a duplicate attribute name.", att.Span);
+						context.Diagnostics?.LogError ("'" + att.Name + "' is a duplicate attribute name.", att.Span);
 					}
 					element.Attributes.AddAttribute (att);
 					rollback = string.Empty;
@@ -102,7 +102,7 @@ namespace MonoDevelop.Xml.Parser
 					context.StateTag = GETTINGVAL;
 					return null;
 				}
-				context.LogError ("Expecting = in attribute, got '" + c + "'.");
+				context.Diagnostics?.LogError ("Expecting = in attribute, got '" + c + "'.", context.Position);
 			} else if (context.StateTag == GETTINGVAL) {
 				if (char.IsWhiteSpace (c)) {
 					return null;
@@ -111,7 +111,7 @@ namespace MonoDevelop.Xml.Parser
 				return AttributeValueState;
 			} else if (c != '<') {
 				//parent handles message for '<'
-				context.LogError ("Unexpected character '" + c + "' in attribute.");
+				context.Diagnostics?.LogError ("Unexpected character '" + c + "' in attribute.", context.Position);
 			}
 
 			if (att != null)

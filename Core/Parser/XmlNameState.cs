@@ -53,7 +53,7 @@ namespace MonoDevelop.Xml.Parser
 			if (XmlChar.IsWhitespace (c) || c == '<' || c == '>' || c == '/' || c == '=') {
 				rollback = string.Empty;
 				if (context.KeywordBuilder.Length == 0) {
-					context.LogError ("Zero-length name.");
+					context.Diagnostics?.LogError ("Zero-length name.", context.Position);
 					namedObject.Name = XName.Empty;
 				} else {
 					string s = context.KeywordBuilder.ToString ();
@@ -68,8 +68,8 @@ namespace MonoDevelop.Xml.Parser
 				return Parent;
 			}
 			if (c == ':') {
-				if (context.KeywordBuilder.ToString ().IndexOf (':') > 0)
-					context.LogError ("Unexpected ':' in name.");
+				if (context.KeywordBuilder.ToString ().IndexOf (':') > 0 && context.BuildTree)
+					context.Diagnostics?.LogError ("Unexpected ':' in name.", context.Position);
 				context.KeywordBuilder.Append (c);
 				return null;
 			}
@@ -80,7 +80,7 @@ namespace MonoDevelop.Xml.Parser
 			}
 			
 			rollback = string.Empty;
-			context.LogError ("Unexpected character '" + c +"' in name");
+			context.Diagnostics?.LogError ($"Unexpected character '{c}' in name", context.Position);
 			return Parent;
 		}
 	}

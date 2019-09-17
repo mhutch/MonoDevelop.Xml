@@ -87,8 +87,7 @@ namespace MonoDevelop.Xml.Parser
 			}
 
 			if (context.KeywordBuilder.Length == 0) {
-				string fullName = ((XAttribute)context.Nodes.Peek ()).Name.FullName;
-				context.LogError ("The value of attribute '" + fullName + "' ended unexpectedly.");
+				context.Diagnostics?.LogError ($"The value of attribute '{(string)((XAttribute)context.Nodes.Peek ()).Name.FullName}' ended unexpectedly.", context.Position);
 				rollback = string.Empty;
 				return Parent;
 			}

@@ -40,7 +40,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 {
 	public class TestXmlParser : XmlParser
 	{
-		public TestXmlParser (XmlRootState rootState) : this (rootState, false)
+		public TestXmlParser (XmlRootState rootState) : this (rootState, true)
 		{
 		}
 		

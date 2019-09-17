@@ -63,7 +63,7 @@ namespace MonoDevelop.Xml.Parser
 					rollback = null;
 					return Parent;
 				} else {
-					context.LogWarning ("The string '--' should not appear within comments.");
+					context.Diagnostics?.LogWarning ("The string '--' should not appear within comments.", context.Position);
 					context.StateTag = NOMATCH;
 				}
 			} else {

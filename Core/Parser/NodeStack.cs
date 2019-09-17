@@ -1,4 +1,4 @@
-﻿// 
+// 
 // Parser.cs
 // 
 // Author:
@@ -27,7 +27,6 @@
 //
 
 using System.Collections.Generic;
-
 using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
@@ -36,6 +35,8 @@ namespace MonoDevelop.Xml.Parser
 	{
 		public NodeStack (IEnumerable<XObject> collection) : base (collection) { }
 		public NodeStack () { }
+
+		public NodeStack (int capacity) : base (capacity) { }
 
 		public XObject Peek (int down)
 		{
@@ -54,6 +55,37 @@ namespace MonoDevelop.Xml.Parser
 			foreach (XObject o in this)
 				last = o;
 			return last as XDocument;
+		}
+
+		internal NodeStack ShallowCopy ()
+		{
+			IEnumerable<XObject> CopyXObjects ()
+			{
+				foreach (XObject o in this)
+					yield return o.ShallowCopy ();
+			}
+
+			var copies = new List<XObject> (CopyXObjects ());
+			copies.Reverse ();
+			return new NodeStack (copies);
+		}
+
+		internal static NodeStack FromNode (XNode fromNode)
+		{
+			var newStack = new NodeStack ();
+
+			// nodes should only be parented to other nodes, if this cast fails something is wrong
+			DepthFirstAddParentsToStack ((XNode)fromNode.Parent);
+
+			void DepthFirstAddParentsToStack (XNode n)
+			{
+				if (n.Parent != null) {
+					DepthFirstAddParentsToStack ((XNode)n.Parent);
+				}
+				newStack.Push ((XNode)n.ShallowCopy ());
+			}
+
+			return newStack;
 		}
 	}
 }

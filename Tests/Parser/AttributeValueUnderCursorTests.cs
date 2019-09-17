@@ -61,7 +61,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		{
 			TestXmlParser.AssertState (doc, p => {
 				p.AssertStateIs<XmlAttributeValueState> ();
-				Assert.AreEqual (val, ((IXmlParserContext)p).KeywordBuilder.ToString ());
+				Assert.AreEqual (val, p.GetContext ().KeywordBuilder.ToString ());
 			});
 		}
 	}

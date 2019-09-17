@@ -26,6 +26,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Collections.Generic;
 using System.Text;
 
 namespace MonoDevelop.Xml.Parser
@@ -39,8 +40,8 @@ namespace MonoDevelop.Xml.Parser
 		XmlParserState PreviousState { get; }
 		NodeStack Nodes { get; }
 		bool BuildTree { get; }
-		void Log (XmlDiagnosticInfo diagnostic);
+		ICollection<XmlDiagnosticInfo> Diagnostics { get; }
 		void EndAll (bool pop);
-		void ConnectAll ();
+		void ConnectNodes ();
 	}
 }

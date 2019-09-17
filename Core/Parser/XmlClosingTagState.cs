@@ -1,4 +1,4 @@
-﻿// 
+// 
 // XmlClosingTagState.cs
 // 
 // Author:
@@ -81,7 +81,7 @@ namespace MonoDevelop.Xml.Parser
 					//clear the stack of intermediate unclosed tags
 					while (popCount > 1) {
 						if (context.Nodes.Pop () is XElement el)
-							context.LogError (string.Format ("Unclosed tag '{0}'", el.Name.FullName), ct.Span);
+							context.Diagnostics?.LogError (string.Format ("Unclosed tag '{0}'", el.Name.FullName), ct.Span);
 						popCount--;
 					}
 					
@@ -92,12 +92,12 @@ namespace MonoDevelop.Xml.Parser
 						else
 							context.Nodes.Pop ();
 					} else {
-						context.LogError (
-							string.Format ("Closing tag '{0}' does not match any currently open tag.", ct.Name.FullName),
-							ct.Span
-						);
-						// add it into the tree anyway so it's accessible
 						if (context.BuildTree) {
+							context.Diagnostics?.LogError (
+								$"Closing tag '{ct.Name.FullName}' does not match any currently open tag.",
+								ct.Span
+							);
+							// add it into the tree anyway so it's accessible
 							var parent = context.Nodes.Peek () as XContainer;
 							if (parent != null) {
 								if (!parent.IsEnded) {
@@ -110,13 +110,13 @@ namespace MonoDevelop.Xml.Parser
 						}
 					}
 				} else {
-					context.LogError ("Closing tag ended prematurely.");
+					context.Diagnostics?.LogError ("Closing tag ended prematurely.", context.Position);
 				}
 				return Parent;
 			}
 			
 			if (c == '<') {
-				context.LogError ("Unexpected '<' in tag.", context.Position - 1);
+				context.Diagnostics?.LogError ("Unexpected '<' in tag.", context.Position - 1);
 				context.Nodes.Pop ();
 				rollback = string.Empty;
 				return Parent;
@@ -132,7 +132,7 @@ namespace MonoDevelop.Xml.Parser
 			}
 			
 			rollback = string.Empty;
-			context.LogError ("Unexpected character '" + c + "' in closing tag.", context.Position - 1);
+			context.Diagnostics?.LogError ("Unexpected character '" + c + "' in closing tag.", context.Position - 1);
 			context.Nodes.Pop ();
 			return Parent;
 		}

@@ -291,8 +291,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 		static char GetAttributeValueDelimiter (XmlParser parser)
 		{
-			var ctx = (IXmlParserContext)parser;
-			switch (ctx.StateTag) {
+			switch (parser.GetContext ().StateTag) {
 			case XmlAttributeValueState.DOUBLEQUOTE: return '"';
 			case XmlAttributeValueState.SINGLEQUOTE: return '\'';
 			default: return (char)0;
