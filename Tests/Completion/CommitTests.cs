@@ -155,7 +155,7 @@ namespace MonoDevelop.Xml.Tests.Completion
 		[TestCase (" T\n", "<Hello There=\"$\"")]
 		[TestCase (" T^=", "<Hello There=$")]
 		[TestCase (" Th^<", "<Hello Th<$")]
-		[TestCase (" Th^ ", "<Hello Th $")]
+		[TestCase (" Th^ ", "<Hello There $")]
 		public void CommitAttribute (string typeChars, string after) => TestTypeCommands ("<Hello$", after, typeChars);
 	}
 }
