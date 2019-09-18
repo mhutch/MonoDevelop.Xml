@@ -45,9 +45,9 @@ namespace MonoDevelop.Xml.Parser
 			if (namedObject == null || namedObject.Name.Prefix != null)
 				throw new InvalidOperationException ("Invalid state");
 			
-			Debug.Assert (context.CurrentStateLength > 1 || IsValidNameStart (c),
+			Debug.Assert (context.CurrentStateLength > 0 || IsValidNameStart (c),
 				"First character pushed to a XmlTagNameState must be a letter.");
-			Debug.Assert (context.CurrentStateLength > 1 || context.KeywordBuilder.Length == 0,
+			Debug.Assert (context.CurrentStateLength > 0 || context.KeywordBuilder.Length == 0,
 				"Keyword builder must be empty when state begins.");
 			
 			if (XmlChar.IsWhitespace (c) || c == '<' || c == '>' || c == '/' || c == '=') {

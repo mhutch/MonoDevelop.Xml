@@ -28,7 +28,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
+using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
 {
@@ -71,10 +73,11 @@ namespace MonoDevelop.Xml.Parser
 				PreviousState = copyFrom.context.PreviousState,
 				BuildTree = false,
 				KeywordBuilder = new StringBuilder (copyFrom.context.KeywordBuilder.ToString ()),
-				Nodes = copyFrom.context.Nodes.ShallowCopy()
+				Nodes = copyFrom.context.Nodes.ShallowCopy ()
 			},
 			copyFrom.RootState
-		) {}
+		)
+		{ }
 
 		public XmlRootState RootState { get; }
 
@@ -91,7 +94,7 @@ namespace MonoDevelop.Xml.Parser
 			context.Nodes.Push (RootState.CreateDocument ());
 		}
 
-		public void Parse (System.IO.TextReader reader)
+		public void Parse (TextReader reader)
 		{
 			int i = reader.Read ();
 			while (i >= 0) {
@@ -103,19 +106,17 @@ namespace MonoDevelop.Xml.Parser
 
 		public void Push (char c)
 		{
-			//FIXME: position/location should be at current char, not after it
-			context.Position++;
-
 			for (int loopLimit = 0; loopLimit < 10; loopLimit++) {
-				context.CurrentStateLength++;
 				string rollback = null;
 				if (CurrentState == null)
-					return;
+					goto done;
 				XmlParserState nextState = CurrentState.PushChar (c, context, ref rollback);
 
 				// no state change
-				if (nextState == CurrentState || nextState == null)
-					return;
+				if (nextState == CurrentState || nextState == null) {
+					context.CurrentStateLength++;
+					goto done;
+				}
 
 				// state changed; reset stuff
 				context.PreviousState = CurrentState;
@@ -130,7 +131,7 @@ namespace MonoDevelop.Xml.Parser
 
 				// only loop if the same char should be run through the new state
 				if (rollback == null)
-					return;
+					goto done;
 
 				//simple rollback, just run same char through again
 				if (rollback.Length == 0)
@@ -139,16 +140,14 @@ namespace MonoDevelop.Xml.Parser
 				//"complex" rollbacks require actually skipping backwards.
 				//Note the previous state is invalid for this operation.
 
-				//rollback position so it's valid
-				context.Position -= (rollback.Length + 1);
-
 				foreach (char rollChar in rollback)
 					Push (rollChar);
-
-				//restore position
-				context.Position++;
 			}
-			throw new InvalidOperationException ("Too many state changes for char '" + c + "'. Current state is " + CurrentState.ToString () + ".");
+			throw new InvalidOperationException ($"Too many state changes for char '{c}'. Current state is {CurrentState.ToString ()}.");
+
+			done:
+				context.Position++;
+				return;
 		}
 
 		object ICloneable.Clone ()

@@ -32,13 +32,14 @@ namespace MonoDevelop.Xml.Parser
 {
 	public class XmlProcessingInstructionState : XmlParserState
 	{
+		const int STARTOFFSET = 2; // "<?"
 		const int NOMATCH = 0;
 		const int QUESTION = 1;
 		
 		public override XmlParserState PushChar (char c, IXmlParserContext context, ref string rollback)
 		{
-			if (context.CurrentStateLength == 1) {
-				context.Nodes.Push (new XProcessingInstruction (context.Position - "<?".Length));
+			if (context.CurrentStateLength == 0) {
+				context.Nodes.Push (new XProcessingInstruction (context.Position - STARTOFFSET));
 			}
 			
 			if (c == '?') {

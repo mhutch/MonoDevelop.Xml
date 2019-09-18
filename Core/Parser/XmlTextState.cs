@@ -34,8 +34,8 @@ namespace MonoDevelop.Xml.Parser
 	{
 		public override XmlParserState PushChar (char c, IXmlParserContext context, ref string rollback)
 		{
-			if (context.CurrentStateLength == 1) {
-				context.Nodes.Push (new XText (context.Position - 1));
+			if (context.CurrentStateLength == 0) {
+				context.Nodes.Push (new XText (context.Position));
 				// StateTag is tracking the last non-whitespace char
 				context.StateTag = context.Position;
 			}
@@ -47,7 +47,7 @@ namespace MonoDevelop.Xml.Parser
 					var node = (XText)context.Nodes.Pop ();
 
 					//trim the text down to the node length and add it
-					context.KeywordBuilder.Length = context.StateTag - node.Span.Start;
+					context.KeywordBuilder.Length = context.StateTag - node.Span.Start + 1;
 					node.End (context.KeywordBuilder.ToString ());
 
 					((XContainer)context.Nodes.Peek ()).AddChildNode (node);

@@ -27,12 +27,15 @@
 //
 
 using System.Diagnostics;
+using System.Text;
 using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
 {
 	public class XmlTagState : XmlParserState
 	{
+		const int STARTOFFSET = 1; // <
+
 		internal const int ATTEMPT_RECOVERY = 1;
 		internal const int RECOVERY_FOUND_WHITESPACE = 2;
 		internal const int MAYBE_SELF_CLOSING = 2;
@@ -61,7 +64,7 @@ namespace MonoDevelop.Xml.Parser
 			
 			if (element == null || element.IsEnded) {
 				var parent = element;
-				element = new XElement (context.Position - 2) { Parent = parent }; // 2 == < + current char
+				element = new XElement (context.Position - STARTOFFSET) { Parent = parent };
 				context.Nodes.Push (element);
 				if (context.BuildTree) {
 					var parentContainer = (XContainer)context.Nodes.Peek (element.IsClosed ? 0 : 1);
@@ -72,7 +75,7 @@ namespace MonoDevelop.Xml.Parser
 			if (c == '<') {
 				if (element.IsNamed) {
 					context.Diagnostics?.LogError ("Unexpected '<' in tag '" + element.Name.FullName + "'.", context.Position);
-					Close (element, context, context.Position - 1);
+					Close (element, context, context.Position);
 				} else {
 					context.Diagnostics?.LogError ("Tag has no name.", element.Span.Start);
 				}
@@ -102,7 +105,7 @@ namespace MonoDevelop.Xml.Parser
 				if (!element.IsNamed) {
 					context.Diagnostics?.LogError ("Tag closed prematurely.", context.Position);
 				} else {
-					Close (element, context, context.Position);
+					Close (element, context, context.Position + 1);
 				}
 				return Parent;
 			}
@@ -126,7 +129,7 @@ namespace MonoDevelop.Xml.Parser
 
 			context.StateTag = FREE;
 
-			if (context.CurrentStateLength > 1 && XmlChar.IsFirstNameChar (c)) {
+			if (context.CurrentStateLength > 0 && XmlChar.IsFirstNameChar (c)) {
 				rollback = string.Empty;
 				return AttributeState;
 			}

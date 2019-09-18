@@ -32,14 +32,16 @@ namespace MonoDevelop.Xml.Parser
 {
 	public class XmlCommentState : XmlParserState
 	{
+		const int STARTOFFSET = 4; // "<!--"
+
 		const int NOMATCH = 0;
 		const int SINGLE_DASH = 1;
 		const int DOUBLE_DASH = 2;
 		
 		public override XmlParserState PushChar (char c, IXmlParserContext context, ref string rollback)
 		{
-			if (context.CurrentStateLength == 1) {
-				context.Nodes.Push (new XComment (context.Position - "<!--".Length - 1));
+			if (context.CurrentStateLength == 0) {
+				context.Nodes.Push (new XComment (context.Position - STARTOFFSET));
 			}
 			
 			if (c == '-') {
@@ -56,7 +58,7 @@ namespace MonoDevelop.Xml.Parser
 					var comment = (XComment) context.Nodes.Pop ();
 					
 					if (context.BuildTree) {
-						comment.End (context.Position);
+						comment.End (context.Position + 1);
 						((XContainer) context.Nodes.Peek ()).AddChildNode (comment);
 					}
 					

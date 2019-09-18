@@ -27,12 +27,12 @@
 //
 
 using System.Diagnostics;
+using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
 {
 	public abstract class XmlParserState
 	{
-		XmlParserState parent;
 
 		/// <summary>
 		/// When the <see cref="Parser"/> advances by one character, it calls this method 
@@ -49,19 +49,18 @@ namespace MonoDevelop.Xml.Parser
 		/// </returns>
 		public abstract XmlParserState PushChar (char c, IXmlParserContext context, ref string rollback);
 
-		public XmlParserState Parent { get { return parent; } }
-		
+		public XmlParserState Parent { get; private set; }
+
 		protected void Adopt (XmlParserState child)
 		{
-			Debug.Assert (child.parent == null);
-			child.parent = this;
+			Debug.Assert (child.Parent == null);
+			child.Parent = this;
 		}
-		
+
 		public XmlRootState RootState {
 			get {
-				return (this as XmlRootState) ?? parent.RootState;
+				return (this as XmlRootState) ?? Parent.RootState;
 			}
 		}
 	}
-	
 }

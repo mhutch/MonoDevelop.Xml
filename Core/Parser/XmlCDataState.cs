@@ -32,14 +32,16 @@ namespace MonoDevelop.Xml.Parser
 {
 	public class XmlCDataState : XmlParserState
 	{
+		const int STARTOFFSET = 9; // "<![CDATA[";
+
 		const int NOMATCH = 0;
 		const int SINGLE_BRACKET = 1;
 		const int DOUBLE_BRACKET = 2;
 		
 		public override XmlParserState PushChar (char c, IXmlParserContext context, ref string rollback)
 		{
-			if (context.CurrentStateLength == 1) {
-				context.Nodes.Push (new XCData (context.Position - "<![CDATA[".Length - 1));
+			if (context.CurrentStateLength == 0) {
+				context.Nodes.Push (new XCData (context.Position - STARTOFFSET));
 			}
 			
 			if (c == ']') {
@@ -55,7 +57,7 @@ namespace MonoDevelop.Xml.Parser
 				var cdata = (XCData) context.Nodes.Pop ();
 				
 				if (context.BuildTree) {
-					cdata.End (context.Position);
+					cdata.End (context.Position + 1);
 					((XContainer) context.Nodes.Peek ()).AddChildNode (cdata); 
 				}
 				return Parent;

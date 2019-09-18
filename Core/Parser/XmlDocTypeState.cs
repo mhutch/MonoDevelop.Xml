@@ -33,6 +33,8 @@ namespace MonoDevelop.Xml.Parser
 {
 	public class XmlDocTypeState : XmlParserState
 	{
+		const int STARTOFFSET = 9; // "<!DOCTYPE";
+
 		readonly XmlNameState nameState = new XmlNameState ();
 		
 		public XmlDocTypeState ()
@@ -44,7 +46,7 @@ namespace MonoDevelop.Xml.Parser
 		{
 			var doc = context.Nodes.Peek () as XDocType;
 			if (doc == null) {
-				doc = new XDocType (context.Position - "<!DOCTYPE".Length - 1);
+				doc = new XDocType (context.Position - STARTOFFSET);
 				context.Nodes.Push (doc);
 			}
 			
@@ -130,7 +132,7 @@ namespace MonoDevelop.Xml.Parser
 				switch (context.StateTag) {
 				case 0:
 					if (c == '[') {
-						doc.InternalDeclarationRegion = new TextSpan (context.Position, 0);
+						doc.InternalDeclarationRegion = new TextSpan (context.Position + 1, 0);
 						context.StateTag = 1;
 						return null;
 					}

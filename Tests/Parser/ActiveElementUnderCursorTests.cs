@@ -1,4 +1,4 @@
-﻿using MonoDevelop.Xml.Editor.Completion;
+using MonoDevelop.Xml.Editor.Completion;
 using NUnit.Framework;
 
 namespace MonoDevelop.Xml.Tests.Parser
@@ -107,7 +107,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		public void PathTest8()
 		{
 			TestXmlParser.AssertTree (
-				"<foo xmlns='" + namespaceURI + "'><bar>$",
+				"<foo xmlns='" + namespaceURI + "'><bar$>",
 				n => TestXmlParser.AssertPath (
 					n,
 					new QualifiedName("foo", namespaceURI),

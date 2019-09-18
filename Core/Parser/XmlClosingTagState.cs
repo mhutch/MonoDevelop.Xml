@@ -33,6 +33,8 @@ namespace MonoDevelop.Xml.Parser
 {
 	public class XmlClosingTagState : XmlParserState
 	{
+		const int STARTOFFSET = 2; // "</"
+
 		readonly XmlNameState NameState;
 		
 		public XmlClosingTagState ()
@@ -51,10 +53,9 @@ namespace MonoDevelop.Xml.Parser
 			var ct = context.Nodes.Peek () as XClosingTag;
 			
 			if (ct == null) {
-				Debug.Assert (context.CurrentStateLength == 1,
-					"IncompleteNode must not be an XClosingTag when CurrentStateLength is 1");
+				Debug.Assert (context.CurrentStateLength == 0, "IncompleteNode must not be an XClosingTag when CurrentStateLength is 0");
 				
-				ct = new XClosingTag (context.Position - 3); //3 = </ and the current char
+				ct = new XClosingTag (context.Position - STARTOFFSET);
 				context.Nodes.Push (ct);
 			}
 			
@@ -63,7 +64,7 @@ namespace MonoDevelop.Xml.Parser
 				context.Nodes.Pop ();
 				
 				if (ct.IsNamed) {
-					ct.End (context.Position);
+					ct.End (context.Position + 1);
 					
 					// walk up tree of parents looking for matching tag
 					int popCount = 0;

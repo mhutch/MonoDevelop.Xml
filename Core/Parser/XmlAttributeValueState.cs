@@ -25,6 +25,7 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
+using System;
 using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
@@ -50,7 +51,7 @@ namespace MonoDevelop.Xml.Parser
 				return Parent;
 			}
 
-			if (context.CurrentStateLength == 1) {
+			if (context.CurrentStateLength == 0) {
 				if (c == '"') {
 					context.StateTag = DOUBLEQUOTE;
 					return null;

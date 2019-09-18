@@ -224,15 +224,16 @@ namespace MonoDevelop.Xml.Tests.Parser
 		[Test]
 		public void DocTypeCapture ()
 		{
-			var parser = new TestXmlParser (CreateRootState (), true);
-			parser.Parse (@"
+			var docText = @"
 		<!DOCTYPE html PUBLIC ""-//W3C//DTD XHTML 1.0 Strict//EN""
 ""DTD/xhtml1-strict.dtd""
 [
 <!-- foo -->
 <!bar #baz>
 ]>
-<doc><foo/></doc>");
+<doc><foo/></doc>".Replace ("\r\n", "\n");
+			var parser = new TestXmlParser (CreateRootState (), true);
+			parser.Parse (docText);
 			parser.AssertEmpty ();
 			XDocument doc = (XDocument)parser.Nodes.Peek ();
 			Assert.IsTrue (doc.FirstChild is XDocType);
@@ -240,8 +241,12 @@ namespace MonoDevelop.Xml.Tests.Parser
 			Assert.AreEqual ("html", dt.RootElement.FullName);
 			Assert.AreEqual ("-//W3C//DTD XHTML 1.0 Strict//EN", dt.PublicFpi);
 			Assert.AreEqual ("DTD/xhtml1-strict.dtd", dt.Uri);
-			Assert.AreEqual (85, dt.InternalDeclarationRegion.Start);
-			Assert.AreEqual (112, dt.InternalDeclarationRegion.End);
+			var expectedInternalDecl = @"
+<!-- foo -->
+<!bar #baz>
+".Replace ("\r\n", "\n");
+			var actualInternalDecl = docText.Substring (dt.InternalDeclarationRegion.Start, dt.InternalDeclarationRegion.Length);
+			Assert.AreEqual (expectedInternalDecl, actualInternalDecl);
 			parser.AssertNoErrors ();
 		}
 
@@ -371,6 +376,29 @@ namespace MonoDevelop.Xml.Tests.Parser
 			Assert.NotNull (t);
 			Assert.AreEqual ("abc defg", docTxt.Substring (t.Span.Start, t.Span.Length));
 			Assert.AreEqual ("abc defg", t.Text);
+		}
+
+		[Test]
+		public void Positions ()
+		{
+			var docTxt = @"<foo someAtt=""SomeVal"">
+<!-- blah -->
+  some text
+<![CDATA[ dfdfdf ]]>
+</foo>
+";
+			var parser = new TestXmlParser (CreateRootState (), true);
+			parser.Parse (docTxt, preserveWindowsNewlines: true);
+			parser.AssertEmpty ();
+			var doc = (XDocument)parser.Nodes.Peek ();
+
+			string Substring (XObject obj) => docTxt.Substring (obj.Span.Start, obj.Span.Length);
+
+			Assert.AreEqual (@"<foo someAtt=""SomeVal"">", Substring (doc.RootElement));
+			Assert.AreEqual (@"someAtt=""SomeVal""", Substring (doc.RootElement.Attributes.First));
+			Assert.AreEqual (@"<!-- blah -->", Substring (doc.RootElement.Nodes.OfType<XComment> ().First ()));
+			Assert.AreEqual (@"<![CDATA[ dfdfdf ]]>", Substring (doc.RootElement.Nodes.OfType<XCData> ().First ()));
+			Assert.AreEqual (@"</foo>", Substring (doc.RootElement.ClosingTag));
 		}
 	}
 }
