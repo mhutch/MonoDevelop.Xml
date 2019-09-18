@@ -171,6 +171,13 @@ namespace MonoDevelop.Xml.Parser
 			}
 			return Parent;
 		}
+
+		public override XmlParserContext TryRecreateState (XObject xobject, int position)
+		{
+			// we could attempt recovery but it's kinda complex due to URL keyword builder
+			// for now, let parent recreate state at start of tag
+			return null;
+		}
 	}
 }
 

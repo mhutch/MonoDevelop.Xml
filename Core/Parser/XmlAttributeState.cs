@@ -120,5 +120,12 @@ namespace MonoDevelop.Xml.Parser
 			rollback = string.Empty;
 			return Parent;
 		}
+
+		public override XmlParserContext TryRecreateState (XObject xobject, int position)
+		{
+			// recreating name builder and value builder state is a pain to get right
+			// for now, let parent recreate state at start of attribute
+			return null;
+		}
 	}
 }

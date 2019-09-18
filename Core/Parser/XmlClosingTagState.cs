@@ -137,5 +137,12 @@ namespace MonoDevelop.Xml.Parser
 			context.Nodes.Pop ();
 			return Parent;
 		}
+
+		public override XmlParserContext TryRecreateState (XObject xobject, int position)
+		{
+			// recreating name builder state is a pain
+			// for now, let parent recreate state at start of tag
+			return null;
+		}
 	}
 }

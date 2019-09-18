@@ -68,5 +68,25 @@ namespace MonoDevelop.Xml.Parser
 			
 			return null;
 		}
+
+		public override XmlParserContext TryRecreateState (XObject xobject, int position)
+		{
+			if (xobject is XCData cd && position >= cd.Span.Start + STARTOFFSET && position < cd.Span.End) {
+				var parents = NodeStack.FromParents (cd);
+				parents.Push (new XCData (cd.Span.Start));
+
+				return new XmlParserContext {
+					CurrentState = this,
+					Position = position,
+					PreviousState = Parent,
+					CurrentStateLength = position - cd.Span.Start + STARTOFFSET,
+					KeywordBuilder = new System.Text.StringBuilder (),
+					StateTag = position == cd.Span.End - 3 ? SINGLE_BRACKET : (position == cd.Span.End - 2? DOUBLE_BRACKET : NOMATCH),
+					Nodes = parents
+				};
+			}
+
+			return null;
+		}
 	}
 }

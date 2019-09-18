@@ -197,9 +197,25 @@ namespace MonoDevelop.Xml.Parser
 			return new XDocument ();
 		}
 
-		internal (XmlParserState currentState, int currentStateLength, int stateTag, XmlParserState previousState) GetStateForNode (XNode fromNode)
+		public override XmlParserContext TryRecreateState (XObject xobject, int position)
 		{
-			throw new NotImplementedException ();
+			return
+				TagState.TryRecreateState (xobject, position)
+				?? ClosingTagState.TryRecreateState (xobject, position)
+				?? CommentState.TryRecreateState (xobject, position)
+				?? CDataState.TryRecreateState (xobject, position)
+				?? DocTypeState.TryRecreateState (xobject, position)
+				?? ProcessingInstructionState.TryRecreateState (xobject, position)
+				?? TextState.TryRecreateState (xobject, position)
+				?? new XmlParserContext {
+					CurrentState = this,
+					Position = xobject.Span.Start,
+					PreviousState = Parent,
+					CurrentStateLength = 0,
+					KeywordBuilder = new System.Text.StringBuilder (),
+					Nodes = NodeStack.FromParents (xobject),
+					StateTag = FREE
+				};
 		}
 	}
 }

@@ -98,5 +98,8 @@ namespace MonoDevelop.Xml.Parser
 			rollback = string.Empty;
 			return Parent;
 		}
+
+		public override XmlParserContext TryRecreateState (XObject xobject, int position)
+			=> throw new InvalidOperationException ("State has no corresponding XObject");
 	}
 }

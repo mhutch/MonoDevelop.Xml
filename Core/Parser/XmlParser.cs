@@ -181,5 +181,16 @@ namespace MonoDevelop.Xml.Parser
 
 		//FIXME: remove this once callers have better APIs to use
 		public IXmlParserContext GetContext () => context;
+
+		/// <summary>
+		/// Efficiently creates a spine parser using information from an existing document. The position of
+		/// the parser is not guaranteed but will not exceed <paramref name="maximumPosition" />.
+		/// </summary>
+		/// <returns></returns>
+		public XmlParser GetSpineParser (XDocument xdocument, int maximumPosition)
+			=> xdocument.FindNodeAtOffset (maximumPosition) is XObject obj
+				&& RootState.TryRecreateState (obj, maximumPosition) is XmlParserContext ctx
+			? new XmlParser (ctx, RootState)
+			: null;
 	}
 }

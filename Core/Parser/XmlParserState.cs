@@ -62,5 +62,7 @@ namespace MonoDevelop.Xml.Parser
 				return (this as XmlRootState) ?? Parent.RootState;
 			}
 		}
+
+		public abstract XmlParserContext TryRecreateState (XObject xobject, int position);
 	}
 }

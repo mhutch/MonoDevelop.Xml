@@ -155,5 +155,56 @@ namespace MonoDevelop.Xml.Parser
 
 			element.End (endOffset);
 		}
+
+		public override XmlParserContext TryRecreateState (XObject xobject, int position)
+		{
+			var fromAtt = AttributeState.TryRecreateState (xobject, position);
+			if (fromAtt != null) {
+				return fromAtt;
+			}
+
+			if (xobject is XElement el && position >= el.Span.Start && position < el.Span.End) {
+
+				// recreating name builder and value builder state is a pain to get right
+				// for now, let parent recreate state at start of tag
+				if (position <= el.NameSpan.End) {
+					return null;
+				}
+
+				// if there are attributes, then at the start of an attribute is also a pretty safe place to recreate state
+				// but if not, let parent recreate state at start of tag
+				if (el.Attributes.First != null && el.Attributes.First.Span.End > position) {
+					return null;
+				}
+
+				int prevStateEnd = el.NameSpan.End;
+				XmlParserState prevState = NameState;
+
+				foreach (var att in el.Attributes) {
+					if (att.Span.End < position) {
+						prevStateEnd = att.Span.End;
+						prevState = AttributeState;
+					} else if (att.Span.End > position) {
+						position = att.Span.Start;
+						break;
+					}
+				}
+
+				var parents = NodeStack.FromParents (el);
+				parents.Push (new XElement (el.Span.Start, el.Name));
+
+				return new XmlParserContext {
+					CurrentState = this,
+					Position = position,
+					PreviousState = prevState,
+					CurrentStateLength = position - prevStateEnd,
+					KeywordBuilder = new StringBuilder (),
+					Nodes = parents,
+					StateTag = FREE
+				};
+			}
+
+			return null;
+		}
 	}
 }

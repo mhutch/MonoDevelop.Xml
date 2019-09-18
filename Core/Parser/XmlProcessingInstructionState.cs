@@ -63,5 +63,25 @@ namespace MonoDevelop.Xml.Parser
 			
 			return null;
 		}
+
+		public override XmlParserContext TryRecreateState (XObject xobject, int position)
+		{
+			if (xobject is XProcessingInstruction pi && position >= pi.Span.Start + STARTOFFSET && position < pi.Span.End) {
+				var parents = NodeStack.FromParents (pi);
+				parents.Push (new XProcessingInstruction (pi.Span.Start));
+
+				return new XmlParserContext {
+					CurrentState = this,
+					Position = position,
+					PreviousState = Parent,
+					CurrentStateLength = position - pi.Span.Start + STARTOFFSET,
+					KeywordBuilder = new System.Text.StringBuilder (),
+					StateTag = position == pi.Span.End - 2? QUESTION : NOMATCH,
+					Nodes = parents
+				};
+			}
+
+			return null;
+		}
 	}
 }

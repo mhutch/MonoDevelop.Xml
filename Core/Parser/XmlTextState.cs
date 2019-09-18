@@ -64,5 +64,29 @@ namespace MonoDevelop.Xml.Parser
 			
 			return null;
 		}
+
+		public override XmlParserContext TryRecreateState (XObject xobject, int position)
+		{
+			if (xobject is XText text && position >= text.Span.Start && position < text.Span.End) {
+				var parents = NodeStack.FromParents (text);
+				parents.Push (new XText (text.Span.Start));
+
+				var sb = new System.Text.StringBuilder (text.Text);
+				// truncate to length
+				sb.Length = position - text.Span.Start;
+
+				return new XmlParserContext {
+					CurrentState = this,
+					Position = position,
+					PreviousState = Parent,
+					CurrentStateLength = sb.Length,
+					KeywordBuilder = sb,
+					Nodes = parents,
+					StateTag = position
+				};
+			}
+
+			return null;
+		}
 	}
 }

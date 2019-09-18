@@ -70,19 +70,18 @@ namespace MonoDevelop.Xml.Parser
 			return new NodeStack (copies);
 		}
 
-		internal static NodeStack FromNode (XNode fromNode)
+		internal static NodeStack FromParents (XObject fromObject)
 		{
 			var newStack = new NodeStack ();
 
-			// nodes should only be parented to other nodes, if this cast fails something is wrong
-			DepthFirstAddParentsToStack ((XNode)fromNode.Parent);
+			DepthFirstAddParentsToStack (fromObject);
 
-			void DepthFirstAddParentsToStack (XNode n)
+			void DepthFirstAddParentsToStack (XObject o)
 			{
-				if (n.Parent != null) {
-					DepthFirstAddParentsToStack ((XNode)n.Parent);
+				if (o.Parent is XObject parent) {
+					DepthFirstAddParentsToStack (parent);
+					newStack.Push (parent.ShallowCopy ());
 				}
-				newStack.Push ((XNode)n.ShallowCopy ());
 			}
 
 			return newStack;

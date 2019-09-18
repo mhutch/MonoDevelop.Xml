@@ -83,5 +83,8 @@ namespace MonoDevelop.Xml.Parser
 			context.Diagnostics?.LogError ($"Unexpected character '{c}' in name", context.Position);
 			return Parent;
 		}
+
+		public override XmlParserContext TryRecreateState (XObject xobject, int position)
+			=> throw new InvalidOperationException ("State has no corresponding XObject");
 	}
 }
