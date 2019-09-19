@@ -58,8 +58,11 @@ namespace MonoDevelop.Xml.Parser
 			context.Nodes.Push (RootState.CreateDocument ());
 		}
 
-		XmlParser (XmlParserContext context, XmlRootState rootState)
+		public XmlParser (XmlParserContext context, XmlRootState rootState)
 		{
+			if (context.BuildTree) {
+				throw new ArgumentException ("When re-using existing context, it cannot be in tree mode");
+			}
 			this.context = context;
 			RootState = rootState;
 		}
@@ -188,7 +191,7 @@ namespace MonoDevelop.Xml.Parser
 		/// </summary>
 		/// <returns></returns>
 		public XmlParser GetSpineParser (XDocument xdocument, int maximumPosition)
-			=> xdocument.FindNodeAtOffset (maximumPosition) is XObject obj
+			=> xdocument.FindNodeAtOrBeforeOffset (maximumPosition) is XObject obj
 				&& RootState.TryRecreateState (obj, maximumPosition) is XmlParserContext ctx
 			? new XmlParser (ctx, RootState)
 			: null;

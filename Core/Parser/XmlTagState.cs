@@ -163,8 +163,13 @@ namespace MonoDevelop.Xml.Parser
 				return fromAtt;
 			}
 
-			if (xobject is XElement el && position >= el.Span.Start && position < el.Span.End) {
+			// we can also recreate state for attributes within the tag, if the attribute state didn't
+			var el = xobject as XElement;
+			if (el == null && xobject is XAttribute a) {
+				el = (XElement) a.Parent;
+			}
 
+			if (el != null && position >= el.Span.Start && position < el.Span.End) {
 				// recreating name builder and value builder state is a pain to get right
 				// for now, let parent recreate state at start of tag
 				if (position <= el.NameSpan.End) {
@@ -173,9 +178,11 @@ namespace MonoDevelop.Xml.Parser
 
 				// if there are attributes, then at the start of an attribute is also a pretty safe place to recreate state
 				// but if not, let parent recreate state at start of tag
-				if (el.Attributes.First != null && el.Attributes.First.Span.End > position) {
+				if (el.Attributes.First == null) {
 					return null;
 				}
+
+				var newEl = new XElement (el.Span.Start, el.Name);
 
 				int prevStateEnd = el.NameSpan.End;
 				XmlParserState prevState = NameState;
@@ -184,14 +191,18 @@ namespace MonoDevelop.Xml.Parser
 					if (att.Span.End < position) {
 						prevStateEnd = att.Span.End;
 						prevState = AttributeState;
-					} else if (att.Span.End > position) {
+						//spine parser is currently expected to have attributes
+						newEl.Attributes.AddAttribute ((XAttribute)att.ShallowCopy ());
+						continue;
+					}
+					if (att.Span.End > position) {
 						position = att.Span.Start;
 						break;
 					}
 				}
 
 				var parents = NodeStack.FromParents (el);
-				parents.Push (new XElement (el.Span.Start, el.Name));
+				parents.Push (newEl);
 
 				return new XmlParserContext {
 					CurrentState = this,
