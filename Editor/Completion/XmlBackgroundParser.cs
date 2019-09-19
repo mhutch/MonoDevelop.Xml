@@ -5,7 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.VisualStudio.Text;
+
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Parser;
 
@@ -15,12 +17,9 @@ namespace MonoDevelop.Xml.Editor.Completion
 		: BackgroundParser<TResult>, IXmlBackgroundParser
 		where TResult : XmlParseResult
 	{
-		ForwardParserCache<XmlParser> spineCache;
-
 		protected override void Initialize ()
 		{
 			StateMachine = CreateParserStateMachine ();
-			spineCache = new ForwardParserCache<XmlParser> (new XmlParser (StateMachine, false), Buffer);
 			Buffer.Properties.AddProperty (typeof (IXmlBackgroundParser), this);
 		}
 
@@ -29,11 +28,58 @@ namespace MonoDevelop.Xml.Editor.Completion
 		// the state machine does not store any state itself, so we can re-use it
 		protected XmlRootState StateMachine { get; private set; }
 
-		// this is intended to be called from the UI thread
+		static int MaximumCompatiblePosition (ITextSnapshot snapshotA, ITextSnapshot snapshotB)
+		{
+			var newVersion = snapshotA.Version;
+			var oldVersion = snapshotB.Version;
+			if (newVersion.VersionNumber < oldVersion.VersionNumber) {
+				var v = newVersion;
+				newVersion = oldVersion;
+				oldVersion = v;
+			}
+
+			int position = Math.Min (newVersion.Length, oldVersion.Length);
+			while (newVersion.VersionNumber != oldVersion.VersionNumber) {
+				foreach (var change in oldVersion.Changes) {
+					if (change.OldPosition > position) {
+						position = change.OldPosition;
+						break;
+					}
+				}
+				oldVersion = oldVersion.Next;
+			}
+
+			return position;
+		}
+
 		public XmlParser GetSpineParser (SnapshotPoint point)
 		{
-			spineCache.UpdatePosition (point.Position);
-			return spineCache.Parser;
+			XmlParser parser = null;
+
+			var prevParse = LastParseResult;
+			if (prevParse != null) {
+				var startPos = Math.Min (point.Position, MaximumCompatiblePosition (prevParse.TextSnapshot, point.Snapshot));
+				if (startPos > 0) {
+					var obj = prevParse.XDocument.FindNodeAtOrBeforeOffset (startPos);
+					var state = StateMachine.TryRecreateState (obj, startPos);
+					if (state != null) {
+						LoggingService.LogDebug ($"XML parser recovered {state.Position}/{point.Position} state");
+						parser = new XmlParser (state, StateMachine);
+					}
+				}
+			}
+
+			if (parser == null) {
+				LoggingService.LogDebug ($"XML parser failed to recover any state");
+				parser = new XmlParser (StateMachine, false);
+			}
+
+			var end = Math.Min (point.Position, point.Snapshot.Length);
+			for (int i = parser.Position; i < end; i++) {
+				parser.Push (point.Snapshot[i]);
+			}
+
+			return parser;
 		}
 
 		Task<XmlParseResult> IXmlBackgroundParser.GetOrParseAsync (ITextSnapshot snapshot, CancellationToken token)
@@ -89,7 +135,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				for (int i = 0; i < length; i++) {
 					parser.Push (snapshot[i]);
 				}
-				return new XmlParseResult (parser.Nodes.GetRoot (), parser.Diagnostics);
+				return new XmlParseResult (parser.Nodes.GetRoot (), parser.Diagnostics, snapshot);
 			});
 		}
 
@@ -102,13 +148,15 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 	public class XmlParseResult
 	{
-		public XmlParseResult (XDocument xDocument, List<XmlDiagnosticInfo> diagnostics)
+		public XmlParseResult (XDocument xDocument, List<XmlDiagnosticInfo> diagnostics, ITextSnapshot textSnapshot)
 		{
 			XDocument = xDocument;
 			Diagnostics = diagnostics;
+			TextSnapshot = textSnapshot;
 		}
 
-        public List<XmlDiagnosticInfo> Diagnostics { get; }
-        public XDocument XDocument { get; }
-    }
+		public List<XmlDiagnosticInfo> Diagnostics { get; }
+		public XDocument XDocument { get; }
+		public ITextSnapshot TextSnapshot { get; }
+	}
 }

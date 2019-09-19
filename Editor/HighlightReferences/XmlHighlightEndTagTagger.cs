@@ -37,9 +37,6 @@ namespace MonoDevelop.MSBuild.Editor.HighlightReferences
 				return Empty;
 			}
 
-			// parser is not currently threadsafe
-			await JoinableTaskContext.Factory.SwitchToMainThreadAsync (token);
-
 			var spine = parser.GetSpineParser (caretLocation);
 			if (!(spine.CurrentState is XmlNameState) || !(spine.CurrentState.Parent is XmlTagState || spine.CurrentState.Parent is XmlClosingTagState)) {
 				return Empty;
