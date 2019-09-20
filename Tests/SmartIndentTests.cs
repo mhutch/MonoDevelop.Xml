@@ -46,6 +46,7 @@ namespace MonoDevelop.Xml.Tests
 			var options = new TestEditorOptions ();
 			options.SetOptionValue (DefaultOptions.ConvertTabsToSpacesOptionId, true);
 			options.SetOptionValue (DefaultOptions.IndentSizeOptionId, 4);
+			options.SetOptionValue (DefaultOptions.TabSizeOptionId, 4);
 
 			var smartIndent = new TestSmartIndent (textView, options);
 			var indent = smartIndent.GetDesiredIndentation (line);
