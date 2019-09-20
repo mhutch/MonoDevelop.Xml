@@ -71,8 +71,7 @@ namespace MonoDevelop.Xml.Editor.Commands
 				var indent = SmartIndentService.GetDesiredIndentation (args.TextView, nextLine);
 				if (indent != null) {
 					edit = args.SubjectBuffer.CreateEdit ();
-					//FIXME support tabs
-					edit.Insert (nextLine.Start.Position, new string (' ', indent.Value));
+					edit.Insert (nextLine.Start.Position, GetIndentString (indent.Value, args.TextView.Options));
 					s = edit.Apply ();
 				}
 				transaction.Complete ();
@@ -82,6 +81,21 @@ namespace MonoDevelop.Xml.Editor.Commands
 			args.TextView.Caret.MoveTo (new SnapshotPoint (s, p));
 
 			nextCommandHandler ();
+		}
+
+		static string GetIndentString (int indent, IEditorOptions options)
+		{
+			if (options.IsConvertTabsToSpacesEnabled ()) {
+				return new string (' ', indent);
+			}
+			var tabSize = options.GetTabSize ();
+			int tabs = indent / tabSize;
+			int spaces = indent - tabs * tabSize;
+			var indentStr = new string ('\t', tabs);
+			if (spaces > 0) {
+				indentStr += new string (' ', spaces);
+			}
+			return indentStr;
 		}
 
 		public CommandState GetCommandState (ReturnKeyCommandArgs args, Func<CommandState> nextCommandHandler)

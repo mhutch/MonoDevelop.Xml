@@ -42,20 +42,17 @@ namespace MonoDevelop.MSBuild.Editor.SmartIndent
 			var parser = GetParser ();
 
 			var indentSize = options.GetIndentSize ();
-			var tabsToSpaces = options.IsConvertTabsToSpacesEnabled ();
+			var tabSize = options.GetTabSize ();
 
 			//calculate the delta between the previous line's expected and actual indent
 			int? previousIndentDelta = null;
 
-			//FIXME: make this work with tabs
-			if (tabsToSpaces) {
-				// find a preceding non-empty line so we don't get confused by blank lines with virtual indents
-				var previousLine = GetPreviousNonEmptyLine (line);
-				if (previousLine != null) {
-					var previousExpectedIndent = GetLineExpectedIndent (previousLine, parser, indentSize);
-					var previousActualIndent = GetLineActualIndent (previousLine);
-					previousIndentDelta = previousActualIndent - previousExpectedIndent;
-				}
+			// find a preceding non-empty line so we don't get confused by blank lines with virtual indents
+			var previousLine = GetPreviousNonEmptyLine (line);
+			if (previousLine != null) {
+				var previousExpectedIndent = GetLineExpectedIndent (previousLine, parser, indentSize);
+				var previousActualIndent = GetLineActualIndent (previousLine, tabSize);
+				previousIndentDelta = previousActualIndent - previousExpectedIndent;
 			}
 
 			var indent = GetLineExpectedIndent (line, parser, indentSize);
@@ -84,18 +81,22 @@ namespace MonoDevelop.MSBuild.Editor.SmartIndent
 			return null;
 		}
 
-		protected virtual int GetLineActualIndent (ITextSnapshotLine line)
+		protected virtual int GetLineActualIndent (ITextSnapshotLine line, int tabSize)
 		{
 			int actualIndent = 0;
 			int start = line.Start.Position;
 			int length = line.Length;
 			var snapshot = line.Snapshot;
 			for (int i = start; i < start + length; i++) {
-				if (snapshot[i] == ' ') {
+				switch (snapshot[i]) {
+				case ' ':
 					actualIndent++;
-				} else {
-					break;
+					continue;
+				case '\t':
+					actualIndent += tabSize;
+					continue;
 				}
+				break;
 			}
 			return actualIndent;
 		}
