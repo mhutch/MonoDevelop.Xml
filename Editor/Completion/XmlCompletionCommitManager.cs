@@ -21,7 +21,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 	class XmlCompletionCommitManager : IAsyncCompletionCommitManager
 	{
 		static readonly char[] allCommitChars = { '>', '/', '=', ' ', ';', '"', '\'' };
-		static readonly char[] attributeCommitChars = { '>', '/', '=', ' ' };
+		static readonly char[] attributeCommitChars = { '=', ' ', '"', '\'' };
 		static readonly char[] tagCommitChars = { '>', '/', ' ' };
 		static readonly char[] entityCommitChars = { ';' };
 		static readonly char[] attributeValueCommitChars = { '"', '\'' };
@@ -150,8 +150,8 @@ namespace MonoDevelop.Xml.Editor.Completion
 						braceManager.PostTypeChar (quoteChar);
 					}
 
-					//if there was no typed char, explicitly re-trigger completion for the attribute value
-					if (typedChar == '\0') {
+					//if it was committed with double-click or enter, explicitly re-trigger completion for the attribute value
+					if (typedChar == '\0' || typedChar == '\n') {
 						RetriggerCompletion (session.TextView);
 					}
 
