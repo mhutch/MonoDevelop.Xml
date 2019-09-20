@@ -103,12 +103,17 @@ namespace MonoDevelop.MSBuild.Editor.SmartIndent
 		protected virtual int GetLineExpectedIndent (ITextSnapshotLine line, TParser parser, int indentSize)
 		{
 			//create a lightweight tree parser, which will actually close nodes
-			var startParser = parser.GetSpineParser (line.Start);
-			var startNodes = startParser.Nodes.ToList ();
-			var startState = startParser.CurrentState;
+			var spineParser = parser.GetSpineParser (line.Start);
+			var startNodes = spineParser.Nodes.ToList ();
+			var startState = spineParser.CurrentState;
 			startNodes.Reverse ();
 
-			var endNodes = parser.GetSpineParser (line.End).Nodes.ToList ();
+			//advance the parser to the end of the line
+			for (int i = line.Start.Position; i < line.End.Position; i++) {
+				spineParser.Push (line.Snapshot[i]);
+			}
+
+			var endNodes = spineParser.Nodes.ToList ();
 			endNodes.Reverse ();
 
 			//count the number of elements in the stack at the start of the line
