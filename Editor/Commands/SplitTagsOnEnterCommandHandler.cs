@@ -23,10 +23,10 @@ namespace MonoDevelop.Xml.Editor.Commands
 	class SplitTagsOnEnterCommandHandler : IChainedCommandHandler<ReturnKeyCommandArgs>
 	{
 		[Import]
-		ISmartIndentationService smartIndentService;
+		ISmartIndentationService SmartIndentService { get; set; }
 
 		[Import]
-		ITextBufferUndoManagerProvider undoManagerProvider;
+		ITextBufferUndoManagerProvider UndoManagerProvider { get; set; }
 
 		const string Name = nameof (SplitTagsOnEnterCommandHandler);
 
@@ -34,7 +34,7 @@ namespace MonoDevelop.Xml.Editor.Commands
 
 		public void ExecuteCommand (ReturnKeyCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
 		{
-			if (smartIndentService == null) {
+			if (SmartIndentService == null) {
 				nextCommandHandler ();
 				return;
 			}
@@ -45,14 +45,14 @@ namespace MonoDevelop.Xml.Editor.Commands
 
 			// we could be smarter about actually analyzing the XML and creating good undo transactions.
 			// right now it just looks for the caret being between "></" and moves the rest of the line
-			// onto an indented new line before letting the normal handler run.
+			// onto an indented new line before letting the normal handler run
 			bool betweenTags = p > 0 && (p + 3) < s.Length && s[p - 1] == '>' && s[p] == '<' && s[p + 1] == '/';
 			if (!betweenTags) {
 				nextCommandHandler ();
 				return;
 			}
 
-			var undoManager = undoManagerProvider.GetTextBufferUndoManager (args.SubjectBuffer);
+			var undoManager = UndoManagerProvider.GetTextBufferUndoManager (args.SubjectBuffer);
 			using (var transaction = undoManager.TextBufferUndoHistory.CreateTransaction ("Split Tags")) {
 				string lineBreakText = null;
 				var currentLine = s.GetLineFromPosition (p);
@@ -68,7 +68,7 @@ namespace MonoDevelop.Xml.Editor.Commands
 				s = edit.Apply ();
 
 				var nextLine = s.GetLineFromLineNumber (currentLine.LineNumber + 1);
-				var indent = smartIndentService.GetDesiredIndentation (args.TextView, nextLine);
+				var indent = SmartIndentService.GetDesiredIndentation (args.TextView, nextLine);
 				if (indent != null) {
 					edit = args.SubjectBuffer.CreateEdit ();
 					//FIXME support tabs
