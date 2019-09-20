@@ -12,11 +12,9 @@ using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Editor.Completion;
 using MonoDevelop.Xml.Parser;
 
-namespace MonoDevelop.MSBuild.Editor.SmartIndent
+namespace MonoDevelop.Xml.Editor.SmartIndent
 {
-	public class XmlSmartIndent<TParser, TResult> : ISmartIndent
-		where TParser : XmlBackgroundParser<TResult>, new()
-		where TResult : XmlParseResult
+	class XmlSmartIndent : ISmartIndent
 	{
 		readonly ITextView textView;
 		readonly IEditorOptions options;
@@ -34,12 +32,12 @@ namespace MonoDevelop.MSBuild.Editor.SmartIndent
 		{
 		}
 
-		protected TParser GetParser () => BackgroundParser<TResult>.GetParser<TParser> ((ITextBuffer2)textView.TextBuffer);
-
 		//FIXME: make this smarter, it's very simple right now
 		public virtual int? GetDesiredIndentation (ITextSnapshotLine line)
 		{
-			var parser = GetParser ();
+			if (!XmlBackgroundParser.TryGetParser (textView.TextBuffer, out var parser)) {
+				return null;
+			}
 
 			var indentSize = options.GetIndentSize ();
 			var tabSize = options.GetTabSize ();
@@ -101,7 +99,7 @@ namespace MonoDevelop.MSBuild.Editor.SmartIndent
 			return actualIndent;
 		}
 
-		protected virtual int GetLineExpectedIndent (ITextSnapshotLine line, TParser parser, int indentSize)
+		protected virtual int GetLineExpectedIndent (ITextSnapshotLine line, IXmlBackgroundParser parser, int indentSize)
 		{
 			//create a lightweight tree parser, which will actually close nodes
 			var spineParser = parser.GetSpineParser (line.Start);
