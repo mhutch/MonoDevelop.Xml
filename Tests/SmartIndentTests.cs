@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using Microsoft.VisualStudio.MiniEditor;
 using Microsoft.VisualStudio.Text.Editor;
 
-using MonoDevelop.MSBuild.Editor.SmartIndent;
+using MonoDevelop.Xml.Editor.SmartIndent;
 using MonoDevelop.Xml.Editor.Completion;
 using MonoDevelop.Xml.Tests.Completion;
 using MonoDevelop.Xml.Tests.EditorTestHelpers;
@@ -48,17 +48,9 @@ namespace MonoDevelop.Xml.Tests
 			options.SetOptionValue (DefaultOptions.IndentSizeOptionId, 4);
 			options.SetOptionValue (DefaultOptions.TabSizeOptionId, 4);
 
-			var smartIndent = new TestSmartIndent (textView, options);
+			var smartIndent = new XmlSmartIndent (textView, options);
 			var indent = smartIndent.GetDesiredIndentation (line);
 			Assert.AreEqual (expectedIndent, indent);
-		}
-	}
-
-	class TestSmartIndent : XmlSmartIndent<XmlBackgroundParser, XmlParseResult>
-	{
-		public TestSmartIndent (ITextView textView, IEditorOptions options) : base (textView, options)
-		{
-
 		}
 	}
 

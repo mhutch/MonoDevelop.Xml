@@ -34,7 +34,7 @@ using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
 {
-	public class XmlParser : ICloneable, IForwardParser
+	public class XmlParser : ICloneable
 	{
 		readonly XmlParserContext context;
 
