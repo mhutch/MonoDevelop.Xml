@@ -3,11 +3,13 @@
 
 using System;
 using System.Collections.Generic;
+
 using Microsoft.VisualStudio.MiniEditor;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 
-using MonoDevelop.Xml.Editor.SmartIndent;
 using MonoDevelop.Xml.Editor.Completion;
+using MonoDevelop.Xml.Editor.SmartIndent;
 using MonoDevelop.Xml.Tests.Completion;
 using MonoDevelop.Xml.Tests.EditorTestHelpers;
 
@@ -42,6 +44,7 @@ namespace MonoDevelop.Xml.Tests
 
 			var textView = CreateTextView (doc);
 			var line = textView.TextBuffer.CurrentSnapshot.GetLineFromPosition (caretPos);
+			BackgroundParser<XmlParseResult>.GetParser<XmlBackgroundParser> ((ITextBuffer2)textView.TextBuffer);
 
 			var options = new TestEditorOptions ();
 			options.SetOptionValue (DefaultOptions.ConvertTabsToSpacesOptionId, true);
