@@ -182,8 +182,8 @@ namespace MonoDevelop.Xml.Parser
 
 		public List<XmlDiagnosticInfo> Diagnostics => context.Diagnostics;
 
-		//FIXME: remove this once callers have better APIs to use
-		public IXmlParserContext GetContext () => context;
+		// this is only meant to be used by static methods on the states
+		internal IXmlParserContext GetContext () => context;
 
 		/// <summary>
 		/// Efficiently creates a spine parser using information from an existing document. The position of

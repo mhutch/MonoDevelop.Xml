@@ -32,14 +32,14 @@ namespace MonoDevelop.Xml.Parser
 {
 	public class XmlAttributeValueState : XmlParserState
 	{
-		internal const int FREE = 0;
-		internal const int UNQUOTED = 1;
-		internal const int SINGLEQUOTE = 2;
-		internal const int DOUBLEQUOTE = 3;
+		const int FREE = 0;
+		const int UNQUOTED = 1;
+		const int SINGLEQUOTE = 2;
+		const int DOUBLEQUOTE = 3;
 
 		//derived classes should use these if they need to store info in the tag
-		internal protected const int TagMask = 3;
-		internal protected const int TagShift = 2;
+		protected const int TagMask = 3;
+		protected const int TagShift = 2;
 
 		public override XmlParserState PushChar (char c, IXmlParserContext context, ref string rollback)
 		{
@@ -101,5 +101,14 @@ namespace MonoDevelop.Xml.Parser
 
 		public override XmlParserContext TryRecreateState (XObject xobject, int position)
 			=> throw new InvalidOperationException ("State has no corresponding XObject");
+
+		public static char? GetDelimiterChar (XmlParser parser)
+			=> parser.CurrentState is XmlAttributeValueState
+			? (parser.GetContext().StateTag & TagMask) switch {
+				SINGLEQUOTE => '\'',
+				DOUBLEQUOTE => '"',
+				_ => (char?) null
+			}
+			: null;
 	}
 }

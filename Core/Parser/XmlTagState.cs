@@ -36,10 +36,10 @@ namespace MonoDevelop.Xml.Parser
 	{
 		const int STARTOFFSET = 1; // <
 
-		internal const int ATTEMPT_RECOVERY = 1;
-		internal const int RECOVERY_FOUND_WHITESPACE = 2;
-		internal const int MAYBE_SELF_CLOSING = 2;
-		internal const int FREE = 0;
+		const int ATTEMPT_RECOVERY = 1;
+		const int RECOVERY_FOUND_WHITESPACE = 2;
+		const int MAYBE_SELF_CLOSING = 2;
+		const int FREE = 0;
 
 		readonly XmlAttributeState AttributeState;
 		readonly XmlNameState NameState;
@@ -217,5 +217,7 @@ namespace MonoDevelop.Xml.Parser
 
 			return null;
 		}
+
+		public static bool IsFree (XmlParser parser) => parser.CurrentState is XmlTagState && parser.GetContext ().StateTag == FREE;
 	}
 }

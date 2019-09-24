@@ -281,21 +281,12 @@ namespace MonoDevelop.Xml.Editor.Completion
 			int currentPosition = caretPosition.Position;
 			int lineStart = caretPosition.Snapshot.GetLineFromPosition (currentPosition).Start.Position;
 			int expressionStart = currentPosition - spineAtCaret.CurrentStateLength;
-			if (spineAtCaret.CurrentState is XmlAttributeValueState && GetAttributeValueDelimiter (spineAtCaret) != 0) {
+			if (XmlAttributeValueState.GetDelimiterChar (spineAtCaret).HasValue) {
 				expressionStart += 1;
 			}
 			int start = Math.Max (expressionStart, lineStart);
 			var expression = caretPosition.Snapshot.GetText (start, currentPosition - start);
 			return expression;
-		}
-
-		static char GetAttributeValueDelimiter (XmlParser parser)
-		{
-			switch (parser.GetContext ().StateTag) {
-			case XmlAttributeValueState.DOUBLEQUOTE: return '"';
-			case XmlAttributeValueState.SINGLEQUOTE: return '\'';
-			default: return (char)0;
-			}
 		}
 
 		CompletionItem cdataItem, commentItem, prologItem;

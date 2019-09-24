@@ -1,4 +1,4 @@
-﻿// 
+// 
 // XmlAttributeState.cs
 // 
 // Author:
@@ -27,6 +27,7 @@
 //
 
 using System.Diagnostics;
+
 using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
@@ -127,5 +128,7 @@ namespace MonoDevelop.Xml.Parser
 			// for now, let parent recreate state at start of attribute
 			return null;
 		}
+
+		public static bool IsExpectingQuote (XmlParser parser) => parser.CurrentState is XmlAttributeState && parser.GetContext ().StateTag == GETTINGVAL;
 	}
 }

@@ -33,13 +33,13 @@ namespace MonoDevelop.Xml.Parser
 {
 	public class XmlRootState : XmlParserState
 	{
-		internal const int FREE = 0;
-		internal const int BRACKET = FREE + 1;
-		internal const int BRACKET_EXCLAM = BRACKET + 1;
-		internal const int COMMENT = BRACKET_EXCLAM + 1;
-		internal const int CDATA = COMMENT + 1;
-		internal const int DOCTYPE = CDATA + 1;
-		internal const int MAXCONST = DOCTYPE;
+		const int FREE = 0;
+		const int BRACKET = FREE + 1;
+		const int BRACKET_EXCLAM = BRACKET + 1;
+		const int COMMENT = BRACKET_EXCLAM + 1;
+		const int CDATA = COMMENT + 1;
+		const int DOCTYPE = CDATA + 1;
+		const int MAXCONST = DOCTYPE;
 
 		public XmlRootState () : this (new XmlTagState (), new XmlClosingTagState ()) { }
 
@@ -217,5 +217,12 @@ namespace MonoDevelop.Xml.Parser
 					StateTag = FREE
 				};
 		}
+
+		public static bool IsFree (XmlParser parser) => parser.CurrentState is XmlRootState && parser.GetContext ().StateTag == FREE;
+		public static bool MaybeTag (XmlParser parser) => parser.CurrentState is XmlRootState && parser.GetContext ().StateTag == BRACKET;
+		internal static bool MaybeCData (XmlParser parser) => parser.CurrentState is XmlRootState && parser.GetContext ().StateTag == CDATA;
+		internal static bool MaybeDocType (XmlParser parser) => parser.CurrentState is XmlRootState && parser.GetContext ().StateTag == DOCTYPE;
+		internal static bool MaybeComment (XmlParser parser) => parser.CurrentState is XmlRootState && parser.GetContext ().StateTag == COMMENT;
+		internal static bool MaybeCDataOrCommentOrDocType (XmlParser parser) => parser.CurrentState is XmlRootState && parser.GetContext ().StateTag == BRACKET_EXCLAM;
 	}
 }

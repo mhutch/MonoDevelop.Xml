@@ -4,4 +4,5 @@
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo ("MonoDevelop.Xml")]
+[assembly: InternalsVisibleTo ("MonoDevelop.Xml.Tests")]
 [assembly: InternalsVisibleTo ("MonoDevelop.Xml.Editor")]

@@ -12,7 +12,6 @@ namespace MonoDevelop.Xml.Editor.Completion
 		//FIXME: the length should do a readahead to capture the whole token
 		public static (XmlCompletionTrigger kind, int length) GetTrigger (XmlParser spine, XmlTriggerReason reason, char typedCharacter)
 		{
-			int stateTag = spine.GetContext ().StateTag;
 			bool isExplicit = reason == XmlTriggerReason.Invocation;
 			bool isTypedChar = reason == XmlTriggerReason.TypedChar;
 			bool isBackspace = reason == XmlTriggerReason.Backspace;
@@ -27,7 +26,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			}
 
 			//auto trigger after < in free space
-			if ((isTypedChar || isBackspace) && spine.CurrentState is XmlRootState && stateTag == XmlRootState.BRACKET) {
+			if ((isTypedChar || isBackspace) && XmlRootState.MaybeTag (spine)) {
 				return (XmlCompletionTrigger.Element, 0);
 			}
 
@@ -42,17 +41,17 @@ namespace MonoDevelop.Xml.Editor.Completion
 			}
 
 			// trigger on explicit invocation after <
-			if (isExplicit && spine.CurrentState is XmlRootState && stateTag == XmlRootState.BRACKET) {
+			if (isExplicit && XmlRootState.MaybeTag (spine)) {
 				return (XmlCompletionTrigger.Element, 0);
 			}
 
 			//doctype/cdata completion, explicit trigger after <! or type ! after <
-			if ((isExplicit || typedCharacter == '!') && spine.CurrentState is XmlRootState && stateTag == XmlRootState.BRACKET_EXCLAM) {
+			if ((isExplicit || typedCharacter == '!') && XmlRootState.MaybeCDataOrCommentOrDocType (spine)) {
 				return (XmlCompletionTrigger.DeclarationOrCDataOrComment, 2);
 			}
 
-			//explicit trigger in existing declaration
-			if (isExplicit && ((spine.CurrentState is XmlRootState && stateTag == XmlRootState.DOCTYPE) || spine.Nodes.Peek () is XDocType)) {
+			//explicit trigger in existing doctype
+			if (isExplicit && (XmlRootState.MaybeDocType (spine) || spine.Nodes.Peek () is XDocType)) {
 				int length = spine.CurrentState is XmlRootState ? spine.CurrentStateLength : spine.Position - ((XDocType)spine.Nodes.Peek ()).Span.Start;
 				return (XmlCompletionTrigger.DocType, length);
 			}
@@ -63,21 +62,18 @@ namespace MonoDevelop.Xml.Editor.Completion
 			}
 
 			//typed space or explicit trigger in tag
-			if ((isExplicit || typedCharacter == ' ') && spine.CurrentState is XmlTagState && stateTag == XmlTagState.FREE) {
+			if ((isExplicit || typedCharacter == ' ') && XmlTagState.IsFree (spine)) {
 				return (XmlCompletionTrigger.Attribute, 0);
 			}
 
 			//attribute value completion
-			if (spine.CurrentState is XmlAttributeValueState) {
-				var kind = stateTag & XmlAttributeValueState.TagMask;
-				if (kind == XmlAttributeValueState.DOUBLEQUOTE || kind == XmlAttributeValueState.SINGLEQUOTE) {
-					//auto trigger on quote regardless
-					if (spine.CurrentStateLength == 1) {
-						return (XmlCompletionTrigger.AttributeValue, 0);
-					}
-					if (isExplicit) {
-						return (XmlCompletionTrigger.AttributeValue, spine.CurrentStateLength - 1);
-					}
+			if (XmlAttributeValueState.GetDelimiterChar (spine).HasValue) {
+				//auto trigger on quote regardless
+				if (spine.CurrentStateLength == 1) {
+					return (XmlCompletionTrigger.AttributeValue, 0);
+				}
+				if (isExplicit) {
+					return (XmlCompletionTrigger.AttributeValue, spine.CurrentStateLength - 1);
 				}
 			}
 
@@ -108,7 +104,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			//explicit invocation in free space
 			if (isExplicit && (
 				spine.CurrentState is XmlTextState
-				|| (spine.CurrentState is XmlRootState && stateTag == XmlRootState.FREE)
+				|| XmlRootState.IsFree (spine)
 			)) {
 				return (XmlCompletionTrigger.ElementWithBracket, 0);
 			}
