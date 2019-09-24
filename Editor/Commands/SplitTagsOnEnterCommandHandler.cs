@@ -28,13 +28,17 @@ namespace MonoDevelop.Xml.Editor.Commands
 		[Import]
 		ITextBufferUndoManagerProvider UndoManagerProvider { get; set; }
 
+
+		[Import]
+		IAsyncCompletionBroker CompletionBroker{ get; set; }
+
 		const string Name = nameof (SplitTagsOnEnterCommandHandler);
 
 		public string DisplayName => Name;
 
 		public void ExecuteCommand (ReturnKeyCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
 		{
-			if (SmartIndentService == null) {
+			if (SmartIndentService == null || CompletionBroker.IsCompletionActive (args.TextView)) {
 				nextCommandHandler ();
 				return;
 			}
