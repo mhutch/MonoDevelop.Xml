@@ -120,43 +120,16 @@ namespace MonoDevelop.Xml.Editor.Completion
 					//FIXME get this from options
 					char quoteChar = typedChar == '\'' ? '\'' : '"';
 
-					var braceManager = GetBraceManager (session.TextView);
-
-					// if we don't have a brace manager, insert the entire =""
-					if (braceManager == null) {
-						Insert (session, buffer, $"{item.InsertText}={quoteChar}{quoteChar}", span);
-						SetCaretSpanOffset (item.InsertText.Length + 2);
-						//explicitly trigger completion for the attribute value
-						RetriggerCompletion (session.TextView);
-						//if the user typed the quote char we're inserting, swallow it so they don't end up mismatched
-						return typedChar == quoteChar? CommitSwallowChar : CommitResult.Handled;
-					}
-
-					//we have a brace manager. first commit without the quotes.
-					Insert (session, buffer, $"{item.InsertText}=", span);
-					SetCaretSpanOffset (item.InsertText.Length + 1);
-
-					// if the user typed a quote char, simply let it through and the brace manager will add an overtypeable sibling
-					if (typedChar == '"' || typedChar == '\'') {
-						return CommitResult.Handled;
-					}
-
-					// we have to insert the quote, but worth with the brace manager so it inserts an overtypeable sibling
-					braceManager.PreTypeChar (quoteChar, out bool handled);
-					if (!handled) {
-						var edit = buffer.CreateEdit ();
-						edit.Insert (session.TextView.Caret.Position.BufferPosition, quoteChar.ToString ());
-						edit.Apply ();
-						braceManager.PostTypeChar (quoteChar);
-					}
-
-					//if it was committed with double-click or enter, explicitly re-trigger completion for the attribute value
-					if (typedChar == '\0' || typedChar == '\n') {
-						RetriggerCompletion (session.TextView);
-					}
-
-					//and allow the char the user types go between the quotes
-					return CommitResult.Handled;
+					// previously this code tried to insert the = and feed the " through the brace manager to get a
+					// brace completion session, but that didn't 't work when inserting attributes into existing elements
+					// as VS brace completion only works at the end of the line. now we have a XmlBraceCompletionCommandHandler
+					// that implements custom overtype behaviors, and we can just insert the entire =""
+					Insert (session, buffer, $"{item.InsertText}={quoteChar}{quoteChar}", span);
+					SetCaretSpanOffset (item.InsertText.Length + 2);
+					//explicitly trigger completion for the attribute value
+					RetriggerCompletion (session.TextView);
+					//if the user typed the quote char we're inserting, swallow it so they don't end up mismatched
+					return typedChar == quoteChar? CommitSwallowChar : CommitResult.Handled;
 				}
 			case XmlCompletionItemKind.Element:
 			case XmlCompletionItemKind.AttributeValue: {
