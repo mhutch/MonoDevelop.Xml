@@ -3,11 +3,14 @@
 
 using System;
 using System.Linq;
+using System.Threading.Tasks;
+
 using Microsoft.VisualStudio.MiniEditor;
+using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Editor.Commanding;
-using Microsoft.VisualStudio.Text.Editor.Commanding.Commands;
-using Microsoft.VisualStudio.Text.Operations;
+
 using MonoDevelop.Xml.Tests.EditorTestHelpers;
+
 using NUnit.Framework;
 
 namespace MonoDevelop.Xml.Tests.Completion
@@ -20,9 +23,8 @@ namespace MonoDevelop.Xml.Tests.Completion
 			=> TestEnvironment.EnsureInitialized ();
 
 		[Test]
-		public void SingleClosingTag ()
-		{
-			TestCommands (
+		public Task SingleClosingTag ()
+			=> TestCommands (
 @"<foo>
     <bar>
     $
@@ -31,34 +33,30 @@ namespace MonoDevelop.Xml.Tests.Completion
     <bar>
     </bar>$
 ",
-					(s) => {
-						s.Type ("</b");
-						s.Enter ();
-					}
-				);
-		}
+				(s) => {
+					s.Type ("</b");
+					s.Enter ();
+				}
+			);
 
 		[Test]
-		public void SingleClosingTagSameLine ()
-		{
-			TestCommands (
+		public Task SingleClosingTagSameLine ()
+			=> TestCommands (
 @"<foo>
     <bar>$
 ",
 @"<foo>
     <bar></bar>$
 ",
-					(s) => {
-						s.Type ("</b");
-						s.Enter ();
-					}
-				);
-		}
+				(s) => {
+					s.Type ("</b");
+					s.Enter ();
+				}
+			);
 
 		[Test]
-		public void SingleClosingTagExplicitInvocation ()
-		{
-			TestCommands (
+		public Task SingleClosingTagExplicitInvocation ()
+			=> TestCommands (
 @"<foo>
     <bar>
     $
@@ -67,36 +65,32 @@ namespace MonoDevelop.Xml.Tests.Completion
     <bar>
     </bar>$
 ",
-					(s) => {
-						s.InvokeCompletion ();
-						s.Type ("</b");
-						s.Enter ();
-					}
-				);
-		}
+				(s) => {
+					s.InvokeCompletion ();
+					s.Type ("</b");
+					s.Enter ();
+				}
+			);
 
 		[Test]
-		public void SingleClosingTagSameLineExplicitInvocation ()
-		{
-			TestCommands (
+		public Task SingleClosingTagSameLineExplicitInvocation ()
+			=> TestCommands (
 @"<foo>
     <bar>$
 ",
 @"<foo>
     <bar></bar>$
 ",
-					(s) => {
-						s.InvokeCompletion ();
-						s.Type ("</b");
-						s.Enter ();
-					}
-				);
-		}
+				(s) => {
+					s.InvokeCompletion ();
+					s.Type ("</b");
+					s.Enter ();
+				}
+			);
 
 		[Test]
-		public void MultipleClosingTags ()
-		{
-			TestCommands (
+		public Task MultipleClosingTags ()
+			=> TestCommands (
 @"<foo>
     <bar>
         <baz>
@@ -109,17 +103,15 @@ namespace MonoDevelop.Xml.Tests.Completion
     </bar>
 </foo>$
 ",
-					(s) => {
-						s.Type ("</f");
-						s.Enter ();
-					}
-				);
-		}
+				(s) => {
+					s.Type ("</f");
+					s.Enter ();
+				}
+			);
 
 		[Test]
-		public void MultipleClosingTagsSameLine ()
-		{
-			TestCommands (
+		public Task  MultipleClosingTagsSameLine ()
+			=> TestCommands (
 @"<foo>
     <bar>
         <baz>hello$
@@ -130,18 +122,19 @@ namespace MonoDevelop.Xml.Tests.Completion
     </bar>
 </foo>$
 ",
-					(s) => {
-						s.Type ("</f");
-						s.Enter ();
-					}
-				);
-		}
+				(s) => {
+					s.Type ("</f");
+					s.Enter ();
+				}
+			);
 
-		void TestTypeCommands (string before, string after, string typeChars)
+		Task TestTypeCommands (string before, string after, string typeChars)
 		{
 			// between each separate action, TestCommands will wait for any active completion session to compute its items
 			var actions = typeChars.Split ('^').Select (t => { Action<IEditorCommandHandlerService> a = (s) => s.Type (t); return a; });
-			TestCommands (before, after, actions);
+			return TestCommands (before, after, actions, initialize: (ITextView tv) => {
+				tv.Options.SetOptionValue ("BraceCompletion/Enabled", true);
+			});
 		}
 
 		[Test]
@@ -149,13 +142,15 @@ namespace MonoDevelop.Xml.Tests.Completion
 		[TestCase ("<he^>", "<foo><Hello>$</Hello>")]
 		[TestCase ("<He^ ", "<foo><Hello $")]
 		[TestCase ("<He^<", "<foo><He<$")]
-		public void CommitElement (string typeChars, string after) => TestTypeCommands ("<foo>$", after, typeChars);
+		public Task CommitElement (string typeChars, string after) => TestTypeCommands ("<foo>$", after, typeChars);
 
 		[Test]
 		[TestCase (" T\n", "<Hello There=\"$\"")]
+		[TestCase (" T\n\"", "<Hello There=\"\"$")]
 		[TestCase (" T^=", "<Hello There=$")]
+		[TestCase (" T^=\"", "<Hello There=\"$\"")]
 		[TestCase (" Th^<", "<Hello Th<$")]
 		[TestCase (" Th^ ", "<Hello There $")]
-		public void CommitAttribute (string typeChars, string after) => TestTypeCommands ("<Hello$", after, typeChars);
+		public Task CommitAttribute (string typeChars, string after) => TestTypeCommands ("<Hello$", after, typeChars);
 	}
 }

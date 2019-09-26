@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.Commanding;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.MiniEditor;
@@ -53,41 +54,50 @@ namespace MonoDevelop.Xml.Tests.EditorTestHelpers
 			return (document.Substring (0, caretOffset) + document.Substring (caretOffset + 1), caretOffset);
 		}
 
-		public void TestCommands (
+		public Task TestCommands (
 			string beforeDocumentText, string afterDocumentText,
 			Action<IEditorCommandHandlerService> command,
-			string filename = default, char caretMarkerChar = '$')
+			string filename = default, char caretMarkerChar = '$',
+			Action<ITextView> initialize = null)
 		{
-			TestCommands (beforeDocumentText,
+			return TestCommands (beforeDocumentText,
 				afterDocumentText,
 				new[] { command },
 				filename,
-				caretMarkerChar);
+				caretMarkerChar,
+				initialize);
 		}
 
-		public void TestCommands (
+		public Task TestCommands (
 			string beforeDocumentText, string afterDocumentText,
 			IEnumerable<Action<IEditorCommandHandlerService>> commands,
-			string filename = default, char caretMarkerChar = '$')
+			string filename = default, char caretMarkerChar = '$',
+			Action<ITextView> initialize = null)
 		{
 			int beforeCaretOffset, afterCaretOffset;
 			(beforeDocumentText, beforeCaretOffset) = ExtractCaret (beforeDocumentText, caretMarkerChar);
 			(afterDocumentText, afterCaretOffset) = ExtractCaret (afterDocumentText, caretMarkerChar);
-			TestCommands (
+			return TestCommands (
 				beforeDocumentText, beforeCaretOffset,
 				afterDocumentText, afterCaretOffset,
 				commands,
-				filename);
+				filename,
+				initialize);
 		}
 
-		public void TestCommands (
+		public async Task TestCommands (
 			string beforeDocumentText, int beforeCaretOffset,
 			string afterDocumentText, int afterCaretOffset,
 			IEnumerable<Action<IEditorCommandHandlerService>> commands,
-			string filename = default)
+			string filename = default,
+			Action<ITextView> initialize = null)
 		{
+			await Catalog.JoinableTaskContext.Factory.SwitchToMainThreadAsync ();
+
 			var textView = CreateTextView (beforeDocumentText, filename);
 			textView.Caret.MoveTo (new SnapshotPoint (textView.TextBuffer.CurrentSnapshot, beforeCaretOffset));
+
+			initialize?.Invoke (textView);
 
 			var commandService = Catalog.CommandServiceFactory.GetService (textView);
 

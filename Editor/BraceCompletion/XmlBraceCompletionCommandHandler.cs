@@ -114,6 +114,9 @@ namespace MonoDevelop.Xml.Editor.BraceCompletion
 			Func<XmlParser, bool> condition,
 			int maxChars)
 		{
+			if (parser.Position == snapshot.Length) {
+				return true;
+			}
 			int maxPos = Math.Min (snapshot.Length, Math.Max (parser.Position + maxChars, maxChars));
 			while (parser.Position < maxPos) {
 				char c = snapshot[parser.Position];
