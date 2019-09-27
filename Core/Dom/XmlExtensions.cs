@@ -26,8 +26,25 @@ namespace MonoDevelop.Xml.Dom
 			return att != null && string.Equals (att.Value, "true", StringComparison.OrdinalIgnoreCase);
 		}
 
-		public static XObject FindNodeAtOffset (this XContainer container, int offset)
+		static XAttribute FindAttribute (this IAttributedXObject attContainer, int offset)
 		{
+			foreach (var att in attContainer.Attributes) {
+				if (att.Span.Start > offset) {
+					break;
+				}
+				if (att.Span.Contains (offset)) {
+					return att;
+				}
+			}
+			return null;
+		}
+
+		public static XObject FindAtOffset (this XContainer container, int offset)
+		{
+			if (container.Span.Contains (offset) && container is IAttributedXObject attObj && attObj.FindAttribute (offset) is XAttribute attribute) {
+				return attribute;
+			}
+
 			while (container != null) {
 				XNode lastNodeBeforeOffset = null;
 				foreach (var node in container.Nodes) {
@@ -35,15 +52,8 @@ namespace MonoDevelop.Xml.Dom
 						break;
 					}
 					if (node.Span.Contains (offset)) {
-						if (node is IAttributedXObject attContainer) {
-							foreach (var att in attContainer.Attributes) {
-								if (att.Span.Start > offset) {
-									break;
-								}
-								if (att.Span.Contains (offset)) {
-									return att;
-								}
-							}
+						if (node is IAttributedXObject attContainer && attContainer.FindAttribute (offset) is XAttribute att) {
+							return att;
 						}
 						return node;
 					}
@@ -57,8 +67,12 @@ namespace MonoDevelop.Xml.Dom
 			return null;
 		}
 
-		public static XObject FindNodeAtOrBeforeOffset (this XContainer container, int offset)
+		public static XObject FindAtOrBeforeOffset (this XContainer container, int offset)
 		{
+			if (container.Span.Contains (offset) && container is IAttributedXObject attObj && attObj.FindAttribute (offset) is XAttribute attribute) {
+				return attribute;
+			}
+
 			XNode lastNodeBeforeOffset = null;
 			while (container != null) {
 				foreach (var node in container.Nodes) {
@@ -66,15 +80,8 @@ namespace MonoDevelop.Xml.Dom
 						break;
 					}
 					if (node.Span.Contains (offset)) {
-						if (node is IAttributedXObject attContainer) {
-							foreach (var att in attContainer.Attributes) {
-								if (att.Span.Start > offset) {
-									break;
-								}
-								if (att.Span.Contains (offset)) {
-									return att;
-								}
-							}
+						if (node is IAttributedXObject attContainer && attContainer.FindAttribute (offset) is XAttribute att) {
+							return att;
 						}
 						return node;
 					}

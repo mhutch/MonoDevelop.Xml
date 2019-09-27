@@ -193,7 +193,7 @@ namespace MonoDevelop.Xml.Parser
 		/// </summary>
 		/// <returns></returns>
 		public XmlParser GetSpineParser (XDocument xdocument, int maximumPosition)
-			=> xdocument.FindNodeAtOrBeforeOffset (maximumPosition) is XObject obj
+			=> xdocument.FindAtOrBeforeOffset (maximumPosition) is XObject obj
 				&& RootState.TryRecreateState (obj, maximumPosition) is XmlParserContext ctx
 			? new XmlParser (ctx, RootState)
 			: null;

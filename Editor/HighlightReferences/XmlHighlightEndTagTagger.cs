@@ -44,7 +44,7 @@ namespace MonoDevelop.MSBuild.Editor.HighlightReferences
 
 			var parseResult = await parser.GetOrParseAsync (caretLocation.Snapshot, token).ConfigureAwait (false);
 
-			var node = parseResult.XDocument.RootElement.FindNodeAtOffset (caretLocation.Position);
+			var node = parseResult.XDocument.RootElement.FindAtOffset (caretLocation.Position);
 
 			if (node is XElement element) {
 				if (element.ClosingTag is XClosingTag closingTag && closingTag.IsNamed) {

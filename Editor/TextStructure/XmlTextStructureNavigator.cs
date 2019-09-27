@@ -54,8 +54,8 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 			var lastParse = parser.LastParseResult;
 			List<XObject> nodePath;
 			XmlParser spine = null;
-			if (lastParse.TextSnapshot.Version.VersionNumber == activeSpan.Snapshot.Version.VersionNumber) {
-				var n = lastParse.XDocument.FindNodeAtOrBeforeOffset (activeSpan.Start.Position);
+			if (lastParse != null && lastParse.TextSnapshot.Version.VersionNumber == activeSpan.Snapshot.Version.VersionNumber) {
+				var n = lastParse.XDocument.FindAtOrBeforeOffset (activeSpan.Start.Position);
 				nodePath = n.SelfAndParents.ToList ();
 			} else {
 				spine = parser.GetSpineParser (activeSpan.End);

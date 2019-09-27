@@ -95,7 +95,7 @@ namespace MonoDevelop.Xml.Editor.Commands
 				return;
 			}
 			if (el.Parent != null) {
-				if (lastParseResult.XDocument.FindNodeAtOffset (el.Parent.Span.Start + 1) is XContainer parent) {
+				if (lastParseResult.XDocument.FindAtOffset (el.Parent.Span.Start + 1) is XContainer parent) {
 					foreach (var n in parent.Nodes) {
 						if (n is XClosingTag) {
 							return;
