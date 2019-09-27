@@ -153,12 +153,14 @@ namespace MonoDevelop.Xml.Parser
 				return;
 		}
 
-		object ICloneable.Clone ()
+		public XmlParser Clone ()
 		{
 			if (context.BuildTree)
 				throw new InvalidOperationException ("Parser can only be cloned when in stack mode");
 			return new XmlParser (this);
 		}
+
+		object ICloneable.Clone () => Clone ();
 
 		public XmlParser GetTreeParser ()
 		{

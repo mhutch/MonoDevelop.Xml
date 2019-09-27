@@ -2,10 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -50,7 +48,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			var (kind, _) = XmlCompletionTriggering.GetTrigger (spine, reason.Value, trigger.Character);
 
 			if (kind != XmlCompletionTrigger.None) {
-				List<XObject> nodePath = GetNodePath (spine, triggerLocation.Snapshot);
+				List<XObject> nodePath = spine.GetNodePath (triggerLocation.Snapshot);
 
 				session.Properties.AddProperty (typeof (XmlCompletionTrigger), kind);
 
@@ -71,7 +69,9 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 				case XmlCompletionTrigger.Attribute:
 					IAttributedXObject attributedOb = (spine.Nodes.Peek () as IAttributedXObject) ?? spine.Nodes.Peek (1) as IAttributedXObject;
-					return await GetAttributeCompletionsAsync (session, triggerLocation, nodePath, attributedOb, GetExistingAttributes (spine, triggerLocation.Snapshot, attributedOb), token);
+					spine.Clone ().AdvanceUntilEnded ((XObject)attributedOb, triggerLocation.Snapshot, 1000);
+					var attributes = attributedOb.Attributes.ToDictionary (StringComparer.OrdinalIgnoreCase);
+					return await GetAttributeCompletionsAsync (session, triggerLocation, nodePath, attributedOb, attributes, token);
 
 				case XmlCompletionTrigger.AttributeValue:
 					if (spine.Nodes.Peek () is XAttribute att && spine.Nodes.Peek (1) is IAttributedXObject attributedObject) {
@@ -194,100 +194,10 @@ namespace MonoDevelop.Xml.Editor.Completion
 		CompletionContext CreateCompletionContext (IEnumerable<CompletionItem> items)
 			=> new CompletionContext (ImmutableArray<CompletionItem>.Empty.AddRange (items), null, InitialSelectionHint.SoftSelection);
 
-		protected List<XObject> GetNodePath (XmlParser spine, ITextSnapshot snapshot)
-		{
-			var path = new List<XObject> (spine.Nodes);
-
-			//remove the root XDocument
-			path.RemoveAt (path.Count - 1);
-
-			//complete incomplete XName if present
-			if (spine.CurrentState is XmlNameState && path[0] is INamedXObject) {
-				path[0] = path[0].ShallowCopy ();
-				XName completeName = GetCompleteName (spine, snapshot);
-				((INamedXObject)path[0]).Name = completeName;
-			}
-			path.Reverse ();
-			return path;
-		}
-
-		protected XName GetCompleteName (XmlParser spine, ITextSnapshot snapshot)
-		{
-			Debug.Assert (spine.CurrentState is XmlNameState);
-
-			int end = spine.Position;
-			int start = end - spine.CurrentStateLength;
-			int mid = -1;
-
-			int limit = Math.Min (snapshot.Length, end + 35);
-
-			//try to find the end of the name, but don't go too far
-			for (; end < limit; end++) {
-				char c = snapshot[end];
-
-				if (c == ':') {
-					if (mid == -1)
-						mid = end;
-					else
-						break;
-				} else if (!XmlChar.IsNameChar (c))
-					break;
-			}
-
-			if (mid > 0 && end > mid + 1) {
-				return new XName (snapshot.GetText (start, mid - start), snapshot.GetText (mid + 1, end - mid - 1));
-			}
-			return new XName (snapshot.GetText (start, end - start));
-		}
-
-		static Dictionary<string, string> GetExistingAttributes (XmlParser spineParser, ITextSnapshot snapshot, IAttributedXObject attributedOb)
-		{
-			// clone parser to avoid modifying state
-			spineParser = (XmlParser)((ICloneable)spineParser).Clone ();
-
-			// parse rest of element to get all attributes
-			for (int i = spineParser.Position; i < snapshot.Length; i++) {
-				spineParser.Push (snapshot[i]);
-
-				var currentState = spineParser.CurrentState;
-				switch (spineParser.CurrentState) {
-				case XmlAttributeState _:
-				case XmlAttributeValueState _:
-				case XmlTagState _:
-					continue;
-				case XmlNameState _:
-					if (currentState.Parent is XmlAttributeState) {
-						continue;
-					}
-					break;
-				}
-				break;
-			}
-
-			var existingAtts = new Dictionary<string, string> (StringComparer.OrdinalIgnoreCase);
-			foreach (XAttribute a in attributedOb.Attributes) {
-				existingAtts[a.Name.FullName] = a.Value ?? string.Empty;
-			}
-
-			return existingAtts;
-		}
 
 		protected TParser GetParser () => BackgroundParser<TResult>.GetParser<TParser> ((ITextBuffer2)TextView.TextBuffer);
 
 		protected XmlParser GetSpineParser (SnapshotPoint point) => GetParser ().GetSpineParser (point);
-
-		protected string GetAttributeOrElementValueToCaret (XmlParser spineAtCaret, SnapshotPoint caretPosition)
-		{
-			int currentPosition = caretPosition.Position;
-			int lineStart = caretPosition.Snapshot.GetLineFromPosition (currentPosition).Start.Position;
-			int expressionStart = currentPosition - spineAtCaret.CurrentStateLength;
-			if (XmlAttributeValueState.GetDelimiterChar (spineAtCaret).HasValue) {
-				expressionStart += 1;
-			}
-			int start = Math.Max (expressionStart, lineStart);
-			var expression = caretPosition.Snapshot.GetText (start, currentPosition - start);
-			return expression;
-		}
 
 		CompletionItem cdataItem, commentItem, prologItem;
 		CompletionItem cdataItemWithBracket, commentItemWithBracket, prologItemWithBracket;
