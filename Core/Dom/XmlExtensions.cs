@@ -90,5 +90,10 @@ namespace MonoDevelop.Xml.Dom
 			}
 			return lastNodeBeforeOffset;
 		}
+
+		public static TextSpan? GetAttributesSpan (this IAttributedXObject obj)
+			=> obj.Attributes.First == null
+			? (TextSpan?)null
+			: TextSpan.FromBounds (obj.Attributes.First.Span.Start, obj.Attributes.Last.Span.End);
 	}
 }

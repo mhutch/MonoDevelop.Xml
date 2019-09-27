@@ -53,6 +53,16 @@ namespace MonoDevelop.Xml.Dom
 			}
 		}
 
+		public IEnumerable<XObject> SelfAndParents {
+			get {
+				var next = this;
+				while (next != null) {
+					yield return next;
+					next = next.Parent;
+				}
+			}
+		}
+
 		public TextSpan Span { get; protected set; }
 
 		public void End (int offset)

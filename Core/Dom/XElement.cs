@@ -183,5 +183,17 @@ namespace MonoDevelop.Xml.Dom
 				return base.AllDescendentNodes;
 			}
 		}
+
+		/// <summary>
+		/// The span of the content between this tag and the closing tag. Null if there is no closing tag or it is self closing.
+		/// </summary>
+		public TextSpan? InnerSpan => (ClosingTag == null || IsSelfClosing)
+			? (TextSpan?) null
+			: TextSpan.FromBounds (Span.End, ClosingTag.Span.Start);
+
+		/// <summary>
+		/// The span from the start of this element to the end of its closing tag.
+		/// </summary>
+		public TextSpan OuterSpan => ClosingTag == null? Span : TextSpan.FromBounds (Span.Start, ClosingTag.Span.End);
 	}
 }

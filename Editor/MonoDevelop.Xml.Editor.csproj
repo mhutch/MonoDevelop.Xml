@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
@@ -8,7 +8,6 @@
   <ItemGroup>
     <Compile Remove="BaseXmlEditorExtension.cs" />
     <Compile Remove="XmlEditorOptions.cs" />
-    <Compile Remove="XmlExpandSelectionHandler.cs" />
     <Compile Remove="XmlParsedDocument.cs" />
     <Compile Remove="XmlTextEditorExtension.cs" />
   </ItemGroup>
@@ -16,7 +15,6 @@
   <ItemGroup>
     <None Include="BaseXmlEditorExtension.cs" />
     <None Include="XmlEditorOptions.cs" />
-    <None Include="XmlExpandSelectionHandler.cs" />
     <None Include="XmlParsedDocument.cs" />
     <None Include="XmlTextEditorExtension.cs" />
   </ItemGroup>
