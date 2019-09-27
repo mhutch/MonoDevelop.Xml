@@ -224,5 +224,6 @@ namespace MonoDevelop.Xml.Parser
 		internal static bool MaybeDocType (XmlParser parser) => parser.CurrentState is XmlRootState && parser.GetContext ().StateTag == DOCTYPE;
 		internal static bool MaybeComment (XmlParser parser) => parser.CurrentState is XmlRootState && parser.GetContext ().StateTag == COMMENT;
 		internal static bool MaybeCDataOrCommentOrDocType (XmlParser parser) => parser.CurrentState is XmlRootState && parser.GetContext ().StateTag == BRACKET_EXCLAM;
+		public static bool IsNotFree (XmlParser parser) => parser.CurrentState is XmlRootState && parser.GetContext ().StateTag != FREE;
 	}
 }

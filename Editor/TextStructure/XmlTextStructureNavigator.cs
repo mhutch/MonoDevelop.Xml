@@ -56,16 +56,17 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 			XmlParser spine = null;
 			if (lastParse != null && lastParse.TextSnapshot.Version.VersionNumber == activeSpan.Snapshot.Version.VersionNumber) {
 				var n = lastParse.XDocument.FindAtOrBeforeOffset (activeSpan.Start.Position);
-				nodePath = n.SelfAndParents.ToList ();
+				nodePath = n.GetPath ();
 			} else {
-				spine = parser.GetSpineParser (activeSpan.End);
-				nodePath = spine.GetNodePathWithCompleteLeafElement (activeSpan.Snapshot);
+				//put spine parser in tree parser mode so it connects element closing nodes
+				spine = parser.GetSpineParser (activeSpan.Start).GetTreeParser ();
+				nodePath = spine.AdvanceToNodeEndAndGetNodePath (activeSpan.Snapshot);
 			}
 
 			// this is a little odd because it was ported from MonoDevelop, where it has to maintain its own stack of state
 			// for contract selection. it describes the current semantic selection as a node path, the index of the node in that path
 			// that's selected, and the kind of selection that node has.
-			int selectedNodeIndex = -1;
+			int selectedNodeIndex = nodePath.Count;
 			SelectionLevel selectionLevel = default;
 
 			// keep on expanding the selection until we find one that contains the current selection but is a little bigger
@@ -91,7 +92,7 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 
 		TextSpan? GetSelectionSpan (ITextSnapshot snapshot, List<XObject> nodePath, ref int index, ref SelectionLevel level)
 		{
-			if (index < 0) {
+			if (index < 0 || index >= nodePath.Count) {
 				return null;
 			}
 			var current = nodePath[index];
@@ -124,16 +125,19 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 
 		bool ExpandSelection (List<XObject> nodePath, XmlParser spine, SnapshotSpan activeSpan, ref int index, ref SelectionLevel level)
 		{
-			if (index + 1 == nodePath.Count) {
+			if (index - 1 < 0) {
 				return false;
 			}
 
 			//if an index is selected, we may need to transition level rather than transitioning index
-			if (index >= 0) {
+			if (index < nodePath.Count) {
 				var current = nodePath[index];
 				if (current is XElement element) {
 					switch (level) {
 					case SelectionLevel.Self:
+						if (spine != null && !spine.AdvanceUntilClosed (element, activeSpan.Snapshot, 5000)) {
+							return false;
+						}
 						if (!element.IsSelfClosing) {
 							level = SelectionLevel.OuterElement;
 							return true;
@@ -165,7 +169,7 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 			}
 
 			//advance up the node path
-			index++;
+			index--;
 			var newNode = nodePath[index];
 
 			//determine the starting selection level for the new node
@@ -174,7 +178,7 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 				return true;
 			}
 
-			if (spine != null && !spine.AdvanceUntilClosed (newNode, activeSpan.Snapshot, 5000)) {
+			if (spine != null && !spine.AdvanceUntilEnded (newNode, activeSpan.Snapshot, 5000)) {
 				return false;
 			}
 
@@ -204,6 +208,10 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 				}
 				level = SelectionLevel.Self;
 				return true;
+			}
+
+			if (spine != null && !spine.AdvanceUntilClosed (newNode, activeSpan.Snapshot, 5000)) {
+				return false;
 			}
 
 			if (newNode is XElement el && el.ClosingTag != null) {

@@ -56,5 +56,8 @@ namespace MonoDevelop.Xml.Tests.Completion
 
 		public IEditorCommandHandlerServiceFactory CommandServiceFactory
 			=> Host.GetService<IEditorCommandHandlerServiceFactory> ();
+
+		public ITextStructureNavigatorSelectorService TextStructureNavigatorSelectorService
+			=> Host.GetService<ITextStructureNavigatorSelectorService> ();
 	}
 }

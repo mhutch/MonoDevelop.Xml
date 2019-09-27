@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
@@ -13,7 +13,6 @@
     <ProjectReference Include="..\external\MiniEditor\Microsoft.VisualStudio.MiniEditor\Microsoft.VisualStudio.MiniEditor.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Remove="ExpandSelectionTests.cs" />
     <Compile Remove="Schema\SchemaAssociationTests.cs" />
     <Compile Remove="Schema\XmlSchemaNamespaceTests.cs" />
   </ItemGroup>
@@ -26,7 +25,6 @@
     <EmbeddedResource Include="Schema\XMLSchema.xsd" LogicalName="XMLSchema.xsd" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="ExpandSelectionTests.cs" />
     <None Include="Schema\SchemaAssociationTests.cs" />
     <None Include="Schema\XmlSchemaNamespaceTests.cs" />
   </ItemGroup>

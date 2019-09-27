@@ -38,11 +38,16 @@ namespace MonoDevelop.Xml.Tests.EditorTestHelpers
 
 		public virtual ITextView CreateTextView (string documentText, string filename = null)
 		{
-			var buffer = Catalog.BufferFactoryService.CreateTextBuffer (documentText, ContentType);
+			var buffer = CreateTextBuffer (documentText);
 			if (filename != null) {
 				Catalog.TextDocumentFactoryService.CreateTextDocument (buffer, filename);
 			}
 			return Catalog.TextViewFactory.CreateTextView (buffer);
+		}
+
+		public virtual ITextBuffer CreateTextBuffer (string documentText)
+		{
+			return Catalog.BufferFactoryService.CreateTextBuffer (documentText, ContentType);
 		}
 
 		protected (string document, int caretOffset) ExtractCaret (string document, char caretMarkerChar)

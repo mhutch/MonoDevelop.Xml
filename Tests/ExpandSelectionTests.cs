@@ -25,24 +25,25 @@
 // THE SOFTWARE.
 
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
-using MonoDevelop.Ide;
-using MonoDevelop.Ide.Editor;
-using MonoDevelop.Ide.Editor.Extension;
+using Microsoft.VisualStudio.MiniEditor;
+using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Operations;
 using MonoDevelop.Xml.Editor;
+using MonoDevelop.Xml.Editor.Completion;
+using MonoDevelop.Xml.Tests.Completion;
+using MonoDevelop.Xml.Tests.EditorTestHelpers;
 using NUnit.Framework;
 
 namespace MonoDevelop.Xml.Tests
 {
 	[TestFixture]
-	public class ExpandSelectionTests : TextEditorExtensionTestBase
+	public class ExpandSelectionTests : EditorTestBase
 	{
-		public static EditorExtensionTestData XmlContentData = new EditorExtensionTestData (
-			fileName: "/a.xml",
-			language: "C#",
-			mimeType: "application/xml",
-			projectFileName: "test.csproj"
-		);
+		protected override string ContentTypeName => XmlContentTypeNames.XmlCore;
+
+		protected override (EditorEnvironment, EditorCatalog) InitializeEnvironment () => TestEnvironment.EnsureInitialized ();
 
 		const string Document = @"<!-- this is
 a comment-->
@@ -64,6 +65,8 @@ a comment-->";
 		<!--another comment-->
 	</bar>
 </foo>";
+
+		const string TextNode = "this is some text";
 
 		const string AttributesFoo = @"hello=""hi"" goodbye=""bye""";
 
@@ -93,13 +96,6 @@ a comment-->";
 
 		const string CommentBar = @"<!--another comment-->";
 
-		protected override EditorExtensionTestData GetContentData () => XmlContentData;
-
-		protected override IEnumerable<TextEditorExtension> GetEditorExtensions ()
-		{
-			yield return new XmlTextEditorExtension ();
-		}
-
 		//args are line, col, then the expected sequence of expansions
 		[Test]
 		[TestCase (1, 2, CommentDoc)]
@@ -107,54 +103,53 @@ a comment-->";
 		[TestCase (3, 3, "foo", ElementFoo, ElementWithBodyFoo)]
 		[TestCase (3, 15, "hi", AttributeHello, AttributesFoo, ElementFoo, ElementWithBodyFoo)]
 		[TestCase (3, 7, "hello", AttributeHello, AttributesFoo, ElementFoo, ElementWithBodyFoo)]
-		[TestCase (4, 7, BodyFoo, ElementWithBodyFoo)]
+		[TestCase (4, 7, TextNode, BodyFoo, ElementWithBodyFoo)]
 		[TestCase (5, 22, "done", AttributeThing, ElementBaz, BodyBar, ElementWithBodyBar, BodyFoo, ElementWithBodyFoo)]
 		[TestCase (6, 12, CommentBar, BodyBar, ElementWithBodyBar, BodyFoo, ElementWithBodyFoo)]
 		public async Task TestExpandShrink (object[] args)
 		{
-			var loc = new DocumentLocation ((int)args [0], (int)args[1]);
-			using (var testCase = await SetupTestCase (Document)) {
-				var doc = testCase.Document;
-				doc.Editor.SetCaretLocation (loc);
-				var ext = doc.GetContent<BaseXmlEditorExtension> ();
+			var buffer = CreateTextBuffer (Document);
+			var parser = XmlBackgroundParser.GetParser<XmlBackgroundParser> ((ITextBuffer2)buffer);
+			var snapshot = buffer.CurrentSnapshot;
+			var navigator = Catalog.TextStructureNavigatorSelectorService.GetTextStructureNavigator (buffer);
+			var line = snapshot.GetLineFromLineNumber ((int)args[0] - 1);
+			var offset = line.Start + (int)args[1] - 1;
 
-				//check initial state 
-				Assert.IsFalse (doc.Editor.IsSomethingSelected);
-				Assert.AreEqual (loc, doc.Editor.CaretLocation);
+			// it's extremely unlikely the parser will hve an up to date parse result yet
+			// so this should use the spine parser codepath
 
-				//check expanding causes correct selections
-				for (int i = 2; i < args.Length; i++) {
-					ext.ExpandSelection ();
-					Assert.AreEqual (args [i], doc.Editor.SelectedText);
-				}
+			SnapshotSpan Span(int s, int l) => new SnapshotSpan (snapshot, s, l);
 
-				//check entire doc is selected
-				ext.ExpandSelection ();
-				var sel = doc.Editor.SelectionRange;
-				Assert.AreEqual (0, sel.Offset);
-				Assert.AreEqual (Document.Length, sel.Length);
+			var span = Span (offset, 0);
 
-				//check expanding again does not change it
-				ext.ExpandSelection ();
-				Assert.AreEqual (0, sel.Offset);
-				Assert.AreEqual (Document.Length, sel.Length);
-
-				//check shrinking causes correct selections
-				for (int i = args.Length - 1; i >= 2; i--) {
-					ext.ShrinkSelection ();
-					Assert.AreEqual (args [i], doc.Editor.SelectedText);
-				}
-
-				//final shrink back to a caret 
-				ext.ShrinkSelection ();
-				Assert.IsFalse (doc.Editor.IsSomethingSelected);
-				Assert.AreEqual (loc, doc.Editor.CaretLocation);
-
-				//check shrinking again does not change it
-				ext.ShrinkSelection ();
-				Assert.IsFalse (doc.Editor.IsSomethingSelected);
-				Assert.AreEqual (loc, doc.Editor.CaretLocation);
+			//check expanding causes correct selections
+			for (int i = 2; i < args.Length; i++) {
+				span = navigator.GetSpanOfEnclosing (span);
+				var text = snapshot.GetText (span);
+				Assert.AreEqual (args[i], text);
 			}
+
+			//check entire doc is selected
+			span = navigator.GetSpanOfEnclosing (span);
+			Assert.AreEqual (0, span.Start.Position);
+			Assert.AreEqual (snapshot.Length, span.Length);
+
+			// now repeat the tests with an up to date parse result
+			await parser.GetOrParseAsync (snapshot, CancellationToken.None);
+
+			span = Span (offset, 0);
+
+			//check expanding causes correct selections
+			for (int i = 2; i < args.Length; i++) {
+				span = navigator.GetSpanOfEnclosing (span);
+				var text = snapshot.GetText (span);
+				Assert.AreEqual (args[i], text);
+			}
+
+			//check entire doc is selected
+			span = navigator.GetSpanOfEnclosing (span);
+			Assert.AreEqual (0, span.Start.Position);
+			Assert.AreEqual (snapshot.Length, span.Length);
 		}
 	}
 }

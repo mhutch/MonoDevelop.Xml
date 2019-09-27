@@ -57,8 +57,8 @@ namespace MonoDevelop.Xml.Parser
 					// so attach a node to the DOM and end the state
 					var comment = (XComment) context.Nodes.Pop ();
 					
+					comment.End (context.Position + 1);
 					if (context.BuildTree) {
-						comment.End (context.Position + 1);
 						((XContainer) context.Nodes.Peek ()).AddChildNode (comment);
 					}
 					

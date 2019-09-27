@@ -58,8 +58,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 					// if we're completing an existing element, remove it from the path
 					// so we don't get completions for its children instead
 					if (nodePath.Count > 0) {
-						var lastNode = nodePath[nodePath.Count - 1] as XElement;
-						if (lastNode != null && lastNode.Name.Length == applicableToSpan.Length) {
+						if (nodePath[nodePath.Count-1] is XElement leaf && leaf.Name.Length == applicableToSpan.Length) {
 							nodePath.RemoveAt (nodePath.Count - 1);
 						}
 					}

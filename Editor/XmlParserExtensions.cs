@@ -1,9 +1,9 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.VisualStudio.Text;
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Parser;
@@ -12,6 +12,8 @@ namespace MonoDevelop.Xml.Editor
 {
 	public static class XmlParserExtensions
 	{
+		const int DEFAULT_READAHEAD_LIMIT = 5000;
+
 		/// <summary>
 		/// Gets the XML name at the parser's position.
 		/// </summary>
@@ -78,8 +80,12 @@ namespace MonoDevelop.Xml.Editor
 		/// <param name="snapshot">The text snapshot corresponding to the parser.</param>
 		/// <param name="maximumReadahead">Maximum number of characters to advance before giving up.</param>
 		/// <returns>Whether the object was successfully completed</returns>
-		public static bool AdvanceUntilClosed (this XmlParser parser, XObject ob, ITextSnapshot snapshot, int maximumReadahead = 500)
+		public static bool AdvanceUntilClosed (this XmlParser parser, XObject ob, ITextSnapshot snapshot, int maximumReadahead = DEFAULT_READAHEAD_LIMIT)
 		{
+			if (!parser.GetContext().BuildTree) {
+				throw new ArgumentException ("Parser must be in tree mode");
+			}
+
 			var el = ob as XElement;
 			if (el == null) {
 				return AdvanceUntilEnded (parser, ob, snapshot, maximumReadahead);
@@ -93,7 +99,8 @@ namespace MonoDevelop.Xml.Editor
 				if (el.IsClosed) {
 					return true;
 				}
-				if (parser.Nodes.Count < startingDepth) {
+				// just in case, bail if we pop out past the element's parent
+				if (parser.Nodes.Count < startingDepth - 1) {
 					return false;
 				}
 			}
@@ -109,7 +116,7 @@ namespace MonoDevelop.Xml.Editor
 		/// <param name="snapshot">The text snapshot corresponding to the parser.</param>
 		/// <param name="maximumReadahead">Maximum number of characters to advance before giving up.</param>
 		/// <returns>Whether the object was successfully completed</returns>
-		public static bool AdvanceUntilEnded (this XmlParser parser, XObject ob, ITextSnapshot snapshot, int maximumReadahead = 500)
+		public static bool AdvanceUntilEnded (this XmlParser parser, XObject ob, ITextSnapshot snapshot, int maximumReadahead = DEFAULT_READAHEAD_LIMIT)
 		{
 			var startingDepth = parser.Nodes.Count;
 
@@ -127,97 +134,98 @@ namespace MonoDevelop.Xml.Editor
 		}
 
 		/// <summary>
-		/// Gets the node path at the parser condition. Reads ahead to complete names, but does not complete the nodes.
+		/// Gets the node path at the parser position without changing the parser state, ensuring that the deepest node has a complete name.
 		/// </summary>
-		/// <param name="parser">A spine parser. Its state will be modified.</param>
+		/// <param name="parser">A spine parser. Its state will not be modified.</param>
 		/// <param name="snapshot">The text snapshot corresponding to the parser.</param>
 		public static List<XObject> GetNodePath (this XmlParser spine, ITextSnapshot snapshot)
 		{
-			var path = new List<XObject> (spine.Nodes);
+			var path = spine.Nodes.ToNodePath ();
 
-			//remove the root XDocument
-			path.RemoveAt (path.Count - 1);
-
-			//complete incomplete XName if present
-			if (spine.CurrentState is XmlNameState && path[0] is INamedXObject) {
-				path[0] = path[0].ShallowCopy ();
+			//complete last node's name without altering the parser state
+			int lastIdx = path.Count - 1;
+			if (spine.CurrentState is XmlNameState && path[lastIdx] is INamedXObject) {
 				XName completeName = GetCompleteName (spine, snapshot);
-				((INamedXObject)path[0]).Name = completeName;
+				var obj = path[lastIdx] = path[lastIdx].ShallowCopy ();
+				((INamedXObject)obj).Name = completeName;
+			}
+
+			return path;
+		}
+
+		/// <summary>
+		/// Advances the parser to end the node at the current position and gets that node's path.
+		/// </summary>
+		/// <param name="spine">A spine parser. Its state will be modified.</param>
+		/// <param name="snapshot">The text snapshot corresponding to the parser.</param>
+		/// <returns></returns>
+		public static List<XObject> AdvanceToNodeEndAndGetNodePath (this XmlParser spine, ITextSnapshot snapshot, int maximumReadahead = DEFAULT_READAHEAD_LIMIT)
+		{
+			if (!spine.GetContext ().BuildTree) {
+				throw new ArgumentException ("Parser must be in tree mode");
+			}
+
+			int startOffset = spine.Position;
+			int startDepth = spine.Nodes.Count;
+
+			//if in potential start of a state, advance into the next state
+			var end = Math.Min (snapshot.Length - spine.Position, maximumReadahead) + spine.Position;
+			if (spine.Position < end && (XmlRootState.IsNotFree (spine) || (spine.CurrentState is XmlRootState && snapshot[spine.Position] == '<'))) {
+				do {
+					spine.Push (snapshot[spine.Position]);
+				} while (spine.Position < end && XmlRootState.IsNotFree (spine));
+
+				//if it transitioned to another state, eat until we get a new node on the stack
+				if (spine.Position < end && !(spine.CurrentState is XmlRootState) && spine.Nodes.Count <= startDepth) {
+					spine.Push (snapshot[spine.Position]);
+				}
+			}
+
+			var path = spine.Nodes.ToNodePath ();
+
+			// make sure the leaf node is ended
+			if (path.Count > 0) {
+				var leaf = path[path.Count-1];
+				if (!(leaf is XDocument)) {
+					AdvanceUntilEnded (spine, leaf, snapshot, maximumReadahead - (spine.Position - startOffset));
+				}
+				//the leaf node might have a child that's a better match for the offset
+				if (leaf is XContainer c && c.FindAtOffset (startOffset) is XObject o) {
+					path.Add (o);
+				}
+			}
+
+			return path;
+		}
+
+		static List<XObject> ToNodePath (this NodeStack stack)
+		{
+			var path = new List<XObject> (stack);
+			path.Reverse ();
+			return path;
+		}
+
+		public static List<XObject> GetPath (this XObject obj)
+		{
+			var path = new List<XObject> ();
+			while (obj != null) {
+				path.Add (obj);
+				obj = obj.Parent;
 			}
 			path.Reverse ();
 			return path;
 		}
 
-		/// <summary>
-		/// Gets the node path at the parser condition, ensuring that the deepest element is closed.
-		/// </summary>
-		/// <param name="parser">A spine parser. Its state will be modified.</param>
-		/// <param name="snapshot">The text snapshot corresponding to the parser.</param>
-		/// <returns></returns>
-		public static List<XObject> GetNodePathWithCompleteLeafElement (this XmlParser parser, ITextSnapshot snapshot)
+		public static void ConnectParents (this List<XObject> nodePath)
 		{
-			int offset = parser.Position;
-			var length = snapshot.Length;
-			int i = offset;
-
-			var nodePath = parser.Nodes.ToList ();
-
-			//if inside body of unclosed element, capture whole body
-			if (parser.CurrentState is XmlRootState && parser.Nodes.Peek () is XElement unclosedEl) {
-				while (i < length && InRootOrClosingTagState () && !unclosedEl.IsClosed) {
-					parser.Push (snapshot[i++]);
-				}
-			}
-
-			//if in potential start of a state, capture it
-			else if (parser.CurrentState is XmlRootState && GetStateTag () > 0) {
-				//eat until we figure out whether it's a state transition 
-				while (i < length && GetStateTag () > 0) {
-					parser.Push (snapshot[i++]);
-				}
-				//if it transitioned to another state, eat until we get a new node on the stack
-				if (NotInRootState ()) {
-					var newState = parser.CurrentState;
-					while (i < length && NotInRootState () && parser.Nodes.Count <= nodePath.Count) {
-						parser.Push (snapshot[i++]);
-					}
-					if (parser.Nodes.Count > nodePath.Count) {
-						nodePath.Insert (0, parser.Nodes.Peek ());
-					}
-				}
-			}
-
-			//ensure any unfinished names are captured
-			while (i < length && InNameOrAttributeState ()) {
-				parser.Push (snapshot[i++]);
-			}
-
-			//if nodes are incomplete, they won't get connected
 			if (nodePath.Count > 1) {
-				for (int idx = 0; idx < nodePath.Count - 1; idx++) {
-					var node = nodePath[idx];
-					if (node.Parent == null) {
-						var parent = nodePath[idx + 1];
-						node.Parent = parent;
-					}
+				var parent = nodePath[nodePath.Count - 1];
+				for (int i = nodePath.Count - 2; i >= 0; i--) {
+					var node = nodePath[i];
+					node.Parent = parent;
+					parent = node;
 				}
 			}
-
-			return nodePath;
-
-			bool InNameOrAttributeState () =>
-				parser.CurrentState is XmlNameState
-					|| parser.CurrentState is XmlAttributeState
-					  || parser.CurrentState is XmlAttributeValueState;
-
-			bool InRootOrClosingTagState () =>
-				parser.CurrentState is XmlRootState
-				  || parser.CurrentState is XmlNameState
-				  || parser.CurrentState is XmlClosingTagState;
-
-			int GetStateTag () => ((IXmlParserContext)parser).StateTag;
-
-			bool NotInRootState () => !(parser.CurrentState is XmlRootState);
 		}
 
 		public static string GetIncompleteValue (this XmlParser spineAtCaret, ITextSnapshot snapshot)
