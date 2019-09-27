@@ -80,13 +80,17 @@ namespace MonoDevelop.Xml.Parser
 		{
 			if (xobject is XComment comment && position >= comment.Span.Start + STARTOFFSET && position < comment.Span.End) {
 				var parents = NodeStack.FromParents (comment);
-				parents.Push (new XComment (comment.Span.Start));
+
+				var length = position - comment.Span.Start + STARTOFFSET;
+				if (length > 0) {
+					parents.Push (new XComment (comment.Span.Start));
+				}
 
 				return new XmlParserContext {
 					CurrentState = this,
 					Position = position,
 					PreviousState = Parent,
-					CurrentStateLength = position - comment.Span.Start + STARTOFFSET,
+					CurrentStateLength = length,
 					KeywordBuilder = new System.Text.StringBuilder (),
 					StateTag = position == comment.Span.End - 3 ? SINGLE_DASH : (position == comment.Span.End - 2 ? DOUBLE_DASH: NOMATCH),
 					Nodes = parents

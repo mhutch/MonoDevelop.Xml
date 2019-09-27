@@ -73,13 +73,17 @@ namespace MonoDevelop.Xml.Parser
 		{
 			if (xobject is XCData cd && position >= cd.Span.Start + STARTOFFSET && position < cd.Span.End) {
 				var parents = NodeStack.FromParents (cd);
-				parents.Push (new XCData (cd.Span.Start));
+
+				var length = position - cd.Span.Start + STARTOFFSET;
+				if (length > 0) {
+					parents.Push (new XCData (cd.Span.Start));
+				}
 
 				return new XmlParserContext {
 					CurrentState = this,
 					Position = position,
 					PreviousState = Parent,
-					CurrentStateLength = position - cd.Span.Start + STARTOFFSET,
+					CurrentStateLength = length,
 					KeywordBuilder = new System.Text.StringBuilder (),
 					StateTag = position == cd.Span.End - 3 ? SINGLE_BRACKET : (position == cd.Span.End - 2? DOUBLE_BRACKET : NOMATCH),
 					Nodes = parents

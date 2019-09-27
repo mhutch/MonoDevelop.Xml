@@ -68,12 +68,15 @@ namespace MonoDevelop.Xml.Parser
 		public override XmlParserContext TryRecreateState (XObject xobject, int position)
 		{
 			if (xobject is XText text && position >= text.Span.Start && position < text.Span.End) {
-				var parents = NodeStack.FromParents (text);
-				parents.Push (new XText (text.Span.Start));
 
-				var sb = new System.Text.StringBuilder (text.Text);
 				// truncate to length
+				var sb = new System.Text.StringBuilder (text.Text);
 				sb.Length = position - text.Span.Start;
+
+				var parents = NodeStack.FromParents (text);
+				if (sb.Length > 0) {
+					parents.Push (new XText (text.Span.Start));
+				}
 
 				return new XmlParserContext {
 					CurrentState = this,
