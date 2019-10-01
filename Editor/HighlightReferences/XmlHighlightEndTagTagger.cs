@@ -20,8 +20,6 @@ namespace MonoDevelop.MSBuild.Editor.HighlightReferences
 {
 	class XmlHighlightEndTagTagger : HighlightTagger<ITextMarkerTag, ITextMarkerTag>
 	{
-		IXmlBackgroundParser parser;
-
 		public XmlHighlightEndTagTagger (
 			ITextView textView, XmlHighlightEndTagTaggerProvider provider
 			)
@@ -33,7 +31,7 @@ namespace MonoDevelop.MSBuild.Editor.HighlightReferences
 			Task<(SnapshotSpan sourceSpan, ImmutableArray<(ITextMarkerTag kind, SnapshotSpan location)> highlights)>
 			GetHighlightsAsync (SnapshotPoint caretLocation, CancellationToken token)
 		{
-			if (!XmlBackgroundParser.TryGetParser (TextView.TextBuffer, out parser)) {
+			if (!XmlBackgroundParser.TryGetParser (TextView.TextBuffer, out var parser)) {
 				return Empty;
 			}
 
@@ -42,7 +40,7 @@ namespace MonoDevelop.MSBuild.Editor.HighlightReferences
 				return Empty;
 			}
 
-			var parseResult = await parser.GetOrParseAsync (caretLocation.Snapshot, token).ConfigureAwait (false);
+			var parseResult = await parser.GetOrProcessAsync (caretLocation.Snapshot, token).ConfigureAwait (false);
 
 			var node = parseResult.XDocument.RootElement.FindAtOffset (caretLocation.Position);
 

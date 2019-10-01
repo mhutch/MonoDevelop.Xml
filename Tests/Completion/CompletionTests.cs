@@ -39,7 +39,7 @@ namespace MonoDevelop.Xml.Tests.Completion
 		public IAsyncCompletionSource GetOrCreate (ITextView textView) => new XmlCompletionTestSource (textView);
 	}
 
-	class XmlCompletionTestSource : XmlCompletionSource<XmlBackgroundParser,XmlParseResult>
+	class XmlCompletionTestSource : XmlCompletionSource
 	{
 		public XmlCompletionTestSource (ITextView textView) : base (textView)
 		{

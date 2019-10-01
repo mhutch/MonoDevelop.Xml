@@ -20,7 +20,7 @@ namespace MonoDevelop.Xml.Editor
 		/// <param name="spine">A spine parser. It will not be modified.</param>
 		/// <param name="snapshot">The text snapshot corresponding to the parser.</param>
 		/// <returns></returns>
-		public static XName GetCompleteName (this XmlParser spine, ITextSnapshot snapshot, int maximumReadahead = 50)
+		public static XName GetCompleteName (this XmlParser spine, ITextSnapshot snapshot, int maximumReadahead = DEFAULT_READAHEAD_LIMIT)
 		{
 			Debug.Assert (spine.CurrentState is XmlNameState);
 

@@ -44,7 +44,7 @@ namespace MonoDevelop.Xml.Tests
 
 			var textView = CreateTextView (doc);
 			var line = textView.TextBuffer.CurrentSnapshot.GetLineFromPosition (caretPos);
-			BackgroundParser<XmlParseResult>.GetParser<XmlBackgroundParser> ((ITextBuffer2)textView.TextBuffer);
+			XmlBackgroundParser.GetParser (textView.TextBuffer);
 
 			var options = new TestEditorOptions ();
 			options.SetOptionValue (DefaultOptions.ConvertTabsToSpacesOptionId, true);

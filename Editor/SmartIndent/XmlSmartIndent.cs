@@ -99,7 +99,7 @@ namespace MonoDevelop.Xml.Editor.SmartIndent
 			return actualIndent;
 		}
 
-		protected virtual int GetLineExpectedIndent (ITextSnapshotLine line, IXmlBackgroundParser parser, int indentSize)
+		protected virtual int GetLineExpectedIndent (ITextSnapshotLine line, XmlBackgroundParser parser, int indentSize)
 		{
 			//create a lightweight tree parser, which will actually close nodes
 			var spineParser = parser.GetSpineParser (line.Start);

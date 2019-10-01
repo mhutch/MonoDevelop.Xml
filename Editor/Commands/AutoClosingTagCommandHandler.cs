@@ -90,7 +90,7 @@ namespace MonoDevelop.Xml.Editor.Commands
 			// also check for orphaned closing tags in this element's parent
 			// this is not as accurate as the tree parse we did above as it uses
 			// the last parse result, which might be a little stale
-			var lastParseResult = parser.LastParseResult;
+			var lastParseResult = parser.LastOutput;
 			if (lastParseResult == null) {
 				return;
 			}

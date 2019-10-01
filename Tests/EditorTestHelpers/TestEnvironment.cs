@@ -46,7 +46,7 @@ namespace MonoDevelop.Xml.Tests.EditorTestHelpers
 			// can be awaited instead if your framework supports it
 			EditorEnvironment = EditorEnvironment.InitializeAsync (
 				typeof (XmlParser).Assembly.Location,
-				typeof (XmlCompletionSource<,>).Assembly.Location,
+				typeof (XmlCompletionSource).Assembly.Location,
 				typeof (TestEnvironment).Assembly.Location
 			).Result;
 

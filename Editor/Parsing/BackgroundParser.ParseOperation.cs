@@ -3,13 +3,12 @@
 
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.Text;
 
 namespace MonoDevelop.Xml.Editor.Completion
 {
-	public abstract partial class BackgroundParser<T>
+	public abstract partial class BackgroundProcessor<TInput, TOutput>
 	{
-		class ParseOperation
+		class Operation
 		{
 			CancellationTokenSource tokenSource;
 
@@ -19,23 +18,23 @@ namespace MonoDevelop.Xml.Editor.Completion
 			//if value is zero, the cancel method has not been called
 			int primaryOwnerCanceled;
 
-			public ParseOperation (BackgroundParser<T> parser, Task<T> operation, ITextSnapshot2 snapshot, CancellationTokenSource tokenSource)
+			public Operation (BackgroundProcessor<TInput,TOutput> processor, Task<TOutput> operation, TInput input, CancellationTokenSource tokenSource)
 			{
-				Parser = parser;
+				Processor = processor;
 				Task = operation;
-				Snapshot = snapshot;
+				Input = input;
 				this.tokenSource = tokenSource;
 				ownerCount = 1;
 				primaryOwnerCanceled = 0;
 			}
 
-			public BackgroundParser<T> Parser { get; }
+			public BackgroundProcessor<TInput,TOutput> Processor { get; }
 
-			public Task<T> Task { get; }
-			public ITextSnapshot2 Snapshot { get; }
+			public Task<TOutput> Task { get; }
+			public TInput Input { get; }
 
 			#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
-			public T Result => Task.IsCompleted ? Task.Result : default;
+			public TOutput Output => Task.IsCompleted ? Task.Result : default;
 			#pragma warning restore VSTHRD002
 
 			public void Cancel ()

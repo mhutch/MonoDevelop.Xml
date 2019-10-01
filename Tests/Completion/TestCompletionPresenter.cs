@@ -9,7 +9,7 @@ using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 
-namespace MonoDevelop.Xml.Editor.Completion
+namespace MonoDevelop.Xml.Tests.Completion
 {
 	[Export (typeof (ICompletionPresenterProvider))]
 	[Name (nameof (TestCompletionPresenterProvider))]

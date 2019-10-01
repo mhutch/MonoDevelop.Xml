@@ -15,16 +15,18 @@ using Microsoft.VisualStudio.Text.Adornments;
 using Microsoft.VisualStudio.Text.Editor;
 
 using MonoDevelop.Xml.Dom;
-using MonoDevelop.Xml.Parser;
 
 namespace MonoDevelop.Xml.Editor.Completion
 {
-	public abstract class XmlCompletionSource<TParser, TResult> : IAsyncCompletionSource where TResult : XmlParseResult where TParser : XmlBackgroundParser<TResult>, new()
+	public abstract class XmlCompletionSource : IAsyncCompletionSource
 	{
+		protected XmlBackgroundParser XmlParser { get; }
+
 		protected ITextView TextView { get; }
 
 		protected XmlCompletionSource (ITextView textView)
 		{
+			XmlParser = XmlBackgroundParser.GetParser (textView.TextBuffer);
 			TextView = textView;
 			InitializeBuiltinItems ();
 		}
@@ -41,8 +43,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				return CompletionContext.Empty;
 			}
 
-			var parser = BackgroundParser<TResult>.GetParser<TParser> ((ITextBuffer2)triggerLocation.Snapshot.TextBuffer);
-			var spine = parser.GetSpineParser (triggerLocation);
+			var spine = XmlParser.GetSpineParser (triggerLocation);
 
 			// FIXME: cache the value from InitializeCompletion somewhere?
 			var (kind, _) = XmlCompletionTriggering.GetTrigger (spine, reason.Value, trigger.Character);
@@ -121,8 +122,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				return CompletionStartData.DoesNotParticipateInCompletion;
 			}
 
-			var parser = BackgroundParser<TResult>.GetParser<TParser> ((ITextBuffer2)triggerLocation.Snapshot.TextBuffer);
-			var spine = parser.GetSpineParser (triggerLocation);
+			var spine = XmlParser.GetSpineParser (triggerLocation);
 
 			LoggingService.LogDebug (
 				"Attempting completion for state '{0}'x{1}, character='{2}', trigger='{3}'",
@@ -193,40 +193,35 @@ namespace MonoDevelop.Xml.Editor.Completion
 		CompletionContext CreateCompletionContext (IEnumerable<CompletionItem> items)
 			=> new CompletionContext (ImmutableArray<CompletionItem>.Empty.AddRange (items), null, InitialSelectionHint.SoftSelection);
 
-
-		protected TParser GetParser () => BackgroundParser<TResult>.GetParser<TParser> ((ITextBuffer2)TextView.TextBuffer);
-
-		protected XmlParser GetSpineParser (SnapshotPoint point) => GetParser ().GetSpineParser (point);
-
 		CompletionItem cdataItem, commentItem, prologItem;
 		CompletionItem cdataItemWithBracket, commentItemWithBracket, prologItemWithBracket;
 		CompletionItem[] entityItems;
 
 		void InitializeBuiltinItems ()
 		{
-			cdataItem = new CompletionItem ("![CDATA[", this, XmlImages.Declaration)
+			cdataItem = new CompletionItem ("![CDATA[", this, XmlImages.CData)
 					.AddDocumentation ("XML character data")
 					.AddKind (XmlCompletionItemKind.CData);
 
-			commentItem = new CompletionItem ("!--", this, XmlImages.Declaration)
+			commentItem = new CompletionItem ("!--", this, XmlImages.Comment)
 				.AddDocumentation ("XML comment")
 				.AddKind (XmlCompletionItemKind.Comment);
 
 			//TODO: commit $"?xml version=\"1.0\" encoding=\"{encoding}\" ?>"
-			prologItem = new CompletionItem ("?xml", this, XmlImages.Declaration)
+			prologItem = new CompletionItem ("?xml", this, XmlImages.Prolog)
 				.AddDocumentation ("XML prolog")
 				.AddKind (XmlCompletionItemKind.Prolog);
 
-			cdataItemWithBracket = new CompletionItem ("<![CDATA[", this, XmlImages.Declaration)
+			cdataItemWithBracket = new CompletionItem ("<![CDATA[", this, XmlImages.CData)
 					.AddDocumentation ("XML character data")
 					.AddKind (XmlCompletionItemKind.CData);
 
-			commentItemWithBracket = new CompletionItem ("<!--", this, XmlImages.Declaration)
+			commentItemWithBracket = new CompletionItem ("<!--", this, XmlImages.Comment)
 				.AddDocumentation ("XML comment")
 				.AddKind (XmlCompletionItemKind.Comment);
 
 			//TODO: commit $"?xml version=\"1.0\" encoding=\"{encoding}\" ?>"
-			prologItemWithBracket = new CompletionItem ("<?xml", this, XmlImages.Declaration)
+			prologItemWithBracket = new CompletionItem ("<?xml", this, XmlImages.Prolog)
 				.AddDocumentation ("XML prolog")
 				.AddKind (XmlCompletionItemKind.Prolog);
 

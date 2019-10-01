@@ -135,7 +135,7 @@ a comment-->";
 			Assert.AreEqual (snapshot.Length, span.Length);
 
 			// now repeat the tests with an up to date parse result
-			await parser.GetOrParseAsync (snapshot, CancellationToken.None);
+			await parser.GetOrProcessAsync (snapshot, CancellationToken.None);
 
 			span = Span (offset, 0);
 
