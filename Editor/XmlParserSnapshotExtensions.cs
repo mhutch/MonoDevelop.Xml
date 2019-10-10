@@ -82,15 +82,24 @@ namespace MonoDevelop.Xml.Editor
 
 		public static string GetIncompleteValue (this XmlSpineParser spineAtCaret, ITextSnapshot snapshot)
 		{
-			int currentPosition = spineAtCaret.Position;
-			int lineStart = snapshot.GetLineFromPosition (currentPosition).Start.Position;
-			int expressionStart = currentPosition - spineAtCaret.CurrentStateLength;
-			if (spineAtCaret.GetAttributeValueDelimiter ().HasValue) {
-				expressionStart += 1;
+			int caretPosition = spineAtCaret.Position;
+			var node = spineAtCaret.Spine.Peek ();
+
+			int valueStart;
+			if (node is XText t) {
+				valueStart = t.Span.Start;
+			} else if (node is XElement el && el.IsEnded) {
+				valueStart = el.Span.End;
+			} else {
+				int lineStart = snapshot.GetLineFromPosition (caretPosition).Start.Position;
+				valueStart = spineAtCaret.Position - spineAtCaret.CurrentStateLength;
+				if (spineAtCaret.GetAttributeValueDelimiter ().HasValue) {
+					valueStart += 1;
+				}
+				valueStart = Math.Max (Math.Max (valueStart, lineStart), caretPosition);
 			}
-			int start = Math.Max (expressionStart, lineStart);
-			var expression = snapshot.GetText (start, currentPosition - start);
-			return expression;
+
+			return snapshot.GetText (valueStart, caretPosition - valueStart);
 		}
 	}
 }
