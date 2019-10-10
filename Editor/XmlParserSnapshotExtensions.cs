@@ -96,7 +96,7 @@ namespace MonoDevelop.Xml.Editor
 				if (spineAtCaret.GetAttributeValueDelimiter ().HasValue) {
 					valueStart += 1;
 				}
-				valueStart = Math.Max (Math.Max (valueStart, lineStart), caretPosition);
+				valueStart = Math.Min (Math.Max (valueStart, lineStart), caretPosition);
 			}
 
 			return snapshot.GetText (valueStart, caretPosition - valueStart);
