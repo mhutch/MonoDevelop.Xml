@@ -2,14 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.ComponentModel.Composition;
+using System.Diagnostics;
 using System.Linq;
+
 using Microsoft.VisualStudio.MiniEditor;
 using Microsoft.VisualStudio.Threading;
 
 using MonoDevelop.Xml.Editor.Completion;
 using MonoDevelop.Xml.Parser;
 using MonoDevelop.Xml.Tests.Completion;
+
 using NUnit.Framework;
+using NUnit.Framework.Interfaces;
+using NUnit.Framework.Internal;
 
 namespace MonoDevelop.Xml.Tests.EditorTestHelpers
 {
@@ -68,13 +73,7 @@ namespace MonoDevelop.Xml.Tests.EditorTestHelpers
 				}
 			}
 
-			// Register your own logging mechanism to print eventual errors
-			// in your extensions
-			var errorHandler = editorEnvironment
-				.GetEditorHost ()
-				.GetService<EditorHostExports.CustomErrorHandler> ();
-
-			errorHandler.ExceptionHandled += (s, e) => HandleError (e.Exception);
+			CustomErrorHandler.ExceptionHandled += (s, e) => HandleError (s, e.Exception);
 
 			editorCatalog = new EditorCatalog (editorEnvironment);
 		}
@@ -87,9 +86,13 @@ namespace MonoDevelop.Xml.Tests.EditorTestHelpers
 
 		protected virtual bool ShouldIgnoreCompositionError (string error) => false;
 
-		protected virtual void HandleError (Exception ex)
+		protected virtual void HandleError (object source, Exception ex)
 		{
-			Assert.Fail (ex.ToString ());
+			TestExecutionContext.CurrentContext.CurrentResult.RecordAssertion (AssertionStatus.Error, ex.Message, ex.StackTrace);
+
+			if (Debugger.IsAttached) {
+				Debugger.Break ();
+			}
 		}
 	}
 }
