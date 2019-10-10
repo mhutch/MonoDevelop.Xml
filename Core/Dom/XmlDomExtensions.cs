@@ -2,12 +2,13 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Dom
 {
-	public static class XmlExtensions
+	public static class XmlDomExtensions
 	{
 		public static TextSpan GetSquiggleSpan (this XNode node)
 		{
@@ -102,5 +103,14 @@ namespace MonoDevelop.Xml.Dom
 			=> obj.Attributes.First == null
 			? (TextSpan?)null
 			: TextSpan.FromBounds (obj.Attributes.First.Span.Start, obj.Attributes.Last.Span.End);
+
+		public static Dictionary<string, string> ToDictionary (this XAttributeCollection attributes, StringComparer comparer)
+		{
+			var dict = new Dictionary<string, string> (comparer);
+			foreach (XAttribute a in attributes) {
+				dict[a.Name.FullName] = a.Value ?? string.Empty;
+			}
+			return dict;
+		}
 	}
 }
