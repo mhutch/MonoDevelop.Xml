@@ -42,7 +42,7 @@ namespace MonoDevelop.Xml.Parser
 			 Adopt (nameState);
 		}
 		
-		public override XmlParserState PushChar (char c, IXmlParserContext context, ref string rollback)
+		public override XmlParserState PushChar (char c, XmlParserContext context, ref string rollback)
 		{
 			var doc = context.Nodes.Peek () as XDocType;
 			if (doc == null) {
@@ -165,8 +165,8 @@ namespace MonoDevelop.Xml.Parser
 				context.Diagnostics?.LogError ("Unexpected character '" + c +"' in doctype.", context.Position);
 			}
 			
+			doc.End (context.Position);
 			if (context.BuildTree) {
-				doc.End (context.Position);
 				((XContainer) context.Nodes.Peek ()).AddChildNode (doc); 
 			}
 			return Parent;

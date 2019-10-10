@@ -27,109 +27,83 @@
 //
 
 using System;
-using System.Collections.Generic;
-using System.IO;
+using System.Diagnostics;
 using System.Text;
-using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
 {
-	public class XmlParser : ICloneable
-	{
-		readonly XmlParserContext context;
 
-		public XmlParser (XmlRootState rootState, bool buildTree)
+	public abstract class XmlParser
+	{
+		protected XmlParserContext Context { get; }
+
+		protected XmlParser (XmlRootState rootState)
 		{
 			RootState = rootState;
 
-			context = new XmlParserContext {
+			Context = new XmlParserContext {
 				CurrentStateLength = 0,
 				CurrentState = rootState,
 				PreviousState = rootState,
-				BuildTree = buildTree,
 				KeywordBuilder = new StringBuilder (),
 				Nodes = new NodeStack ()
 			};
 
-			if (buildTree) {
-				context.Diagnostics = new List<XmlDiagnosticInfo> ();
-			}
-
-			context.Nodes.Push (RootState.CreateDocument ());
+			Context.Nodes.Push (RootState.CreateDocument ());
 		}
 
-		public XmlParser (XmlParserContext context, XmlRootState rootState)
+		protected XmlParser (XmlParserContext context, XmlRootState rootState)
 		{
-			if (context.BuildTree) {
-				throw new ArgumentException ("When re-using existing context, it cannot be in tree mode");
-			}
-			this.context = context;
+			Context = context;
 			RootState = rootState;
 		}
-
-		XmlParser (XmlParser copyFrom)
-			: this (new XmlParserContext {
-				Position = copyFrom.context.Position,
-				CurrentState = copyFrom.context.CurrentState,
-				CurrentStateLength = copyFrom.context.CurrentStateLength,
-				StateTag = copyFrom.context.StateTag,
-				PreviousState = copyFrom.context.PreviousState,
-				BuildTree = false,
-				KeywordBuilder = new StringBuilder (copyFrom.context.KeywordBuilder.ToString ()),
-				Nodes = copyFrom.context.Nodes.ShallowCopy ()
-			},
-			copyFrom.RootState
-		)
-		{ }
 
 		public XmlRootState RootState { get; }
 
 		public void Reset ()
 		{
-			context.CurrentState = RootState;
-			context.PreviousState = RootState;
-			context.Position = 0;
-			context.StateTag = 0;
-			context.CurrentStateLength = 0;
-			context.KeywordBuilder.Length = 0;
-			context.Diagnostics?.Clear ();
-			context.Nodes.Clear ();
-			context.Nodes.Push (RootState.CreateDocument ());
+			Context.CurrentState = RootState;
+			Context.PreviousState = RootState;
+			Context.Position = 0;
+			Context.StateTag = 0;
+			Context.CurrentStateLength = 0;
+			Context.KeywordBuilder.Length = 0;
+			Context.Diagnostics?.Clear ();
+			Context.Nodes.Clear ();
+			Context.Nodes.Push (RootState.CreateDocument ());
 		}
 
-		public void Parse (TextReader reader)
-		{
-			int i = reader.Read ();
-			while (i >= 0) {
-				char c = (char)i;
-				Push (c);
-				i = reader.Read ();
-			}
-		}
+		// ideally this would eventually be removed from the public API and be replaced by extension methods that do everything this does
+		// without exposing the internal state directly
+		internal XmlParserContext GetContext () => Context;
 
+		/// <summary>
+		/// Parse a document by pushing characters one at a time.
+		/// </summary>
+		/// <param name="c">The character</param>
 		public void Push (char c)
 		{
 			for (int loopLimit = 0; loopLimit < 10; loopLimit++) {
 				string rollback = null;
-				if (CurrentState == null)
+				if (Context.CurrentState == null)
 					goto done;
-				XmlParserState nextState = CurrentState.PushChar (c, context, ref rollback);
+				XmlParserState nextState = Context.CurrentState.PushChar (c, Context, ref rollback);
 
 				// no state change
-				if (nextState == CurrentState || nextState == null) {
-					context.CurrentStateLength++;
+				if (nextState == Context.CurrentState || nextState == null) {
+					Context.CurrentStateLength++;
 					goto done;
 				}
 
 				// state changed; reset stuff
-				context.PreviousState = CurrentState;
-				context.CurrentState = nextState;
-				context.StateTag = 0;
-				context.CurrentStateLength = 0;
-				if (context.KeywordBuilder.Length < 50)
-					context.KeywordBuilder.Length = 0;
+				Context.PreviousState = Context.CurrentState;
+				Context.CurrentState = nextState;
+				Context.StateTag = 0;
+				Context.CurrentStateLength = 0;
+				if (Context.KeywordBuilder.Length < 50)
+					Context.KeywordBuilder.Length = 0;
 				else
-					context.KeywordBuilder = new StringBuilder ();
+					Context.KeywordBuilder = new StringBuilder ();
 
 
 				// only loop if the same char should be run through the new state
@@ -146,56 +120,13 @@ namespace MonoDevelop.Xml.Parser
 				foreach (char rollChar in rollback)
 					Push (rollChar);
 			}
-			throw new InvalidOperationException ($"Too many state changes for char '{c}'. Current state is {CurrentState.ToString ()}.");
+			throw new InvalidOperationException ($"Too many state changes for char '{c}'. Current state is {Context.CurrentState.ToString ()}.");
 
 			done:
-				context.Position++;
+				Context.Position++;
 				return;
 		}
 
-		public XmlParser Clone ()
-		{
-			if (context.BuildTree)
-				throw new InvalidOperationException ("Parser can only be cloned when in stack mode");
-			return new XmlParser (this);
-		}
-
-		object ICloneable.Clone () => Clone ();
-
-		public XmlParser GetTreeParser ()
-		{
-			if (context.BuildTree)
-				throw new InvalidOperationException ("Parser can only be cloned when in stack mode");
-
-			var parser = new XmlParser (this);
-			parser.context.BuildTree = true;
-			parser.context.ConnectNodes ();
-
-			return parser;
-		}
-
-		public override string ToString () => context.ToString ();
-
-
-		public XmlParserState CurrentState => context.CurrentState;
-		public int CurrentStateLength => context.CurrentStateLength;
-		public NodeStack Nodes => context.Nodes;
-		public int Position => context.Position;
-
-		public List<XmlDiagnosticInfo> Diagnostics => context.Diagnostics;
-
-		// this is only meant to be used by static methods on the states
-		internal IXmlParserContext GetContext () => context;
-
-		/// <summary>
-		/// Efficiently creates a spine parser using information from an existing document. The position of
-		/// the parser is not guaranteed but will not exceed <paramref name="maximumPosition" />.
-		/// </summary>
-		/// <returns></returns>
-		public XmlParser GetSpineParser (XDocument xdocument, int maximumPosition)
-			=> xdocument.FindAtOrBeforeOffset (maximumPosition) is XObject obj
-				&& RootState.TryRecreateState (obj, maximumPosition) is XmlParserContext ctx
-			? new XmlParser (ctx, RootState)
-			: null;
+		public override string ToString () => Context.ToString ();
 	}
 }

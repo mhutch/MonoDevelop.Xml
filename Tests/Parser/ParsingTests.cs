@@ -47,7 +47,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		[Test]
 		public void AttributeName ()
 		{
-			var parser = new TestXmlParser (CreateRootState ());
+			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (@"
 <doc>
 	<tag.a>
@@ -67,7 +67,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		[Test]
 		public void Attributes ()
 		{
-			var parser = new TestXmlParser (CreateRootState ());
+			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (@"
 <doc>
 	<tag.a name=""foo"" arg=5 wibble = 6 bar.baz = 'y.ff7]' $ />
@@ -85,7 +85,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		[Test]
 		public void AttributeRecovery ()
 		{
-			var parser = new TestXmlParser (CreateRootState ());
+			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (@"
 <doc>
 	<tag.a>
@@ -107,7 +107,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		[Test]
 		public void IncompleteTags ()
 		{
-			var parser = new TestXmlParser (CreateRootState ());
+			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (@"
 <doc>
 	<tag.a att1 >
@@ -125,17 +125,17 @@ namespace MonoDevelop.Xml.Tests.Parser
 ",
 				delegate {
 					parser.AssertStateIs<XmlTagState> ();
-					Assert.IsFalse (parser.Nodes.Peek (1).IsComplete);
+					Assert.IsFalse (parser.PeekSpine (1).IsComplete);
 					parser.AssertNodeDepth (6);
 					parser.AssertPath ("//doc/tag.a/tag.b/tag.c/tag.d");
 				},
 				delegate {
 					parser.AssertStateIs<XmlAttributeValueState> ();
 					parser.AssertNodeDepth (9);
-					Assert.IsTrue (parser.Nodes.Peek (3) is XElement eld && eld.Name.Name == "tag.d" && eld.IsComplete);
-					Assert.IsTrue (parser.Nodes.Peek (2) is XElement ele && ele.Name.Name == "tag.e" && !ele.IsComplete);
-					Assert.IsTrue (parser.Nodes.Peek (1) is XElement elf && elf.Name.Name == "tag.f" && !elf.IsComplete);
-					Assert.IsTrue (parser.Nodes.Peek () is XAttribute att && !att.IsComplete);
+					Assert.IsTrue (parser.PeekSpine (3) is XElement eld && eld.Name.Name == "tag.d" && eld.IsComplete);
+					Assert.IsTrue (parser.PeekSpine (2) is XElement ele && ele.Name.Name == "tag.e" && !ele.IsComplete);
+					Assert.IsTrue (parser.PeekSpine (1) is XElement elf && elf.Name.Name == "tag.f" && !elf.IsComplete);
+					Assert.IsTrue (parser.PeekSpine () is XAttribute att && !att.IsComplete);
 					parser.AssertPath ("//doc/tag.a/tag.b/tag.c/tag.d/tag.e/tag.f/@id");
 				}
 			);
@@ -146,7 +146,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		[Test]
 		public void Unclosed ()
 		{
-			var parser = new TestXmlParser (CreateRootState ());
+			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (@"
 <doc>
 	<tag.a>
@@ -174,7 +174,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		[Test]
 		public void ClosingTagWithWhitespace ()
 		{
-			var parser = new TestXmlParser (CreateRootState ());
+			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (@"<doc><a></ a></doc >");
 			parser.AssertEmpty ();
 			parser.AssertErrorCount (0);
@@ -184,7 +184,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		[Test]
 		public void BadClosingTag ()
 		{
-			var parser = new TestXmlParser (CreateRootState ());
+			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (@"<doc><x><abc></ab c><cd></cd></x></doc>");
 			parser.AssertEmpty ();
 			parser.AssertErrorCount (2);
@@ -193,7 +193,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		[Test]
 		public void Misc ()
 		{
-			var parser = new TestXmlParser (CreateRootState ());
+			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (@"
 <doc>
 	<!DOCTYPE $  >
@@ -232,10 +232,10 @@ namespace MonoDevelop.Xml.Tests.Parser
 <!bar #baz>
 ]>
 <doc><foo/></doc>".Replace ("\r\n", "\n");
-			var parser = new TestXmlParser (CreateRootState (), true);
+			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (docText);
 			parser.AssertEmpty ();
-			XDocument doc = (XDocument)parser.Nodes.Peek ();
+			XDocument doc = (XDocument)parser.PeekSpine ();
 			Assert.IsTrue (doc.FirstChild is XDocType);
 			XDocType dt = (XDocType)doc.FirstChild;
 			Assert.AreEqual ("html", dt.RootElement.FullName);
@@ -253,10 +253,10 @@ namespace MonoDevelop.Xml.Tests.Parser
 		[Test]
 		public void NamespacedAttributes ()
 		{
-			var parser = new TestXmlParser (CreateRootState (), true);
+			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (@"<tag foo:bar='1' foo:bar:baz='2' foo='3' />");
 			parser.AssertEmpty ();
-			var doc = (XDocument)parser.Nodes.Peek ();
+			var doc = (XDocument)parser.PeekSpine ();
 			var el = (XElement)doc.FirstChild;
 			Assert.AreEqual (3, el.Attributes.Count ());
 			Assert.AreEqual ("foo", el.Attributes.ElementAt (0).Name.Prefix);
@@ -267,13 +267,13 @@ namespace MonoDevelop.Xml.Tests.Parser
 			Assert.AreEqual ("foo", el.Attributes.ElementAt (2).Name.Name);
 			Assert.AreEqual (3, el.Attributes.Count ());
 			parser.AssertErrorCount (1);
-			Assert.AreEqual (26, parser.Diagnostics[0].Span.Start, 26);
+			Assert.AreEqual (26, parser.GetContext().Diagnostics[0].Span.Start, 26);
 		}
 
 		[Test]
 		public void SimpleTree ()
 		{
-			var parser = new TestXmlParser (CreateRootState (), true);
+			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (@"
 <doc>
 	<a>
@@ -290,7 +290,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 </doc>");
 			parser.AssertErrorCount (0);
 
-			var doc = ((XDocument)parser.Nodes.Peek ()).RootElement;
+			var doc = ((XDocument)parser.PeekSpine ()).RootElement;
 			Assert.NotNull (doc);
 			Assert.AreEqual ("doc", doc.Name.Name);
 			Assert.True (doc.IsEnded);
@@ -343,7 +343,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		[Test]
 		public void UnnamedElement ()
 		{
-			var parser = new TestXmlParser (CreateRootState (), true);
+			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (@"
 <doc>
 	<a/>
@@ -363,11 +363,11 @@ namespace MonoDevelop.Xml.Tests.Parser
 	</a>
 </doc>";
 
-			var parser = new TestXmlParser (CreateRootState (), true);
+			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (docTxt, preserveWindowsNewlines: true);
 			parser.AssertErrorCount (0);
 
-			var el = (((XDocument)parser.Nodes.Peek ()).RootElement)?.FirstChild as XElement;
+			var el = (((XDocument)parser.PeekSpine ()).RootElement)?.FirstChild as XElement;
 			Assert.NotNull (el);
 			Assert.AreEqual (2, el.Nodes.Count ());
 			var b = el.FirstChild as XElement;
@@ -387,10 +387,10 @@ namespace MonoDevelop.Xml.Tests.Parser
 <![CDATA[ dfdfdf ]]>
 </foo>
 ";
-			var parser = new TestXmlParser (CreateRootState (), true);
+			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (docTxt, preserveWindowsNewlines: true);
 			parser.AssertEmpty ();
-			var doc = (XDocument)parser.Nodes.Peek ();
+			var doc = (XDocument)parser.PeekSpine ();
 
 			string Substring (XObject obj) => docTxt.Substring (obj.Span.Start, obj.Span.Length);
 

@@ -41,7 +41,7 @@ namespace MonoDevelop.Xml.Parser
 		protected const int TagMask = 3;
 		protected const int TagShift = 2;
 
-		public override XmlParserState PushChar (char c, IXmlParserContext context, ref string rollback)
+		public override XmlParserState PushChar (char c, XmlParserContext context, ref string rollback)
 		{
 			System.Diagnostics.Debug.Assert (((XAttribute) context.Nodes.Peek ()).Value == null);
 
@@ -80,7 +80,7 @@ namespace MonoDevelop.Xml.Parser
 			return null;
 		}
 
-		XmlParserState BuildUnquotedValue (char c, IXmlParserContext context, ref string rollback)
+		XmlParserState BuildUnquotedValue (char c, XmlParserContext context, ref string rollback)
 		{
 			if (char.IsLetterOrDigit (c) || c == '_' || c == '.') {
 				context.KeywordBuilder.Append (c);
@@ -102,9 +102,9 @@ namespace MonoDevelop.Xml.Parser
 		public override XmlParserContext TryRecreateState (XObject xobject, int position)
 			=> throw new InvalidOperationException ("State has no corresponding XObject");
 
-		public static char? GetDelimiterChar (XmlParser parser)
-			=> parser.CurrentState is XmlAttributeValueState
-			? (parser.GetContext().StateTag & TagMask) switch {
+		public static char? GetDelimiterChar (XmlParserContext context)
+			=> context.CurrentState is XmlAttributeValueState
+			? (context.StateTag & TagMask) switch {
 				SINGLEQUOTE => '\'',
 				DOUBLEQUOTE => '"',
 				_ => (char?) null

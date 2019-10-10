@@ -54,12 +54,12 @@ namespace MonoDevelop.Xml.Tests.Parser
 		[Test]
 		public void FailureTest1()
 		{
-			TestXmlParser.AssertState ("<a foo=''$", p => Assert.IsNull (p.Nodes.LastOrDefault () as XAttribute));
+			TestXmlParser.Parse ("<a foo=''$", p => Assert.IsNull (p.GetContext ().Nodes.LastOrDefault () as XAttribute));
 		}
 
 		public void AssertAttributeValue (string doc, string val)
 		{
-			TestXmlParser.AssertState (doc, p => {
+			TestXmlParser.Parse (doc, p => {
 				p.AssertStateIs<XmlAttributeValueState> ();
 				Assert.AreEqual (val, p.GetContext ().KeywordBuilder.ToString ());
 			});

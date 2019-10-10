@@ -82,7 +82,7 @@ namespace MonoDevelop.Xml.Parser
 		protected XmlProcessingInstructionState ProcessingInstructionState { get; }
 		protected XmlTextState TextState { get; }
 
-		public override XmlParserState PushChar (char c, IXmlParserContext context, ref string rollback)
+		public override XmlParserState PushChar (char c, XmlParserContext context, ref string rollback)
 		{
 			if (c == '<') {
 				if (context.StateTag != FREE)
@@ -175,7 +175,7 @@ namespace MonoDevelop.Xml.Parser
 			return null;
 		}
 
-		static int LengthFromOpenBracket (IXmlParserContext context)
+		static int LengthFromOpenBracket (XmlParserContext context)
 		{
 			switch (context.StateTag) {
 			case BRACKET:
@@ -218,12 +218,12 @@ namespace MonoDevelop.Xml.Parser
 				};
 		}
 
-		public static bool IsFree (XmlParser parser) => parser.CurrentState is XmlRootState && parser.GetContext ().StateTag == FREE;
-		public static bool MaybeTag (XmlParser parser) => parser.CurrentState is XmlRootState && parser.GetContext ().StateTag == BRACKET;
-		internal static bool MaybeCData (XmlParser parser) => parser.CurrentState is XmlRootState && parser.GetContext ().StateTag == CDATA;
-		internal static bool MaybeDocType (XmlParser parser) => parser.CurrentState is XmlRootState && parser.GetContext ().StateTag == DOCTYPE;
-		internal static bool MaybeComment (XmlParser parser) => parser.CurrentState is XmlRootState && parser.GetContext ().StateTag == COMMENT;
-		internal static bool MaybeCDataOrCommentOrDocType (XmlParser parser) => parser.CurrentState is XmlRootState && parser.GetContext ().StateTag == BRACKET_EXCLAM;
-		public static bool IsNotFree (XmlParser parser) => parser.CurrentState is XmlRootState && parser.GetContext ().StateTag != FREE;
+		internal static bool IsFree (XmlParserContext context) => context.CurrentState is XmlRootState && context.StateTag == FREE;
+		internal static bool MaybeTag (XmlParserContext context) => context.CurrentState is XmlRootState && context.StateTag == BRACKET;
+		internal static bool MaybeCData (XmlParserContext context) => context.CurrentState is XmlRootState && context.StateTag == CDATA;
+		internal static bool MaybeDocType (XmlParserContext context) => context.CurrentState is XmlRootState && context.StateTag == DOCTYPE;
+		internal static bool MaybeComment (XmlParserContext context) => context.CurrentState is XmlRootState && context.StateTag == COMMENT;
+		internal static bool MaybeCDataOrCommentOrDocType (XmlParserContext context) => context.CurrentState is XmlRootState && context.StateTag == BRACKET_EXCLAM;
+		internal static bool IsNotFree (XmlParserContext context) => context.CurrentState is XmlRootState && context.StateTag != FREE;
 	}
 }

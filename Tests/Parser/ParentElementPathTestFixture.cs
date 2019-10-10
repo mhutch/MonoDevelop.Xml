@@ -46,10 +46,10 @@ namespace MonoDevelop.Xml.Tests.Parser
 
 		public void AssertParentPath (string doc, params QualifiedName [] qualifiedNames)
 		{
-			TestXmlParser.AssertState (doc, p =>
+			TestXmlParser.Parse (doc, p =>
 				Assert.AreEqual (
 					new XmlElementPath (qualifiedNames),
-					XmlElementPath.Resolve (p.Nodes.ToArray ())
+					XmlElementPath.Resolve (p.GetContext ().Nodes.ToArray ())
 				)
 			);
 		}

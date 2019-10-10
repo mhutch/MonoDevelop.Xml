@@ -57,7 +57,7 @@ namespace MonoDevelop.Xml.Parser
 			Adopt (this.AttributeValueState);
 		}
 
-		public override XmlParserState PushChar (char c, IXmlParserContext context, ref string rollback)
+		public override XmlParserState PushChar (char c, XmlParserContext context, ref string rollback)
 		{
 			var att = context.Nodes.Peek () as XAttribute;
 
@@ -129,6 +129,6 @@ namespace MonoDevelop.Xml.Parser
 			return null;
 		}
 
-		public static bool IsExpectingQuote (XmlParser parser) => parser.CurrentState is XmlAttributeState && parser.GetContext ().StateTag == GETTINGVAL;
+		public static bool IsExpectingQuote (XmlParserContext context) => context.CurrentState is XmlAttributeState && context.StateTag == GETTINGVAL;
 	}
 }

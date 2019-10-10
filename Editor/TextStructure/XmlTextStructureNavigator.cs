@@ -53,13 +53,12 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 			// else use a spine from the end of the selection and update as needed
 			var lastParse = parser.LastOutput;
 			List<XObject> nodePath;
-			XmlParser spine = null;
+			XmlSpineParser spine = null;
 			if (lastParse != null && lastParse.TextSnapshot.Version.VersionNumber == activeSpan.Snapshot.Version.VersionNumber) {
 				var n = lastParse.XDocument.FindAtOrBeforeOffset (activeSpan.Start.Position);
 				nodePath = n.GetPath ();
 			} else {
-				//put spine parser in tree parser mode so it connects element closing nodes
-				spine = parser.GetSpineParser (activeSpan.Start).GetTreeParser ();
+				spine = parser.GetSpineParser (activeSpan.Start);
 				nodePath = spine.AdvanceToNodeEndAndGetNodePath (activeSpan.Snapshot);
 			}
 
@@ -123,7 +122,7 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 			throw new InvalidOperationException ();
 		}
 
-		bool ExpandSelection (List<XObject> nodePath, XmlParser spine, SnapshotSpan activeSpan, ref int index, ref SelectionLevel level)
+		bool ExpandSelection (List<XObject> nodePath, XmlSpineParser spine, SnapshotSpan activeSpan, ref int index, ref SelectionLevel level)
 		{
 			if (index - 1 < 0) {
 				return false;

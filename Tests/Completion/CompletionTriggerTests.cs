@@ -4,6 +4,7 @@
 using System.IO;
 using MonoDevelop.Xml.Editor.Completion;
 using MonoDevelop.Xml.Parser;
+using MonoDevelop.Xml.Tests.Parser;
 using NUnit.Framework;
 using NUnit.Framework.Internal;
 
@@ -92,8 +93,8 @@ namespace MonoDevelop.Xml.Tests.Completion
 				doc += typedChar;
 			}
 
-			var spine = new XmlParser (new XmlRootState (), false);
-			spine.Parse (new StringReader (doc));
+			var spine = new XmlSpineParser (new XmlRootState ());
+			spine.Parse (doc);
 
 			var result = XmlCompletionTriggering.GetTrigger (spine, reason, typedChar);
 			Assert.AreEqual (expectedTrigger, result.kind);

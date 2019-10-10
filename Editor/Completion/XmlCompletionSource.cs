@@ -43,13 +43,13 @@ namespace MonoDevelop.Xml.Editor.Completion
 				return CompletionContext.Empty;
 			}
 
-			var spine = XmlParser.GetSpineParser (triggerLocation);
+			var parser = XmlParser.GetSpineParser (triggerLocation);
 
 			// FIXME: cache the value from InitializeCompletion somewhere?
-			var (kind, _) = XmlCompletionTriggering.GetTrigger (spine, reason.Value, trigger.Character);
+			var (kind, _) = XmlCompletionTriggering.GetTrigger (parser, reason.Value, trigger.Character);
 
 			if (kind != XmlCompletionTrigger.None) {
-				List<XObject> nodePath = spine.GetNodePath (triggerLocation.Snapshot);
+				List<XObject> nodePath = parser.GetNodePath (triggerLocation.Snapshot);
 
 				session.Properties.AddProperty (typeof (XmlCompletionTrigger), kind);
 
@@ -68,13 +68,13 @@ namespace MonoDevelop.Xml.Editor.Completion
 					return await GetElementCompletionsAsync (session, triggerLocation, nodePath, kind == XmlCompletionTrigger.ElementWithBracket, token);
 
 				case XmlCompletionTrigger.Attribute:
-					IAttributedXObject attributedOb = (spine.Nodes.Peek () as IAttributedXObject) ?? spine.Nodes.Peek (1) as IAttributedXObject;
-					spine.Clone ().AdvanceUntilEnded ((XObject)attributedOb, triggerLocation.Snapshot, 1000);
+					IAttributedXObject attributedOb = (parser.Spine.Peek () as IAttributedXObject) ?? parser.Spine.Peek (1) as IAttributedXObject;
+					parser.Clone ().AdvanceUntilEnded ((XObject)attributedOb, triggerLocation.Snapshot, 1000);
 					var attributes = attributedOb.Attributes.ToDictionary (StringComparer.OrdinalIgnoreCase);
 					return await GetAttributeCompletionsAsync (session, triggerLocation, nodePath, attributedOb, attributes, token);
 
 				case XmlCompletionTrigger.AttributeValue:
-					if (spine.Nodes.Peek () is XAttribute att && spine.Nodes.Peek (1) is IAttributedXObject attributedObject) {
+					if (parser.Spine.Peek () is XAttribute att && parser.Spine.Peek (1) is IAttributedXObject attributedObject) {
 						return await GetAttributeValueCompletionsAsync (session, triggerLocation, nodePath, attributedObject, att, token);
 					}
 					break;

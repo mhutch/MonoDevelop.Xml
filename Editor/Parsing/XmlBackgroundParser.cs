@@ -30,13 +30,14 @@ namespace MonoDevelop.Xml.Editor.Completion
 			ITextSnapshot previousInput,
 			CancellationToken token)
 		{
-			var parser = new XmlParser (StateMachine, true);
+			var parser = new XmlTreeParser (StateMachine);
 			return Task.Run (() => {
 				var length = input.Length;
 				for (int i = 0; i < length; i++) {
 					parser.Push (input[i]);
 				}
-				return new XmlParseResult (parser.Nodes.GetRoot (), parser.Diagnostics, input);
+				var (doc, diagnostics) = parser.FinalizeDocument ();
+				return new XmlParseResult (doc, diagnostics, input);
 			}, token);
 		}
 
@@ -64,9 +65,9 @@ namespace MonoDevelop.Xml.Editor.Completion
 			return position;
 		}
 
-		public XmlParser GetSpineParser (SnapshotPoint point)
+		public XmlSpineParser GetSpineParser (SnapshotPoint point)
 		{
-			XmlParser parser = null;
+			XmlSpineParser parser = null;
 
 			var prevParse = LastOutput;
 			if (prevParse != null) {
@@ -76,14 +77,14 @@ namespace MonoDevelop.Xml.Editor.Completion
 					var state = StateMachine.TryRecreateState (obj, startPos);
 					if (state != null) {
 						LoggingService.LogDebug ($"XML parser recovered {state.Position}/{point.Position} state");
-						parser = new XmlParser (state, StateMachine);
+						parser = new XmlSpineParser (state, StateMachine);
 					}
 				}
 			}
 
 			if (parser == null) {
 				LoggingService.LogDebug ($"XML parser failed to recover any state");
-				parser = new XmlParser (StateMachine, false);
+				parser = new XmlSpineParser (StateMachine);
 			}
 
 			var end = Math.Min (point.Position, point.Snapshot.Length);
@@ -102,14 +103,14 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 	public class XmlParseResult
 	{
-		public XmlParseResult (XDocument xDocument, List<XmlDiagnosticInfo> diagnostics, ITextSnapshot textSnapshot)
+		public XmlParseResult (XDocument xDocument, List<XmlDiagnosticInfo> parseDiagnostics, ITextSnapshot textSnapshot)
 		{
 			XDocument = xDocument;
-			Diagnostics = diagnostics;
+			ParseDiagnostics = parseDiagnostics;
 			TextSnapshot = textSnapshot;
 		}
 
-		public List<XmlDiagnosticInfo> Diagnostics { get; }
+		public List<XmlDiagnosticInfo> ParseDiagnostics { get; }
 		public XDocument XDocument { get; }
 		public ITextSnapshot TextSnapshot { get; }
 	}

@@ -39,7 +39,7 @@ namespace MonoDevelop.Xml.Parser
 			return char.IsLetter (c) || c == '_';
 		}
 
-		public override XmlParserState PushChar (char c, IXmlParserContext context, ref string rollback)
+		public override XmlParserState PushChar (char c, XmlParserContext context, ref string rollback)
 		{
 			var namedObject = context.Nodes.Peek () as INamedXObject;
 			if (namedObject == null || namedObject.Name.Prefix != null)

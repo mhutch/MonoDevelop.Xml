@@ -67,9 +67,9 @@ namespace MonoDevelop.Xml.Editor.BraceCompletion
 				var spine = parser.GetSpineParser (openingPoint);
 				bool isOverType =
 					// in a quoted value typing its quote char over the end quote
-					XmlAttributeValueState.GetDelimiterChar (spine) == args.TypedChar
+					spine.GetAttributeValueDelimiter () == args.TypedChar
 					// typing a quote after after the attribute's equals sign
-					|| XmlAttributeState.IsExpectingQuote (spine);
+					|| spine.IsExpectingAttributeQuote ();
 				if (isOverType) {
 					using (var edit = args.SubjectBuffer.CreateEdit ()) {
 						edit.Replace (openingPoint.Position, 1, args.TypedChar.ToString ());
@@ -86,8 +86,8 @@ namespace MonoDevelop.Xml.Editor.BraceCompletion
 				// if we're in a state where we expect an attribute value quote
 				// and we're able to walk the parser to the end of of the line without completing the attribute
 				// and without ending in an incomplete attribute value, then it's reasonable to auto insert a matching quote
-				if (XmlAttributeState.IsExpectingQuote (spine)) {
-					var att = (XAttribute)spine.Nodes.Peek ();
+				if (spine.IsExpectingAttributeQuote ()) {
+					var att = (XAttribute)spine.Spine.Peek ();
 					if (AdvanceParserUntilConditionOrEol (spine, snapshot, p => att.Value != null, 1000) && att.Value == null && !(spine.CurrentState is XmlAttributeValueState)) {
 						using (var edit = args.SubjectBuffer.CreateEdit ()) {
 							//TODO create an undo transition between the two chars
@@ -109,7 +109,7 @@ namespace MonoDevelop.Xml.Editor.BraceCompletion
 
 		static bool IsQuoteChar (char ch) => ch == '"' || ch == '\'';
 
-		static bool AdvanceParserUntilConditionOrEol (XmlParser parser,
+		static bool AdvanceParserUntilConditionOrEol (XmlSpineParser parser,
 			ITextSnapshot snapshot,
 			Func<XmlParser, bool> condition,
 			int maxChars)

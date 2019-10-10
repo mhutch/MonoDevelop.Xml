@@ -103,7 +103,7 @@ namespace MonoDevelop.Xml.Editor.SmartIndent
 		{
 			//create a lightweight tree parser, which will actually close nodes
 			var spineParser = parser.GetSpineParser (line.Start);
-			var startNodes = spineParser.Nodes.ToList ();
+			var startNodes = spineParser.Spine.ToList ();
 			var startState = spineParser.CurrentState;
 			startNodes.Reverse ();
 
@@ -112,7 +112,7 @@ namespace MonoDevelop.Xml.Editor.SmartIndent
 				spineParser.Push (line.Snapshot[i]);
 			}
 
-			var endNodes = spineParser.Nodes.ToList ();
+			var endNodes = spineParser.Spine.ToList ();
 			endNodes.Reverse ();
 
 			//count the number of elements in the stack at the start of the line

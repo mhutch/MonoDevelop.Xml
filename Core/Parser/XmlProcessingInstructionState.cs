@@ -36,7 +36,7 @@ namespace MonoDevelop.Xml.Parser
 		const int NOMATCH = 0;
 		const int QUESTION = 1;
 		
-		public override XmlParserState PushChar (char c, IXmlParserContext context, ref string rollback)
+		public override XmlParserState PushChar (char c, XmlParserContext context, ref string rollback)
 		{
 			if (context.CurrentStateLength == 0) {
 				context.Nodes.Push (new XProcessingInstruction (context.Position - STARTOFFSET));
@@ -51,9 +51,9 @@ namespace MonoDevelop.Xml.Parser
 				// if the '?' is followed by a '>', the state has ended
 				// so attach a node to the DOM and end the state
 				var xpi = (XProcessingInstruction) context.Nodes.Pop ();
-				
+				xpi.End (context.Position);
+
 				if (context.BuildTree) {
-					xpi.End (context.Position);
 					((XContainer) context.Nodes.Peek ()).AddChildNode (xpi); 
 				}
 				return Parent;

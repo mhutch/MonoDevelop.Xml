@@ -98,12 +98,12 @@ namespace MonoDevelop.Xml.Tests.Parser
 
 		public void AssertInsideAttributeValue (string doc)
 		{
-			TestXmlParser.AssertState (doc, p => p.AssertStateIs<XmlAttributeValueState> ());
+			TestXmlParser.Parse (doc, p => p.AssertStateIs<XmlAttributeValueState> ());
 		}
 
 		public void AssertNotInsideAttributeValue (string doc)
 		{
-			TestXmlParser.AssertState (doc, p => p.AssertStateIsNot<XmlAttributeValueState> ());
+			TestXmlParser.Parse (doc, p => p.AssertStateIsNot<XmlAttributeValueState> ());
 		}
 	}
 }

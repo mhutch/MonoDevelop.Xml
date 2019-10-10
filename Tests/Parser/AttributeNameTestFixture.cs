@@ -87,8 +87,8 @@ namespace MonoDevelop.Xml.Tests.Parser
 
 		static void AssertAttributeName (string doc, string name)
 		{
-			TestXmlParser.AssertState (doc, p => {
-				var att = p.Nodes.FirstOrDefault () as XAttribute;
+			TestXmlParser.Parse (doc, p => {
+				var att = p.PeekSpine () as XAttribute;
 				Assert.NotNull (att);
 				Assert.NotNull (att.Name);
 				Assert.IsNull (att.Name.Prefix);
@@ -98,8 +98,8 @@ namespace MonoDevelop.Xml.Tests.Parser
 
 		static void NotAttribute (string doc)
 		{
-			TestXmlParser.AssertState (doc, p => {
-				var att = p.Nodes.FirstOrDefault () as XAttribute;
+			TestXmlParser.Parse (doc, p => {
+				var att = p.PeekSpine () as XAttribute;
 				Assert.IsNull (att);
 			});
 		}

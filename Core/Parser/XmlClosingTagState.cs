@@ -48,7 +48,7 @@ namespace MonoDevelop.Xml.Parser
 			Adopt (NameState);
 		}
 
-		public override XmlParserState PushChar (char c, IXmlParserContext context, ref string rollback)
+		public override XmlParserState PushChar (char c, XmlParserContext context, ref string rollback)
 		{
 			var ct = context.Nodes.Peek () as XClosingTag;
 			
@@ -82,16 +82,14 @@ namespace MonoDevelop.Xml.Parser
 					//clear the stack of intermediate unclosed tags
 					while (popCount > 1) {
 						if (context.Nodes.Pop () is XElement el)
-							context.Diagnostics?.LogError (string.Format ("Unclosed tag '{0}'", el.Name.FullName), ct.Span);
+							context.Diagnostics?.LogError (string.Format ("Unclosed tag '{0}'", el.Name.FullName), el.Span);
 						popCount--;
 					}
 					
 					//close the start tag, if we found it
 					if (popCount > 0) {
-						if (context.BuildTree)
-							((XElement) context.Nodes.Pop ()).Close (ct);
-						else
-							context.Nodes.Pop ();
+						// close it even if not in tree mode, as some spines may want to know whether an element was closed after advancing the parser
+						((XElement) context.Nodes.Pop ()).Close (ct);
 					} else {
 						if (context.BuildTree) {
 							context.Diagnostics?.LogError (

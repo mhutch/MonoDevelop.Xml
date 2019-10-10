@@ -16,7 +16,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		[Test]
 		public void PathTest1()
 		{
-			TestXmlParser.AssertTree (
+			TestXmlParser.Parse (
 				"<foo xmlns='" + namespaceURI + "'$><bar>",
 				n => TestXmlParser.AssertPath (
 					n,
@@ -28,7 +28,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		[Test]
 		public void PathTest2()
 		{
-			TestXmlParser.AssertTree (
+			TestXmlParser.Parse (
 				"<foo xmlns='" + namespaceURI + "'><$bar>",
 				n => TestXmlParser.AssertPath (
 					n,
@@ -41,7 +41,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		[Test]
 		public void PathTest3()
 		{
-			TestXmlParser.AssertTree (
+			TestXmlParser.Parse (
 				"<foo xmlns='" + namespaceURI + "'><b$ar>",
 				n => TestXmlParser.AssertPath (
 					n,
@@ -54,7 +54,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		[Test]
 		public void PathTest4()
 		{
-			TestXmlParser.AssertTree (
+			TestXmlParser.Parse (
 				"<foo xmlns='" + namespaceURI + "'><bar$>",
 				n => TestXmlParser.AssertPath (
 					n,
@@ -67,7 +67,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		[Test]
 		public void PathTest5()
 		{
-			TestXmlParser.AssertTree (
+			TestXmlParser.Parse (
 				"<foo xmlns='" + namespaceURI + "'><bar a$='a'>",
 				n => TestXmlParser.AssertPath (
 					n,
@@ -80,7 +80,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		[Test]
 		public void PathTest6()
 		{
-			TestXmlParser.AssertTree (
+			TestXmlParser.Parse (
 				"<foo xmlns='" + namespaceURI + "'><bar a='a$'>",
 				n => TestXmlParser.AssertPath (
 					n,
@@ -93,7 +93,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		[Test]
 		public void PathTest7()
 		{
-			TestXmlParser.AssertTree (
+			TestXmlParser.Parse (
 				"<foo xmlns='" + namespaceURI + "'><bar a='a'  $>",
 				n => TestXmlParser.AssertPath (
 					n,
@@ -106,7 +106,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		[Test]
 		public void PathTest8()
 		{
-			TestXmlParser.AssertTree (
+			TestXmlParser.Parse (
 				"<foo xmlns='" + namespaceURI + "'><bar$>",
 				n => TestXmlParser.AssertPath (
 					n,
@@ -119,7 +119,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		[Test]
 		public void PathTest9()
 		{
-			TestXmlParser.AssertTree (
+			TestXmlParser.Parse (
 				"<foo xmlns='" + namespaceURI + "'><bar \n\n hi='$'>",
 				n => TestXmlParser.AssertPath (
 					n,
@@ -132,7 +132,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		[Test]
 		public void PathTest10()
 		{
-			TestXmlParser.AssertTree (
+			TestXmlParser.Parse (
 				"<foo xmlns='" + namespaceURI + "'><bar $Id=\r\n</foo>",
 				n => TestXmlParser.AssertPath (
 					n,
@@ -145,7 +145,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		[Test]
 		public void PathTest11()
 		{
-			TestXmlParser.AssertTree (
+			TestXmlParser.Parse (
 				"<fo$o xmlns='" + namespaceURI + "'>",
 				n => TestXmlParser.AssertPath (
 					n,

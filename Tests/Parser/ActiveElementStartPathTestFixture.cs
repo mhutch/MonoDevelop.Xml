@@ -74,7 +74,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		[Test]
 		public void OutOfStartTagPathTest1()
 		{
-			TestXmlParser.AssertState (
+			TestXmlParser.Parse (
 				"<foo xmlns='" + namespaceURI + "'> $",
 				p => p.AssertStateIs<XmlRootState> ()
 			);
@@ -82,8 +82,8 @@ namespace MonoDevelop.Xml.Tests.Parser
 
 		static void AssertElementPath (string text, params QualifiedName[] qualifiedNames)
 		{
-			TestXmlParser.AssertState (text, p => {
-				var arr = p.Nodes.ToArray ();
+			TestXmlParser.Parse (text, p => {
+				var arr = p.GetContext ().Nodes.ToArray ();
 				Array.Reverse (arr);
 				Assert.AreEqual (
 					new XmlElementPath (qualifiedNames),

@@ -26,6 +26,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -33,7 +34,7 @@ using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
 {
-	public class XmlParserContext : IXmlParserContext
+	public class XmlParserContext
 	{
 		public XmlParserState PreviousState { get; set; }
 		public XmlParserState CurrentState { get; set; }
@@ -44,8 +45,6 @@ namespace MonoDevelop.Xml.Parser
 		public NodeStack Nodes { get; set; }
 		public bool BuildTree { get; set; }
 		public List<XmlDiagnosticInfo> Diagnostics { get; set; }
-
-		ICollection<XmlDiagnosticInfo> IXmlParserContext.Diagnostics => Diagnostics;
 
 		public void ConnectNodes ()
 		{
@@ -59,6 +58,18 @@ namespace MonoDevelop.Xml.Parser
 				prev = o as XNode;
 			}
 		}
+
+		internal XmlParserContext ShallowCopy () =>
+			new XmlParserContext {
+				Position = Position,
+				CurrentState = CurrentState,
+				CurrentStateLength = CurrentStateLength,
+				StateTag = StateTag,
+				PreviousState = PreviousState,
+				BuildTree = false,
+				KeywordBuilder = new StringBuilder (KeywordBuilder.ToString ()),
+				Nodes = Nodes.ShallowCopy ()
+			};
 
 		public void EndAll (bool pop)
 		{

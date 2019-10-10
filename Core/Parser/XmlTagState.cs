@@ -58,7 +58,7 @@ namespace MonoDevelop.Xml.Parser
 			Adopt (NameState);
 		}
 		
-		public override XmlParserState PushChar (char c, IXmlParserContext context, ref string rollback)
+		public override XmlParserState PushChar (char c, XmlParserContext context, ref string rollback)
 		{
 			var element = context.Nodes.Peek () as XElement;
 			
@@ -147,7 +147,7 @@ namespace MonoDevelop.Xml.Parser
 			return null;
 		}
 		
-		protected virtual void Close (XElement element, IXmlParserContext context, int endOffset)
+		protected virtual void Close (XElement element, XmlParserContext context, int endOffset)
 		{
 			//have already checked that element is not null, i.e. top of stack is our element
 			if (element.IsClosed)
@@ -218,6 +218,6 @@ namespace MonoDevelop.Xml.Parser
 			return null;
 		}
 
-		public static bool IsFree (XmlParser parser) => parser.CurrentState is XmlTagState && parser.GetContext ().StateTag == FREE;
+		public static bool IsFree (XmlParserContext context) => context.CurrentState is XmlTagState && context.StateTag == FREE;
 	}
 }

@@ -38,7 +38,7 @@ namespace MonoDevelop.Xml.Parser
 		const int SINGLE_DASH = 1;
 		const int DOUBLE_DASH = 2;
 		
-		public override XmlParserState PushChar (char c, IXmlParserContext context, ref string rollback)
+		public override XmlParserState PushChar (char c, XmlParserContext context, ref string rollback)
 		{
 			if (context.CurrentStateLength == 0) {
 				context.Nodes.Push (new XComment (context.Position - STARTOFFSET));

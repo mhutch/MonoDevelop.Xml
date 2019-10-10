@@ -38,44 +38,38 @@ using NUnit.Framework;
 
 namespace MonoDevelop.Xml.Tests.Parser
 {
-	public class TestXmlParser : XmlParser
+	public static class TestXmlParser
 	{
-		public TestXmlParser (XmlRootState rootState) : this (rootState, true)
+		public static void Parse (string doc, params Action<XmlParser>[] asserts)
 		{
-		}
-		
-		public TestXmlParser (XmlRootState rootState, bool buildTree) : base (rootState, buildTree)
-		{
-		}
-
-		public static void AssertState (string doc, params Action<TestXmlParser>[] asserts)
-		{
-			var p = new TestXmlParser (new XmlRootState ());
+			var p = new XmlTreeParser (new XmlRootState ());
 			p.Parse (doc, Array.ConvertAll (asserts, a => (Action)(() => a (p))));
 		}
 
-		public static void AssertTree (string txt, params Action<XNode>[] asserts)
+		public static void Parse (string txt, params Action<XNode>[] asserts)
 		{
-			var p = new TestXmlParser (new XmlRootState (), true);
+			var p = new XmlTreeParser (new XmlRootState ());
+			var context = p.GetContext ();
 
 			//parse and capture span info
 			var list = new List<int> ();
-			p.Parse (txt, Array.ConvertAll (asserts, a => (Action)(() => list.Add (p.Position))));
+			p.Parse (txt, Array.ConvertAll (asserts, a => (Action)(() => list.Add (context.Position))));
 
-			var doc = (XDocument) p.Nodes.Last ();
+			var doc = (XDocument)context.Nodes.Last ();
 
 			for (int i = 0; i < asserts.Length; i++) {
-				asserts [i] (doc.AllDescendentNodes.FirstOrDefault (n => n.Span.Contains (list[i])));
+				asserts[i] (doc.AllDescendentNodes.FirstOrDefault (n => n.Span.Contains (list[i])));
 			}
 		}
 
-		public void Parse (string doc, params Action[] asserts) => Parse (doc, '$', false, asserts);
+		public static void Parse (this XmlParser parser, string doc, params Action[] asserts) => parser.Parse (doc, '$', false, asserts);
 
-		public void Parse (string doc, char trigger, params Action[] asserts) => Parse (doc, trigger, false, asserts);
+		public static void Parse (this XmlParser parser, string doc, char trigger, params Action[] asserts) => parser.Parse (doc, trigger, false, asserts);
 
-		public void Parse (string doc, char trigger = '$', bool preserveWindowsNewlines = false, params Action[] asserts)
+		public static void Parse (this XmlParser parser, string doc, char trigger = '$', bool preserveWindowsNewlines = false, params Action[] asserts)
 		{
-			Assert.AreEqual (Position, 0);
+			var context = parser.GetContext ();
+			Assert.AreEqual (context.Position, 0);
 			int assertNo = 0;
 			for (int i = 0; i < doc.Length; i++) {
 				char c = doc[i];
@@ -83,24 +77,28 @@ namespace MonoDevelop.Xml.Tests.Parser
 					continue;
 				}
 				if (c == trigger) {
-					if (i + 1 < doc.Length && doc [i + 1] == trigger) {
-						Push (c);
+					if (i + 1 < doc.Length && doc[i + 1] == trigger) {
+						parser.Push (c);
 						i++;
 						continue;
 					}
 					asserts[assertNo] ();
 					assertNo++;
 				} else {
-					Push (c);
+					parser.Push (c);
 				}
 			}
 			Assert.AreEqual (asserts.Length, assertNo);
 		}
-		
-		public string GetPath ()
+
+		public static XObject PeekSpine (this XmlParser parser) => parser.GetContext ().Nodes.Peek ();
+
+		public static XObject PeekSpine (this XmlParser parser, int down) => parser.GetContext ().Nodes.Peek (down);
+
+		public static string GetPath (this XmlParser parser)
 		{
 			System.Text.StringBuilder sb = new System.Text.StringBuilder ();
-			foreach (XObject obj in Nodes) {
+			foreach (XObject obj in parser.GetContext().Nodes) {
 				if (obj is XDocument) {
 					sb.Insert (0, '/');
 					break;
@@ -111,58 +109,63 @@ namespace MonoDevelop.Xml.Tests.Parser
 			return sb.ToString ();
 		}
 		
-		public void AssertPath (string path)
+		public static void AssertPath (this XmlParser parser, string path)
 		{
-			Assert.AreEqual (path, GetPath ());
+			Assert.AreEqual (path, parser.GetPath ());
 		}
 		
-		public Action PathAssertion (string path)
+		public static Action PathAssertion (this XmlParser parser, string path)
 		{
 			return delegate {
-				Assert.AreEqual (path, GetPath ());
+				Assert.AreEqual (path, parser.GetPath ());
 			};
 		}
 		
-		public void AssertStateIs<T> () where T : XmlParserState
+		public static void AssertStateIs<T> (this XmlParser parser) where T : XmlParserState
 		{
-			Assert.IsTrue (CurrentState is T, "Current state is {0} not {1}", CurrentState.GetType ().Name, typeof (T).Name);
+			var context = parser.GetContext ();
+			Assert.IsTrue (context.CurrentState is T, "Current state is {0} not {1}", context.CurrentState.GetType ().Name, typeof (T).Name);
 		}
 
-		public void AssertStateIsNot<T> () where T : XmlParserState
+		public static void AssertStateIsNot<T> (this XmlParser parser) where T : XmlParserState
 		{
-			Assert.IsFalse (CurrentState is T, "Current state is {0}", typeof (T).Name);
+			var context = parser.GetContext ();
+			Assert.IsFalse (context.CurrentState is T, "Current state is {0}", typeof (T).Name);
 		}
 		
-		public void AssertNodeDepth (int depth)
+		public static void AssertNodeDepth (this XmlParser parser, int depth)
 		{
-			Assert.AreEqual (depth, Nodes.Count, "Node depth is {0} not {1}", Nodes.Count, depth);
+			var nodes = parser.GetContext ().Nodes;
+			Assert.AreEqual (depth, nodes.Count, "Node depth is {0} not {1}", nodes.Count, depth);
 		}
 		
-		public void AssertNodeIs<T> (int down)
+		public static void AssertNodeIs<T> (this XmlParser parser, int down)
 		{
-			XObject n = Nodes.Peek (down);
-			AssertNodeDepth (down);
+			XObject n = parser.GetContext ().Nodes.Peek (down);
+			AssertNodeDepth (parser, down);
 			Assert.IsTrue (n is T, "Node down {0} is {1}, not {2}", down, n.GetType ().Name, typeof (T).Name);
 		}
 		
-		public void AssertNodeIs<T> ()
+		public static void AssertNodeIs<T> (this XmlParser parser)
 		{
-			XObject n = Nodes.Peek ();
+			var context = parser.GetContext ();
+			XObject n = context.Nodes.Peek ();
 			Assert.IsTrue (n is T, "Node is {0}, not {1}", n.GetType ().Name, typeof (T).Name);
 		}
 		
-		public void AssertErrorCount (int count)
+		public static void AssertErrorCount (this XmlParser parser, int count)
 		{
-			AssertErrorCount (count, x => true);
+			AssertErrorCount (parser, count, x => true);
 		}
 		
-		public void AssertErrorCount (int count, Func<XmlDiagnosticInfo,bool> filter)
+		public static void AssertErrorCount (this XmlParser parser, int count, Func<XmlDiagnosticInfo,bool> filter)
 		{
 			string msg = null;
-			var actualCount = Diagnostics.Count (filter);
+			var diagnostics = parser.GetContext ().Diagnostics;
+			var actualCount = diagnostics.Count (filter);
 			if (actualCount != count) {
 				var sb = new System.Text.StringBuilder ();
-				foreach (var err in Diagnostics)
+				foreach (var err in diagnostics)
 					if (filter (err))
 						sb.AppendFormat ("{0}@{1}: {2}\n", err.Severity, err.Span, err.Message);
 				msg = sb.ToString ();
@@ -170,14 +173,14 @@ namespace MonoDevelop.Xml.Tests.Parser
 			Assert.AreEqual (count, actualCount, msg);
 		}
 
-		public void AssertAttributes (params string[] nameValuePairs)
+		public static void AssertAttributes (this XmlParser parser, params string[] nameValuePairs)
 		{
-			AssertNodeIs<IAttributedXObject> ();
-			IAttributedXObject obj = (IAttributedXObject) Nodes.Peek ();
-			AssertAttributes (obj, nameValuePairs);
+			parser.AssertNodeIs<IAttributedXObject> ();
+			IAttributedXObject obj = (IAttributedXObject) parser.GetContext ().Nodes.Peek ();
+			parser.AssertAttributes (obj, nameValuePairs);
 		}
 
-		public void AssertAttributes (IAttributedXObject obj, params string[] nameValuePairs)
+		public static void AssertAttributes (this XmlParser parser, IAttributedXObject obj, params string[] nameValuePairs)
 		{
 			if ((nameValuePairs.Length % 2) != 0)
 				throw new ArgumentException ("nameValuePairs");
@@ -192,30 +195,30 @@ namespace MonoDevelop.Xml.Tests.Parser
 			Assert.AreEqual (nameValuePairs.Length, i);
 		}
 		
-		public void AssertNoErrors ()
+		public static void AssertNoErrors (this XmlParser parser)
 		{
-			AssertErrorCount (0);
+			parser.AssertErrorCount (0);
 		}
 		
-		public void AssertEmpty ()
+		public static void AssertEmpty (this XmlParser parser)
 		{
-			AssertNodeDepth (1);
-			AssertNodeIs<XDocument> (); 
+			parser.AssertNodeDepth (1);
+			parser.AssertNodeIs<XDocument> (); 
 		}
 		
-		public void AssertName (string name)
+		public static void AssertName (this XmlParser parser, string name)
 		{
-			AssertName (0, name);
+			parser.AssertName (0, name);
 		}
 		
-		public void AssertName (int down, string name)
+		public static void AssertName (this XmlParser parser, int down, string name)
 		{
-			XObject node = Nodes.Peek (down);
+			XObject node = parser.GetContext ().Nodes.Peek (down);
 			Assert.IsTrue (node is INamedXObject);
 			Assert.AreEqual (name, ((INamedXObject)node).Name.FullName);
 		}
 
-		public static void AssertPath (XNode node, params QualifiedName[] qualifiedNames)
+		public static void AssertPath (this XNode node, params QualifiedName[] qualifiedNames)
 		{
 			var path = new List<XNode> ();
 			while (node != null) {

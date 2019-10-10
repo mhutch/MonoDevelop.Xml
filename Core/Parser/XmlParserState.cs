@@ -47,7 +47,7 @@ namespace MonoDevelop.Xml.Parser
 		/// The next state. A new or parent <see cref="XmlParserState"/> will change the parser state; 
 		/// the current state or null will not.
 		/// </returns>
-		public abstract XmlParserState PushChar (char c, IXmlParserContext context, ref string rollback);
+		public abstract XmlParserState PushChar (char c, XmlParserContext context, ref string rollback);
 
 		public XmlParserState Parent { get; private set; }
 

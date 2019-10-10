@@ -34,8 +34,8 @@ namespace MonoDevelop.Xml.Tests.Parser
 
 		public void AssertAttributeName (string doc, string name)
 		{
-			TestXmlParser.AssertState (doc, p => {
-				var att = p.Nodes.First () as XAttribute;
+			TestXmlParser.Parse (doc, p => {
+				var att = p.PeekSpine () as XAttribute;
 				Assert.NotNull (att);
 				Assert.AreEqual (name, GetName (p));
 			});
@@ -43,14 +43,15 @@ namespace MonoDevelop.Xml.Tests.Parser
 
 		static string GetName (XmlParser parser)
 		{
-			var namedObject = parser.Nodes.First () as INamedXObject;
+			var namedObject = parser.PeekSpine () as INamedXObject;
 			Assert.NotNull (namedObject);
 			if (namedObject.IsNamed)
 				return namedObject.Name.ToString ();
 
-			var state = parser.CurrentState as XmlNameState;
+			var context = parser.GetContext ();
+			var state = context.CurrentState as XmlNameState;
 			Assert.NotNull (state);
-			return parser.GetContext ().KeywordBuilder.ToString ();
+			return context.KeywordBuilder.ToString ();
 		}
 	}
 }

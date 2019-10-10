@@ -38,7 +38,7 @@ namespace MonoDevelop.Xml.Parser
 		const int SINGLE_BRACKET = 1;
 		const int DOUBLE_BRACKET = 2;
 		
-		public override XmlParserState PushChar (char c, IXmlParserContext context, ref string rollback)
+		public override XmlParserState PushChar (char c, XmlParserContext context, ref string rollback)
 		{
 			if (context.CurrentStateLength == 0) {
 				context.Nodes.Push (new XCData (context.Position - STARTOFFSET));
@@ -55,9 +55,9 @@ namespace MonoDevelop.Xml.Parser
 				// if the ']]' is followed by a '>', the state has ended
 				// so attach a node to the DOM and end the state
 				var cdata = (XCData) context.Nodes.Pop ();
+				cdata.End (context.Position + 1);
 				
 				if (context.BuildTree) {
-					cdata.End (context.Position + 1);
 					((XContainer) context.Nodes.Peek ()).AddChildNode (cdata); 
 				}
 				return Parent;

@@ -82,8 +82,8 @@ namespace MonoDevelop.Xml.Tests.Parser
 
 		public void AssertIsNamespaceDeclaration (string doc)
 		{
-			TestXmlParser.AssertState (doc, p => {
-				var node = p.Nodes.FirstOrDefault () as XAttribute;
+			TestXmlParser.Parse (doc, p => {
+				var node = p.PeekSpine () as XAttribute;
 				Assert.NotNull (node);
 				Assert.IsTrue (node.IsNamed);
 				if (node.Name.HasPrefix)
@@ -95,8 +95,8 @@ namespace MonoDevelop.Xml.Tests.Parser
 
 		public void AssertNotNamespaceDeclaration (string doc)
 		{
-			TestXmlParser.AssertState (doc, p => {
-				var node = p.Nodes.FirstOrDefault () as XAttribute;
+			TestXmlParser.Parse (doc, p => {
+				var node = p.PeekSpine () as XAttribute;
 				if (node != null && node.IsNamed) {
 					if (node.Name.HasPrefix)
 						Assert.AreNotEqual ("xmlns", node.Name.Prefix);

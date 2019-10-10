@@ -62,30 +62,13 @@ namespace MonoDevelop.Xml.Editor.Commands
 
 			var position = args.TextView.Caret.Position.BufferPosition;
 			var spineParser = parser.GetSpineParser (position);
-			var el = spineParser.Nodes.Peek () as XElement;
+			var el = spineParser.Spine.Peek () as XElement;
 			if (el == null || !el.IsEnded || !el.IsNamed || el.Span.End != position.Position) {
 				return;
 			}
 
-			var treeParser = spineParser.GetTreeParser ();
-			el = (XElement) treeParser.Nodes.Peek ();
-
-			var snapshot = position.Snapshot;
-			int nodeCount = treeParser.Nodes.Count;
-
-			// walk the parser forward until this node is closed or pops off the stack
-			// this is capped at 500 chars so it doesn't hang the IDE with large documents
-			int maxPos = Math.Min (position.Position + 500, snapshot.Length);
-			for (
-				int i = position;
-				i < maxPos && treeParser.Nodes.Count >= nodeCount;
-				i++)
-			{
-				treeParser.Push (snapshot[i]);
-				if (el.IsClosed) {
-					return;
-				}
-			}
+			el = (XElement) spineParser.Spine.Peek ();
+			spineParser.AdvanceUntilClosed (el, position.Snapshot);
 
 			// also check for orphaned closing tags in this element's parent
 			// this is not as accurate as the tree parse we did above as it uses
