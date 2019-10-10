@@ -59,7 +59,7 @@ namespace MonoDevelop.Xml.Parser
 					string s = context.KeywordBuilder.ToString ();
 					int i = s.IndexOf (':');
 					if (i < 0) {
-						namedObject.Name = new XName (s);
+						namedObject.Name = s;
 					} else {
 						namedObject.Name = new XName (s.Substring (0, i), s.Substring (i + 1));
 					}

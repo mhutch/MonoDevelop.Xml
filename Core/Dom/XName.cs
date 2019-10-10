@@ -32,14 +32,14 @@ namespace MonoDevelop.Xml.Dom
 	{
 		public XName (string prefix, string name)
 		{
-			this.Prefix = prefix;
-			this.Name = name;
+			Prefix = prefix;
+			Name = name;
 		}
 
 		public XName (string name)
 		{
 			Prefix = null;
-			this.Name = name;
+			Name = name;
 		}
 
 		public static XName Empty => new XName (null);
@@ -99,5 +99,7 @@ namespace MonoDevelop.Xml.Dom
 				return Name;
 			return Prefix + ":" + Name;
 		}
+
+		public static implicit operator XName (string name) => new XName (name);
 	}
 }

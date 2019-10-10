@@ -23,7 +23,7 @@ namespace MonoDevelop.Xml.Dom
 
 		public static bool IsTrue (this XAttributeCollection attributes, string name)
 		{
-			var att = attributes.Get (new XName (name), true);
+			var att = attributes.Get (name, true);
 			return att != null && string.Equals (att.Value, "true", StringComparison.OrdinalIgnoreCase);
 		}
 
