@@ -4,7 +4,7 @@
 
 using Microsoft.VisualStudio.Text.Tagging;
 
-namespace MonoDevelop.Xml.Editor.Tags
+namespace MonoDevelop.Xml.Editor.Tagging
 {
 	/// <summary>
 	/// The base type of any text marker tags that can be navigated with Ctrl+Shift+Up and Ctrl+Shift+Down.

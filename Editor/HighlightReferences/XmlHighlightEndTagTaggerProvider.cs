@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Threading;
 using Microsoft.VisualStudio.Utilities;
 using MonoDevelop.Xml.Editor;
-using MonoDevelop.Xml.Editor.Tags;
+using MonoDevelop.Xml.Editor.Tagging;
 
 namespace MonoDevelop.MSBuild.Editor.HighlightReferences
 {

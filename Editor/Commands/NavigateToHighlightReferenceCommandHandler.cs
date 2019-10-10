@@ -16,7 +16,7 @@ using Microsoft.VisualStudio.Text.Editor.Commanding.Commands;
 using Microsoft.VisualStudio.Text.Outlining;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Utilities;
-using MonoDevelop.Xml.Editor.Tags;
+using MonoDevelop.Xml.Editor.Tagging;
 using VSCommanding = Microsoft.VisualStudio.Commanding;
 
 namespace MonoDevelop.Xml.Editor.Commands
