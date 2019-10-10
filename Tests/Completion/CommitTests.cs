@@ -20,7 +20,7 @@ namespace MonoDevelop.Xml.Tests.Completion
 	{
 		protected override string ContentTypeName => CompletionTestContentType.Name;
 		protected override (EditorEnvironment, EditorCatalog) InitializeEnvironment ()
-			=> TestEnvironment.EnsureInitialized ();
+			=> XmlTestEnvironment.EnsureInitialized ();
 
 		[Test]
 		public Task SingleClosingTag ()

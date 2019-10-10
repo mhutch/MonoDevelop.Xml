@@ -111,6 +111,6 @@ namespace MonoDevelop.Xml.Tests.Completion
 			result.AssertContains ("!--");
 		}
 
-		protected override (EditorEnvironment, EditorCatalog) InitializeEnvironment () => TestEnvironment.EnsureInitialized ();
+		protected override (EditorEnvironment, EditorCatalog) InitializeEnvironment () => XmlTestEnvironment.EnsureInitialized ();
 	}
 }

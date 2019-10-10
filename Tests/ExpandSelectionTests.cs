@@ -43,7 +43,7 @@ namespace MonoDevelop.Xml.Tests
 	{
 		protected override string ContentTypeName => XmlContentTypeNames.XmlCore;
 
-		protected override (EditorEnvironment, EditorCatalog) InitializeEnvironment () => TestEnvironment.EnsureInitialized ();
+		protected override (EditorEnvironment, EditorCatalog) InitializeEnvironment () => XmlTestEnvironment.EnsureInitialized ();
 
 		const string Document = @"<!-- this is
 a comment-->

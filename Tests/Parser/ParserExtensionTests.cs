@@ -17,7 +17,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 	public class ParserExtensionTests : EditorTestBase
 	{
 		protected override string ContentTypeName => XmlContentTypeNames.XmlCore;
-		protected override (EditorEnvironment, EditorCatalog) InitializeEnvironment () => TestEnvironment.EnsureInitialized ();
+		protected override (EditorEnvironment, EditorCatalog) InitializeEnvironment () => XmlTestEnvironment.EnsureInitialized ();
 
 		[Test]
 		[TestCase ("<a><b>", "")]

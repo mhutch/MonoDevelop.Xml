@@ -21,7 +21,7 @@ namespace MonoDevelop.Xml.Tests
 	{
 		protected override string ContentTypeName => CompletionTestContentType.Name;
 
-		protected override (EditorEnvironment, EditorCatalog) InitializeEnvironment () => TestEnvironment.EnsureInitialized ();
+		protected override (EditorEnvironment, EditorCatalog) InitializeEnvironment () => XmlTestEnvironment.EnsureInitialized ();
 
 		[Test]
 		[TestCase ("<a>|", 4)] // single indent inside one element
@@ -67,7 +67,9 @@ namespace MonoDevelop.Xml.Tests
 
 		public IEditorOptions Parent { get => throw new NotImplementedException (); set => throw new NotImplementedException (); }
 
+		#pragma warning disable 67
 		public event EventHandler<EditorOptionChangedEventArgs> OptionChanged;
+		#pragma warning restore 67
 
 		public bool ClearOptionValue (string optionId) => throw new NotImplementedException ();
 
