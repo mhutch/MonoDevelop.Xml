@@ -108,11 +108,6 @@ namespace MonoDevelop.Xml.Tests.EditorTestHelpers
 
 			foreach (var c in commands) {
 				c (commandService);
-
-				//ensure the computation is completed before we continue typing
-				if (textView.Properties.TryGetProperty (typeof (IAsyncCompletionSession), out IAsyncCompletionSession session)) {
-					session.GetComputedItems (CancellationToken.None);
-				}
 			}
 
 			Assert.AreEqual (afterDocumentText, textView.TextBuffer.CurrentSnapshot.GetText ());

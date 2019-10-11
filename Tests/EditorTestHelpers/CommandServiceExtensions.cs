@@ -1,8 +1,10 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Threading;
 using Microsoft.VisualStudio.Commanding;
+using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Editor.Commanding;
@@ -36,10 +38,19 @@ namespace MonoDevelop.Xml.Tests.EditorTestHelpers
 			this IEditorCommandHandlerService commandService,
 			Func<ITextView, ITextBuffer, T> argsFactory) where T : EditorCommandArgs
 		{
+			ITextView textView = null;
+			Func<ITextView, ITextBuffer, T> capturingArgsFactory = (v, b) => { textView = v; return argsFactory (v, b); };
 			if (commandService.GetCommandState (argsFactory, Unspecified).IsAvailable) {
-				commandService.Execute (argsFactory, Noop);
+				commandService.Execute (capturingArgsFactory, Noop);
 			} else {
 				throw new InvalidOperationException ($"No handler available for `{typeof (T)}`");
+			}
+
+			//ensure the computation is completed before we continue typing
+			if (textView != null) {
+				if (textView.Properties.TryGetProperty (typeof (IAsyncCompletionSession), out IAsyncCompletionSession session)) {
+					session.GetComputedItems (CancellationToken.None);
+				}
 			}
 		}
 
