@@ -101,6 +101,10 @@ namespace MonoDevelop.Xml.Parser
 					return false;
 				}
 			}
+			// if at end of document, consider text nodes to be ended anyways
+			if (parser.Position == text.Length && ob is XText xt) {
+				xt.End (text.GetTextBetween (xt.Span.Start, text.Length));
+			}
 			return false;
 		}
 
