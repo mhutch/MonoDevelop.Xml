@@ -88,7 +88,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 		Task<TOutput> StartOperationAsync (TInput input, CancellationToken token)
 		{
 			var lastSuccessful = lastSuccessfulOperation;
-			if (lastSuccessful != null && CompareInputs (lastSuccessful.Input, input) > 0) {
+			if (lastSuccessful != null && CompareInputs (lastSuccessful.Input, input) < 0) {
 				return StartOperationAsync (input, lastSuccessful.Output, lastSuccessful.Input, token);
 			}
 			return StartOperationAsync (input, default, null, token);
