@@ -112,5 +112,36 @@ namespace MonoDevelop.Xml.Dom
 			}
 			return dict;
 		}
+
+		public static XNode FindPreviousNode (this XNode node)
+			=> node.FindPreviousSibling () ?? node.Parent as XNode;
+
+		public static XNode FindPreviousSibling (this XNode node)
+		{
+			if (node.Parent is XContainer container) {
+				var n = container.FirstChild;
+				while (n != null) {
+					if (n.NextSibling == node) {
+						return n;
+					}
+					n = n.NextSibling;
+				}
+			}
+			return null;
+		}
+
+		public static XAttribute FindPreviousSibling (this XAttribute att)
+		{
+			if (att.Parent is IAttributedXObject p && p.Attributes is XAttributeCollection atts) {
+				var a = atts.First;
+				while (a != null) {
+					if (a.NextSibling == att) {
+						return a;
+					}
+					a = a.NextSibling;
+				}
+			}
+			return null;
+		}
 	}
 }
