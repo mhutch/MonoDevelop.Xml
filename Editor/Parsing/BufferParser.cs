@@ -15,8 +15,15 @@ namespace MonoDevelop.Xml.Editor.Completion
 		public static TParser GetParser<TParser> (ITextBuffer buffer) where TParser : BufferParser<TParseResult>, new()
 		{
 			var parser = buffer.Properties.GetOrCreateSingletonProperty (typeof (TParser), () => new TParser ());
-			//avoid capturing by calling this afterwards
+
+			//avoid capturing by calling this outside the lambda
 			if (parser.Buffer == null) {
+				if (!buffer.ContentType.IsOfType (parser.ContentType)) {
+					parser.Dispose ();
+					throw new ArgumentException (
+						$"Buffer content type is {buffer.ContentType.TypeName}, expecting {parser.ContentType}",
+						nameof (buffer));
+				}
 				parser.Initialize ((ITextBuffer2)buffer);
 			}
 			return parser;
@@ -34,6 +41,8 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 			Initialize ();
 		}
+
+		protected abstract string ContentType { get; }
 
 		protected ITextBuffer2 Buffer { get; private set; }
 
@@ -58,21 +67,17 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 		void BufferContentTypeChanged (object sender, ContentTypeChangedEventArgs e)
 		{
-			Dispose ();
+			if (!e.AfterContentType.IsOfType (ContentType)) {
+				Dispose ();
+			}
 		}
 
-		public void Dispose ()
-		{
-			Dispose (true);
-			GC.SuppressFinalize (this);
-		}
-
-		protected virtual void Dispose (bool disposing)
+		protected override void Dispose (bool disposing)
 		{
 			if (disposing && Buffer != null) {
 				Buffer.ChangedOnBackground -= BufferChangedOnBackground;
 				Buffer.ContentTypeChanged -= BufferContentTypeChanged;
-				Buffer.Properties.RemoveProperty (GetType ().Name);
+				Buffer.Properties.RemoveProperty (GetType ());
 				Buffer = null;
 			}
 		}

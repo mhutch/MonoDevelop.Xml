@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace MonoDevelop.Xml.Editor.Completion
 {
-	public abstract partial class BackgroundProcessor<TInput, TOutput>
+	public abstract partial class BackgroundProcessor<TInput, TOutput> : IDisposable
 		where TInput : class
 		where TOutput : class
 	{
@@ -108,6 +108,18 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 			currentOperation = current = CreateOperation (input);
 			return current.Task;
+		}
+
+		protected virtual void Dispose (bool disposing)
+		{
+		}
+
+		~BackgroundProcessor () => Dispose (false);
+
+		public void Dispose ()
+		{
+			Dispose (true);
+			GC.SuppressFinalize (this);
 		}
 	}
 }

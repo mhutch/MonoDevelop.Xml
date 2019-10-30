@@ -20,6 +20,8 @@ namespace MonoDevelop.Xml.Editor.Completion
 			StateMachine = CreateParserStateMachine ();
 		}
 
+		protected override string ContentType => XmlContentTypeNames.XmlCore;
+
 		protected virtual XmlRootState CreateParserStateMachine () => new XmlRootState ();
 
 		// the state machine does not store any state itself, so we can re-use it
