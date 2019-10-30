@@ -18,6 +18,9 @@ namespace MonoDevelop.Xml.Dom
 		public bool Contains (int offset) => offset >= Start && offset < End;
 
 		public bool ContainsOuter (int offset) => offset >= Start && offset <= End;
+		public bool Contains (TextSpan other) => Start <= other.Start && (End > other.End || (End == other.End && other.Length > 0));
+		public bool ContainsOuter (TextSpan other) => Start <= other.Start && End >= other.End;
+		public bool Intersects (TextSpan other) => other.Start <= End && other.End >= Start;
 
 		public static TextSpan FromBounds (int start, int end) => new TextSpan (start, end - start);
 
