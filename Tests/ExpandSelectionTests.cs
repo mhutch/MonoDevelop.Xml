@@ -24,16 +24,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.VisualStudio.MiniEditor;
 using Microsoft.VisualStudio.Text;
-using Microsoft.VisualStudio.Text.Operations;
+
 using MonoDevelop.Xml.Editor;
 using MonoDevelop.Xml.Editor.Completion;
 using MonoDevelop.Xml.Tests.Completion;
 using MonoDevelop.Xml.Tests.EditorTestHelpers;
+
 using NUnit.Framework;
 
 namespace MonoDevelop.Xml.Tests
@@ -96,24 +97,25 @@ a comment-->";
 
 		const string CommentBar = @"<!--another comment-->";
 
-		//args are line, col, then the expected sequence of expansions
+		//args are document, line, col, then the expected sequence of expansions
 		[Test]
-		[TestCase (1, 2, CommentDoc)]
-		[TestCase (3, 2, "foo", ElementFoo, ElementWithBodyFoo)]
-		[TestCase (3, 3, "foo", ElementFoo, ElementWithBodyFoo)]
-		[TestCase (3, 15, "hi", AttributeHello, AttributesFoo, ElementFoo, ElementWithBodyFoo)]
-		[TestCase (3, 7, "hello", AttributeHello, AttributesFoo, ElementFoo, ElementWithBodyFoo)]
-		[TestCase (4, 7, TextNode, BodyFoo, ElementWithBodyFoo)]
-		[TestCase (5, 22, "done", AttributeThing, ElementBaz, BodyBar, ElementWithBodyBar, BodyFoo, ElementWithBodyFoo)]
-		[TestCase (6, 12, CommentBar, BodyBar, ElementWithBodyBar, BodyFoo, ElementWithBodyFoo)]
+		[TestCase (Document, 1, 2, CommentDoc)]
+		[TestCase (Document, 3, 2, "foo", ElementFoo, ElementWithBodyFoo)]
+		[TestCase (Document, 3, 3, "foo", ElementFoo, ElementWithBodyFoo)]
+		[TestCase (Document, 3, 15, "hi", AttributeHello, AttributesFoo, ElementFoo, ElementWithBodyFoo)]
+		[TestCase (Document, 3, 7, "hello", AttributeHello, AttributesFoo, ElementFoo, ElementWithBodyFoo)]
+		[TestCase (Document, 4, 7, TextNode, BodyFoo, ElementWithBodyFoo)]
+		[TestCase (Document, 5, 22, "done", AttributeThing, ElementBaz, BodyBar, ElementWithBodyBar, BodyFoo, ElementWithBodyFoo)]
+		[TestCase (Document, 6, 12, CommentBar, BodyBar, ElementWithBodyBar, BodyFoo, ElementWithBodyFoo)]
 		public async Task TestExpandShrink (object[] args)
 		{
-			var buffer = CreateTextBuffer (Document);
+			var buffer = CreateTextBuffer ((string)args[0]);
 			var parser = XmlBackgroundParser.GetParser<XmlBackgroundParser> ((ITextBuffer2)buffer);
 			var snapshot = buffer.CurrentSnapshot;
 			var navigator = Catalog.TextStructureNavigatorSelectorService.GetTextStructureNavigator (buffer);
-			var line = snapshot.GetLineFromLineNumber ((int)args[0] - 1);
-			var offset = line.Start + (int)args[1] - 1;
+
+			var line = snapshot.GetLineFromLineNumber ((int)args[1] - 1);
+			var offset = line.Start + (int)args[2] - 1;
 
 			// it's extremely unlikely the parser will hve an up to date parse result yet
 			// so this should use the spine parser codepath
@@ -123,7 +125,7 @@ a comment-->";
 			var span = Span (offset, 0);
 
 			//check expanding causes correct selections
-			for (int i = 2; i < args.Length; i++) {
+			for (int i = 3; i < args.Length; i++) {
 				span = navigator.GetSpanOfEnclosing (span);
 				var text = snapshot.GetText (span);
 				Assert.AreEqual (args[i], text);
@@ -140,7 +142,7 @@ a comment-->";
 			span = Span (offset, 0);
 
 			//check expanding causes correct selections
-			for (int i = 2; i < args.Length; i++) {
+			for (int i = 3; i < args.Length; i++) {
 				span = navigator.GetSpanOfEnclosing (span);
 				var text = snapshot.GetText (span);
 				Assert.AreEqual (args[i], text);
