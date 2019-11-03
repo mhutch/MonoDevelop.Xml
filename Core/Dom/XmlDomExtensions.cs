@@ -143,5 +143,52 @@ namespace MonoDevelop.Xml.Dom
 			}
 			return null;
 		}
+
+		/// <summary>
+		/// Get the nodes from the document that intersect a particular range.
+		/// </summary>
+		public static IEnumerable<XNode> GetNodesIntersectingRange (this XDocument document, TextSpan span)
+		{
+			var startObj = document.FindAtOrBeforeOffset (span.Start);
+			var node = startObj as XNode ?? startObj.Parents.OfType<XNode> ().First ();
+
+			foreach (var n in node.FollowingNodes ()) {
+				if (n.Span.Start > span.End) {
+					yield break;
+				}
+				if (n.Span.Intersects (span)) {
+					yield return n;
+				}
+			}
+		}
+
+		/// <summary>
+		/// Gets subsequent nodes in the document in the order they appears in the text.
+		/// </summary>
+		public static IEnumerable<XNode> FollowingNodes (this XNode node)
+		{
+			while (node != null) {
+				yield return node;
+				if (node is XContainer c) {
+					foreach (var n in c.AllDescendentNodes) {
+						yield return n;
+					}
+				}
+				while (node != null && node.NextSibling == null) {
+					node = (XNode)node.Parent as XNode;
+				}
+				node = node?.NextSibling;
+			}
+		}
+
+		public static IEnumerable<T> SelfAndParentsOfType<T> (this XObject obj)
+		{
+			while (obj != null) {
+				if (obj is T t) {
+					yield return t;
+				}
+				obj = obj.Parent;
+			}
+		}
 	}
 }
