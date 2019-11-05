@@ -194,6 +194,6 @@ namespace MonoDevelop.Xml.Dom
 		/// <summary>
 		/// The span from the start of this element to the end of its closing tag.
 		/// </summary>
-		public TextSpan OuterSpan => ClosingTag == null? Span : TextSpan.FromBounds (Span.Start, ClosingTag.Span.End);
+		public override TextSpan OuterSpan => ClosingTag == null? Span : TextSpan.FromBounds (Span.Start, ClosingTag.Span.End);
 	}
 }

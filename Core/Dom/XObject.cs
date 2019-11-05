@@ -55,6 +55,8 @@ namespace MonoDevelop.Xml.Dom
 
 		public TextSpan Span { get; protected set; }
 
+		public virtual TextSpan OuterSpan => Span;
+
 		public void End (int offset)
 		{
 			Span = TextSpan.FromBounds (Span.Start, offset);
