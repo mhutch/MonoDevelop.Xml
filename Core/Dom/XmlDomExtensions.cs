@@ -130,6 +130,24 @@ namespace MonoDevelop.Xml.Dom
 			return null;
 		}
 
+		public static XElement GetPreviousSiblingElement (this XElement element)
+		{
+			if (element.Parent is XElement parentEl) {
+				var node = parentEl.FirstChild;
+				XElement prevElement = null;
+				while (node != null) {
+					if (node is XElement nextElement) {
+						if (nextElement == element) {
+							return prevElement;
+						}
+						prevElement = nextElement;
+					}
+					node = node.NextSibling;
+				}
+			}
+			return null;
+		}
+
 		public static XAttribute FindPreviousSibling (this XAttribute att)
 		{
 			if (att.Parent is IAttributedXObject p && p.Attributes is XAttributeCollection atts) {
