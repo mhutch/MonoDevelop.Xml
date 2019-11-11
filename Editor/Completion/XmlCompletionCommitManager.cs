@@ -10,7 +10,6 @@ using Microsoft.CodeAnalysis.Text.Shared.Extensions;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.Text;
-using Microsoft.VisualStudio.Text.BraceCompletion;
 using Microsoft.VisualStudio.Text.Editor;
 
 using MonoDevelop.Xml.Dom;
@@ -168,9 +167,6 @@ namespace MonoDevelop.Xml.Editor.Completion
 				=> session.TextView.Caret.MoveTo (
 					new SnapshotPoint (buffer.CurrentSnapshot, span.Start.Position + spanOffset));
 		}
-
-		IBraceCompletionManager GetBraceManager (ITextView view)
-			=> view.Properties.TryGetProperty ("BraceCompletionManager", out IBraceCompletionManager manager) && manager.Enabled ? manager : null;
 
 		void RetriggerCompletion (ITextView textView)
 		{

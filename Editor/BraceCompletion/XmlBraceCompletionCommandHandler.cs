@@ -7,7 +7,7 @@ using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Commanding;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Text;
-using Microsoft.VisualStudio.Text.BraceCompletion;
+//using Microsoft.VisualStudio.Text.BraceCompletion;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Editor.Commanding.Commands;
 using Microsoft.VisualStudio.Utilities;
@@ -15,6 +15,8 @@ using Microsoft.VisualStudio.Utilities;
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Editor.Completion;
 using MonoDevelop.Xml.Parser;
+
+using BF = System.Reflection.BindingFlags;
 
 namespace MonoDevelop.Xml.Editor.BraceCompletion
 {
@@ -105,7 +107,21 @@ namespace MonoDevelop.Xml.Editor.BraceCompletion
 		}
 
 		static bool IsBraceCompletionEnabled (ITextView textView)
-			=> textView.Properties.TryGetProperty ("BraceCompletionManager", out IBraceCompletionManager manager) && manager.Enabled;
+		//=> textView.Properties.TryGetProperty ("BraceCompletionManager", out IBraceCompletionManager manager) && manager.Enabled;
+		//HACK: VSMac as of 16.4 doesn't have IBraceCompletionManager in the assembly that the 16.4 nugets
+		// say it's in, so we can't use it even when depending on 16.4. use reflection instead.
+		{
+			if (textView.Properties.TryGetProperty ("BraceCompletionManager", out object manager)) {
+				var prop = braceManagerEnabledProp
+					?? ( braceManagerEnabledProp =
+						manager.GetType ().GetProperty ("Enabled", BF.Instance | BF.NonPublic | BF.Public)
+					);
+				return prop != null && prop.GetValue (manager) is bool b && b;
+			}
+			return false;
+		}
+
+		static System.Reflection.PropertyInfo braceManagerEnabledProp;
 
 		static bool IsQuoteChar (char ch) => ch == '"' || ch == '\'';
 
