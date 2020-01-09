@@ -1,9 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+
 namespace MonoDevelop.Xml.Dom
 {
-	public struct TextSpan
+	public struct TextSpan : IEquatable<TextSpan>
 	{
 		public TextSpan (int start, int length)
 		{
@@ -25,5 +27,11 @@ namespace MonoDevelop.Xml.Dom
 		public static TextSpan FromBounds (int start, int end) => new TextSpan (start, end - start);
 
 		public override string ToString () => $"({Start}-{End})";
+
+		public bool Equals (TextSpan other) => other.Start == Start && other.Length == Length;
+
+		public override bool Equals (object obj) => obj is TextSpan t && t.Equals (this);
+
+		public override int GetHashCode () => (Start << 16) ^ (Start >> 16) ^ Length; //try to distribute bits over the range a bit better
 	}
 }
