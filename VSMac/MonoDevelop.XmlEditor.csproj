@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MonoDevelop.Addins" Version="0.4.7" />
+    <AddinReference Include="MonoDevelop.TextEditor" />
+    <AddinReference Include="MonoDevelop.TextEditor.Cocoa" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Manifest.addin.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AddinFile Include="Templates\XmlFile.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Core\MonoDevelop.Xml.Core.csproj" />
+    <ProjectReference Include="..\Editor\MonoDevelop.Xml.Editor.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ExtensionModel>
+
+	<Extension path="/MonoDevelop/Ide/Composition">
+		<Assembly file="MonoDevelop.Xml.Editor.dll" />
+		<Assembly file="MonoDevelop.Xml.Core.dll" />
+		<Assembly file="MonoDevelop.XmlEditor.dll" />
+	</Extension>
+
+	<Extension path = "/MonoDevelop/Ide/FileTemplates">
+		<FileTemplate
+			id = "XmlFile"
+			file = "Templates/XmlFile.xml" />
+	</Extension>
+
+</ExtensionModel>
