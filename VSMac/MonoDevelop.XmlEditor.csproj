@@ -5,8 +5,9 @@
 
   <ItemGroup>
     <PackageReference Include="MonoDevelop.Addins" Version="0.4.7" />
+    <PackageReference Include="Microsoft.VisualStudio.Language.Intellisense" Version="16.4.66" />
+    <PackageReference Include="Microsoft.VisualStudio.Language.StandardClassification" Version="16.4.66" />
     <AddinReference Include="MonoDevelop.TextEditor" />
-    <AddinReference Include="MonoDevelop.TextEditor.Cocoa" />
   </ItemGroup>
 
   <ItemGroup>
