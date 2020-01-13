@@ -11,10 +11,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Properties\Manifest.addin.xml" />
-  </ItemGroup>
-
-  <ItemGroup>
     <AddinFile Include="Templates\XmlFile.xml" />
   </ItemGroup>
 
