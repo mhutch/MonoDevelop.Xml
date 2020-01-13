@@ -1,4 +1,4 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.28922.388
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -9,6 +9,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonoDevelop.Xml.Editor", "Editor\MonoDevelop.Xml.Editor.csproj", "{21DCB152-D50D-48E9-B1AA-FB341192D88F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.MiniEditor", "external\MiniEditor\Microsoft.VisualStudio.MiniEditor\Microsoft.VisualStudio.MiniEditor.csproj", "{63921982-748E-4CB8-80A9-84E14FB60E1B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonoDevelop.XmlEditor", "VSMac\MonoDevelop.XmlEditor.csproj", "{34E809F6-E4AE-42BE-9967-6E8B81F29B0B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -32,6 +34,10 @@ Global
 		{63921982-748E-4CB8-80A9-84E14FB60E1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{63921982-748E-4CB8-80A9-84E14FB60E1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{63921982-748E-4CB8-80A9-84E14FB60E1B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{34E809F6-E4AE-42BE-9967-6E8B81F29B0B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{34E809F6-E4AE-42BE-9967-6E8B81F29B0B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{34E809F6-E4AE-42BE-9967-6E8B81F29B0B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{34E809F6-E4AE-42BE-9967-6E8B81F29B0B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
