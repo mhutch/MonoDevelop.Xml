@@ -15,7 +15,9 @@ namespace MonoDevelop.Xml.Editor.Classification
 	[Export (typeof (IViewTaggerProvider))]
 	[TagType (typeof (IClassificationTag))]
 	[TagType (typeof (IStructureTag))]
-	[ContentType (XmlContentTypeNames.XmlCore)]
+	[ContentType (XmlContentTypeNames.Xml)]
+	[ContentType (XmlContentTypeNames.Xsd)]
+	[ContentType (XmlContentTypeNames.Xslt)]
 	sealed class XmlTextMateTaggerProvider : ITaggerProvider, IViewTaggerProvider
 	{
 		[Import]
