@@ -5,28 +5,21 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Text;
-using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Utilities;
 
 namespace MonoDevelop.Xml.Editor.Classification
 {
 	[Export (typeof (ITaggerProvider))]
-	[Export (typeof (IViewTaggerProvider))]
 	[TagType (typeof (IClassificationTag))]
 	[TagType (typeof (IStructureTag))]
 	[ContentType (XmlContentTypeNames.Xml)]
 	[ContentType (XmlContentTypeNames.Xsd)]
 	[ContentType (XmlContentTypeNames.Xslt)]
-	sealed class XmlTextMateTaggerProvider : ITaggerProvider, IViewTaggerProvider
+	sealed class XmlTextMateTaggerProvider : ITaggerProvider
 	{
 		[Import]
 		ICommonEditorAssetServiceFactory assetServiceFactory = null;
-
-		public ITagger<T> CreateTagger<T> (ITextView view, ITextBuffer buffer) where T : ITag
-		{
-			return CreateTagger<T> (buffer);
-		}
 
 		public ITagger<T> CreateTagger<T> (ITextBuffer buffer) where T : ITag =>
 			assetServiceFactory.GetOrCreate (buffer)
