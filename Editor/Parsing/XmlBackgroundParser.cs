@@ -76,10 +76,15 @@ namespace MonoDevelop.Xml.Editor.Completion
 				var startPos = Math.Min (point.Position, MaximumCompatiblePosition (prevParse.TextSnapshot, point.Snapshot));
 				if (startPos > 0) {
 					var obj = prevParse.XDocument.FindAtOrBeforeOffset (startPos);
-					var state = StateMachine.TryRecreateState (obj, startPos);
-					if (state != null) {
-						LoggingService.LogDebug ($"XML parser recovered {state.Position}/{point.Position} state");
-						parser = new XmlSpineParser (state, StateMachine);
+
+					// check for null as there may not be a node before startPos
+					if (obj != null)
+					{
+						var state = StateMachine.TryRecreateState (obj, startPos);
+						if (state != null) {
+							LoggingService.LogDebug ($"XML parser recovered {state.Position}/{point.Position} state");
+							parser = new XmlSpineParser (state, StateMachine);
+						}
 					}
 				}
 			}
