@@ -78,8 +78,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 					var obj = prevParse.XDocument.FindAtOrBeforeOffset (startPos);
 
 					// check for null as there may not be a node before startPos
-					if (obj != null)
-					{
+					if (obj != null) {
 						var state = StateMachine.TryRecreateState (obj, startPos);
 						if (state != null) {
 							LoggingService.LogDebug ($"XML parser recovered {state.Position}/{point.Position} state");
