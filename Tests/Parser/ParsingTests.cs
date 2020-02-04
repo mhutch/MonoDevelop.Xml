@@ -401,12 +401,10 @@ namespace MonoDevelop.Xml.Tests.Parser
 			Assert.AreEqual (@"</foo>", Substring (doc.RootElement.ClosingTag));
 		}
 
-		//[Test]
+		[Test]
 		public void ProcessingInstruction()
 		{
-			var docTxt = @"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""yes""?>
-<X>
-</X>";
+			var docTxt = @"<?x?>";
 
 			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (docTxt, preserveWindowsNewlines: true);
@@ -415,7 +413,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 			var processingInstruction = doc.FirstChild;
 
 			Assert.AreEqual (0, processingInstruction.Span.Start);
-			Assert.AreEqual (55, processingInstruction.Span.Length);
+			Assert.AreEqual (5, processingInstruction.Span.Length);
 		}
 	}
 }

@@ -39,7 +39,7 @@ namespace MonoDevelop.Xml.Parser
 		public override XmlParserState PushChar (char c, XmlParserContext context, ref string rollback)
 		{
 			if (context.CurrentStateLength == 0) {
-				context.Nodes.Push (new XProcessingInstruction (context.Position - STARTOFFSET));
+				context.Nodes.Push (new XProcessingInstruction (context.Position - QUESTION));
 			}
 			
 			if (c == '?') {
@@ -51,7 +51,10 @@ namespace MonoDevelop.Xml.Parser
 				// if the '?' is followed by a '>', the state has ended
 				// so attach a node to the DOM and end the state
 				var xpi = (XProcessingInstruction) context.Nodes.Pop ();
-				xpi.End (context.Position);
+
+				// at this point the position isn't incremented to include the '>' yet
+				// so make sure to include the closing '>' in the span
+				xpi.End (context.Position + 1);
 
 				if (context.BuildTree) {
 					((XContainer) context.Nodes.Peek ()).AddChildNode (xpi); 
