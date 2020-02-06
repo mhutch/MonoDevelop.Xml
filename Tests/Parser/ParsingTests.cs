@@ -400,5 +400,20 @@ namespace MonoDevelop.Xml.Tests.Parser
 			Assert.AreEqual (@"<![CDATA[ dfdfdf ]]>", Substring (doc.RootElement.Nodes.OfType<XCData> ().First ()));
 			Assert.AreEqual (@"</foo>", Substring (doc.RootElement.ClosingTag));
 		}
+
+		[Test]
+		public void ProcessingInstruction()
+		{
+			var docTxt = @"<?x?>";
+
+			var parser = new XmlTreeParser (CreateRootState ());
+			parser.Parse (docTxt, preserveWindowsNewlines: true);
+			parser.AssertEmpty ();
+			var doc = (XDocument)parser.PeekSpine ();
+			var processingInstruction = doc.FirstChild;
+
+			Assert.AreEqual (0, processingInstruction.Span.Start);
+			Assert.AreEqual (5, processingInstruction.Span.Length);
+		}
 	}
 }
