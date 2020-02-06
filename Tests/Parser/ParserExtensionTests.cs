@@ -37,5 +37,19 @@ namespace MonoDevelop.Xml.Tests.Parser
 
 			Assert.AreEqual (expected, actual);
 		}
+
+		[Test]
+		public void TestIncremental ()
+		{
+			var buffer = Catalog.BufferFactoryService.CreateTextBuffer (" ", ContentType);
+			var parser = XmlBackgroundParser.GetParser (buffer);
+			parser.GetOrProcessAsync (buffer.CurrentSnapshot, default).Wait ();
+
+			buffer.Insert (0, " ");
+			var snapshot = buffer.CurrentSnapshot;
+			var caretPoint = new SnapshotPoint (snapshot, 1);
+
+			var spine = parser.GetSpineParser (caretPoint);
+		}
 	}
 }
