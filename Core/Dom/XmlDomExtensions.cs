@@ -208,5 +208,34 @@ namespace MonoDevelop.Xml.Dom
 				obj = obj.Parent;
 			}
 		}
+
+		public static XNode GetNodeContainingRange (this XNode node, TextSpan span)
+		{
+			if (node is XContainer container) {
+				foreach (var child in container.Nodes) {
+					var found = child.GetNodeContainingRange (span);
+					if (found != null) {
+						return found;
+					}
+				}
+			}
+
+			if (node.Span.Contains (span)) {
+				return node;
+			}
+
+			return null;
+		}
+
+
+		public static void VisitSelfAndChildren (this XNode node, Action<XNode> action)
+		{
+			action (node);
+			if (node is XContainer container) {
+				foreach (var child in container.Nodes) {
+					VisitSelfAndChildren (child, action);
+				}
+			}
+		}
 	}
 }
