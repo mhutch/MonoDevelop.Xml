@@ -4,6 +4,7 @@
 using System;
 using System.Linq;
 
+using Microsoft.CodeAnalysis.Text.Shared.Extensions;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods;
@@ -101,6 +102,8 @@ namespace MonoDevelop.Xml.Editor.SmartIndent
 
 		protected virtual int GetLineExpectedIndent (ITextSnapshotLine line, XmlBackgroundParser parser, int indentSize)
 		{
+			var snapshot = line.Snapshot;
+
 			//create a lightweight tree parser, which will actually close nodes
 			var spineParser = parser.GetSpineParser (line.Start);
 			var startNodes = spineParser.Spine.ToList ();
@@ -109,7 +112,7 @@ namespace MonoDevelop.Xml.Editor.SmartIndent
 
 			//advance the parser to the end of the line
 			for (int i = line.Start.Position; i < line.End.Position; i++) {
-				spineParser.Push (line.Snapshot[i]);
+				spineParser.Push (snapshot[i]);
 			}
 
 			var endNodes = spineParser.Spine.ToList ();
@@ -122,7 +125,14 @@ namespace MonoDevelop.Xml.Editor.SmartIndent
 			//special case if the line starts with something else than a closing tag,
 			//treat it as content and don't take the remaining closing tags on the
 			//current line into account
-			bool startsWithClosingTag = line.GetText ().StartsWith ("</");
+			bool startsWithClosingTag = false;
+			var firstNonWhitespacePosition = line.GetFirstNonWhitespacePosition ();
+			if (firstNonWhitespacePosition is int first &&
+				line.End > first + 1 &&
+				snapshot[first] == '<' &&
+				snapshot[first + 1] == '/') {
+				startsWithClosingTag = true;
+			}
 
 			//first node is the xdocument, skip it
 			for (int i = 1; i < startNodes.Count; i++) {
