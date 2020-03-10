@@ -14,6 +14,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Utilities;
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Editor.Completion;
+using MonoDevelop.Xml.Parser;
 
 namespace MonoDevelop.Xml.Editor.Commands
 {
@@ -345,7 +346,7 @@ namespace MonoDevelop.Xml.Editor.Commands
 
 			int? start = null;
 			for (int i = line.Start; i < line.End.Position; i++) {
-				if (!IsWhiteSpace (snapshot[i])) {
+				if (!XmlChar.IsWhitespace (snapshot[i])) {
 					start = i;
 					break;
 				}
@@ -357,7 +358,7 @@ namespace MonoDevelop.Xml.Editor.Commands
 
 			int end = start.Value;
 			for (int i = line.End.Position - 1; i >= end; i--) {
-				if (!IsWhiteSpace (snapshot[i])) {
+				if (!XmlChar.IsWhitespace (snapshot[i])) {
 					// need to add 1 since end is exclusive
 					end = i + 1;
 					break;
@@ -365,11 +366,6 @@ namespace MonoDevelop.Xml.Editor.Commands
 			}
 
 			return TextSpan.FromBounds (start.Value, end);
-
-			bool IsWhiteSpace (char c)
-			{
-				return c == ' ' || c == '\t' || (c > (char)128 && char.IsWhiteSpace (c));
-			}
 
 			bool IsLineBreak (char c)
 			{
@@ -407,7 +403,7 @@ namespace MonoDevelop.Xml.Editor.Commands
 				// Creates comments such that current comments are excluded
 				var parentNode = node.GetNodeContainingRange (currentRegion.ToTextSpan ());
 
-				parentNode.VisitSelfAndChildren (child => {
+				parentNode.VisitSelfAndDescendents (child => {
 					if (child is XComment comment) {
 						// ignore comments outside our range
 						if (!currentRegion.IntersectsWith (comment.Span.ToSpan ())) {
