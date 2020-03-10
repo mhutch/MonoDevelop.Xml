@@ -31,6 +31,8 @@ namespace MonoDevelop.Xml.Tests
 		[TestCase ("<a>\n  <b>|", 6)] // respect user correction on previous line
 		[TestCase ("<a>\n    <b>|</b>\n</a>", 4)] // tag close on current line deindents
 		[TestCase ("<a>\n    <b><c>|</c></b>\n</a>", 4)] // double tag close
+		[TestCase ("<a>w|</a>", 0)] // no indent for closing tag
+		[TestCase ("<a>|w</a>", 4)] // indent when content is present
 		public void TestSmartIndent (string doc, int expectedIndent)
 		{
 			var caretPos = doc.IndexOf ('|');

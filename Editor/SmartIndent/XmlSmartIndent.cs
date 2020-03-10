@@ -119,11 +119,23 @@ namespace MonoDevelop.Xml.Editor.SmartIndent
 			//which were not closed by the end of the line
 			int depth = 0;
 
+			//special case if the line starts with something else than a closing tag,
+			//treat it as content and don't take the remaining closing tags on the
+			//current line into account
+			bool startsWithClosingTag = line.GetText ().StartsWith ("</");
+
 			//first node is the xdocument, skip it
 			for (int i = 1; i < startNodes.Count; i++) {
-				if (i == endNodes.Count || !(startNodes[i] is XElement) || startNodes[i] != endNodes[i]) {
-					break;
+				if (!(startNodes[i] is XElement)) {
+					continue;
 				}
+
+				if (startsWithClosingTag) {
+					if (i == endNodes.Count || startNodes[i] != endNodes[i]) {
+						break;
+					}
+				}
+
 				depth++;
 			}
 
