@@ -91,6 +91,12 @@ namespace MonoDevelop.Xml.Parser
 						// close it even if not in tree mode, as some spines may want to know whether an element was closed after advancing the parser
 						((XElement) context.Nodes.Pop ()).Close (ct);
 					} else {
+						//if we haven't found a matching tag, just close the top one which is likely invalid
+						//https://github.com/mhutch/MonoDevelop.Xml/issues/14
+						if (context.Nodes.Peek() is XElement) {
+							((XElement)context.Nodes.Pop ()).Close (ct);
+						}
+
 						if (context.BuildTree) {
 							context.Diagnostics?.LogError (
 								$"Closing tag '{ct.Name.FullName}' does not match any currently open tag.",
