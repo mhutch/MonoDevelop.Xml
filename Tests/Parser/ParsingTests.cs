@@ -415,5 +415,23 @@ namespace MonoDevelop.Xml.Tests.Parser
 			Assert.AreEqual (0, processingInstruction.Span.Start);
 			Assert.AreEqual (5, processingInstruction.Span.Length);
 		}
+
+		[Test]
+		public void NameStartsWithWhitespaceAndColon ()
+		{
+			var docTxt = "< :";
+			var parser = new XmlTreeParser (CreateRootState ());
+			parser.Parse (docTxt);
+		}
+
+		[Test]
+		public void MismatchedElementNameWithWhitespaceInName2 ()
+		{
+			var docTxt = "<X><n\n:a></a><b></X>";
+			var parser = new XmlTreeParser (CreateRootState ());
+			parser.Parse (docTxt);
+			parser.AssertEmpty ();
+			parser.AssertErrorCount (4);
+		}
 	}
 }
