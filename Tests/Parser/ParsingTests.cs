@@ -197,7 +197,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (docTxt);
 			parser.AssertEmpty ();
-			parser.AssertErrorCount (3);
+			parser.AssertErrorCount (4);
 		}
 
 		[Test]
