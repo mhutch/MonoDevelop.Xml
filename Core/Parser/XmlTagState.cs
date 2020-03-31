@@ -104,6 +104,7 @@ namespace MonoDevelop.Xml.Parser
 				}
 				if (!element.IsNamed) {
 					context.Diagnostics?.LogError ("Tag closed prematurely.", context.Position);
+					element.End (context.Position + 1);
 				} else {
 					Close (element, context, context.Position + 1);
 				}

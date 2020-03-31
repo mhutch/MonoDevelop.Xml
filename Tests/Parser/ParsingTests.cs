@@ -191,6 +191,26 @@ namespace MonoDevelop.Xml.Tests.Parser
 		}
 
 		[Test]
+		public void MismatchedElementNameWithNamespace ()
+		{
+			var docTxt = "<X><n:></a><b></X>";
+			var parser = new XmlTreeParser (CreateRootState ());
+			parser.Parse (docTxt);
+			parser.AssertEmpty ();
+			parser.AssertErrorCount (4);
+		}
+
+		[Test]
+		public void MismatchedElementNameWithWhitespaceInName ()
+		{
+			var docTxt = "<X><n:\na></a><b></X>";
+			var parser = new XmlTreeParser (CreateRootState ());
+			parser.Parse (docTxt);
+			parser.AssertEmpty ();
+			parser.AssertErrorCount (5);
+		}
+
+		[Test]
 		public void Misc ()
 		{
 			var parser = new XmlTreeParser (CreateRootState ());
