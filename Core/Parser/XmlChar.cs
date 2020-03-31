@@ -59,6 +59,15 @@ namespace MonoDevelop.Xml.Parser
 
 		public static bool IsFirstNameChar (int ch)
 		{
+			// Names starting with a colon are valid according to the spec,
+			// but the spec also recommends that they only be used for namespaces.
+			// To allow proper error recovery we simplify and do not accept
+			// colons in names.
+			// https://www.w3.org/TR/xml/#NT-NameStartChar
+			if (ch == ':') {
+				return false;
+			}
+
 			if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')) {
 				return true;
 			} else if ((uint) ch <= 0xFFFF) {
@@ -134,6 +143,15 @@ namespace MonoDevelop.Xml.Parser
 
 		public static bool IsNameChar (int ch)
 		{
+			// Names starting with a colon are valid according to the spec,
+			// but the spec also recommends that they only be used for namespaces.
+			// To allow proper error recovery we simplify and do not accept
+			// colons in names.
+			// https://www.w3.org/TR/xml/#NT-NameStartChar
+			if (ch == ':') {
+				return false;
+			}
+
 			if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')) {
 				return true;
 			} else if ((uint) ch <= 0xFFFF) {

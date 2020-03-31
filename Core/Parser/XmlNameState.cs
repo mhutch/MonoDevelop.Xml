@@ -34,22 +34,17 @@ namespace MonoDevelop.Xml.Parser
 {
 	public class XmlNameState : XmlParserState
 	{
-		internal static bool IsValidNameStart (char c)
-		{
-			return char.IsLetter (c) || c == '_';
-		}
-
 		public override XmlParserState PushChar (char c, XmlParserContext context, ref string rollback)
 		{
 			var namedObject = context.Nodes.Peek () as INamedXObject;
 			if (namedObject == null || namedObject.Name.Prefix != null)
 				throw new InvalidOperationException ("Invalid state");
 			
-			Debug.Assert (context.CurrentStateLength > 0 || IsValidNameStart (c),
+			Debug.Assert (context.CurrentStateLength > 0 || XmlChar.IsFirstNameChar (c),
 				"First character pushed to a XmlTagNameState must be a letter.");
 			Debug.Assert (context.CurrentStateLength > 0 || context.KeywordBuilder.Length == 0,
 				"Keyword builder must be empty when state begins.");
-			
+
 			if (XmlChar.IsWhitespace (c) || c == '<' || c == '>' || c == '/' || c == '=') {
 				rollback = string.Empty;
 				if (context.KeywordBuilder.Length == 0) {
