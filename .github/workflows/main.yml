@@ -1,0 +1,42 @@
+name: Build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest ]
+        config: [ Debug ]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0 # GitVersioning needs deep clone
+        submodules: recursive
+  
+    - uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '5.0.x'
+
+    - name: Set up NuGet
+      uses: nuget/setup-nuget@v1
+
+    - name: Restore
+      run: dotnet restore MonoDevelop.Xml.sln
+
+    - name: Build
+      run: dotnet build MonoDevelop.Xml.sln -c ${{ matrix.config }} --no-restore
+
+    - name: Test (Windows)
+      if: startsWith (matrix.os, 'windows')
+      run: dotnet test -c ${{ matrix.config }} --no-build
+
+    - name: Test (Linux/Mac)
+      if: startsWith (matrix.os, 'windows') == false
+      # dotnet test doesn't support mono so we have to use the nunit runner
+      run: |
+        nuget install NUnit.ConsoleRunner -Version 3.11.1 -OutputDirectory testrunner
+        mono ./testrunner/NUnit.ConsoleRunner.3.11.1/tools/nunit3-console.exe ./Tests/bin/${{ matrix.config }}/MonoDevelop.Xml.Tests.dll
