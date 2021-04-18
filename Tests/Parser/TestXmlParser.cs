@@ -89,6 +89,14 @@ namespace MonoDevelop.Xml.Tests.Parser
 				}
 			}
 			Assert.AreEqual (asserts.Length, assertNo);
+
+			var diagnostics = context.Diagnostics;
+			if (diagnostics != null) {
+				foreach (var diagnostic in diagnostics) {
+					Assert.GreaterOrEqual (diagnostic.Span.Start, 0);
+					Assert.GreaterOrEqual (diagnostic.Span.Length, 0);
+				}
+			}
 		}
 
 		public static XObject PeekSpine (this XmlParser parser) => parser.GetContext ().Nodes.Peek ();
