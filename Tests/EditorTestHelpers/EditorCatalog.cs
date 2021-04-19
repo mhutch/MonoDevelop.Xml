@@ -45,6 +45,12 @@ namespace MonoDevelop.Xml.Tests.Completion
 		public IClassificationTypeRegistryService ClassificationTypeRegistryService
 			=> Host.GetService<IClassificationTypeRegistryService> ();
 
+		public IEditorOperationsFactoryService EditorOperationsFactoryService
+			=> Host.GetService<IEditorOperationsFactoryService> ();
+
+		public IMultiSelectionBrokerFactory MultiSelectionBrokerFactory
+			=> Host.GetService<IMultiSelectionBrokerFactory> ();
+
 		public IBufferTagAggregatorFactoryService BufferTagAggregatorFactoryService
 			=> Host.GetService<IBufferTagAggregatorFactoryService> ();
 
