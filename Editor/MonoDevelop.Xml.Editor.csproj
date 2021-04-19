@@ -2,29 +2,31 @@
 
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Remove="BaseXmlEditorExtension.cs" />
-    <Compile Remove="XmlEditorOptions.cs" />
     <Compile Remove="XmlParsedDocument.cs" />
     <Compile Remove="XmlTextEditorExtension.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="BaseXmlEditorExtension.cs" />
-    <None Include="XmlEditorOptions.cs" />
     <None Include="XmlParsedDocument.cs" />
     <None Include="XmlTextEditorExtension.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Core\MonoDevelop.Xml.Core.csproj" />
-    <PackageReference Include="Microsoft.VisualStudio.ImageCatalog" Version="16.9.31023.347" />
-    <PackageReference Include="Microsoft.VisualStudio.Language.Intellisense" Version="16.9.227" />
-    <PackageReference Include="Microsoft.VisualStudio.Language.StandardClassification" Version="16.9.227" />
-    <PackageReference Include="Microsoft.VisualStudio.Threading" Version="16.9.60" />
+    <PackageReference Include="Microsoft.VisualStudio.ImageCatalog" Version="16.9.31023.347" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.VisualStudio.Language.Intellisense" Version="16.9.227" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.VisualStudio.Language.StandardClassification" Version="16.9.227" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading" Version="16.9.60" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.ComponentModel.Composition" />
   </ItemGroup>
 
 </Project>
