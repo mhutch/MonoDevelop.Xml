@@ -146,8 +146,8 @@ namespace MonoDevelop.Xml.Tests.Completion
 
 		[Test]
 		[TestCase (" T\n", "<Hello There=\"$\"")]
-		[TestCase (" T\n\"", "<Hello There=\"\"$")]
-		[TestCase (" T^=", "<Hello There=$")]
+		[TestCase (" T\n\"", "<Hello There=\"$\"")]
+		[TestCase (" T^=", "<Hello There=\"$\"")]
 		[TestCase (" T^=\"", "<Hello There=\"$\"")]
 		[TestCase (" Th^<", "<Hello Th<$")]
 		[TestCase (" Th^ ", "<Hello There $")]
