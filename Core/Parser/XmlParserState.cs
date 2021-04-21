@@ -33,7 +33,6 @@ namespace MonoDevelop.Xml.Parser
 {
 	public abstract class XmlParserState
 	{
-
 		/// <summary>
 		/// When the <see cref="Parser"/> advances by one character, it calls this method 
 		/// on the currently active <see cref="XmlParserState"/> to determine the next state.
@@ -64,5 +63,20 @@ namespace MonoDevelop.Xml.Parser
 		}
 
 		public abstract XmlParserContext TryRecreateState (XObject xobject, int position);
+
+		public override string ToString ()
+		{
+			string result = null;
+
+			if (Parent is XmlParserState parent) {
+				result = parent.ToString() + ".";
+			}
+
+			result += GetType().Name
+				.Replace ("Xml", "")
+				.Replace ("State", "");
+
+			return result;
+		}
 	}
 }

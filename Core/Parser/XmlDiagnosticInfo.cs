@@ -45,6 +45,11 @@ namespace MonoDevelop.Xml.Parser
 		public DiagnosticSeverity Severity { get; }
 		public string Message { get; }
 		public TextSpan Span { get; }
+
+		public override string ToString ()
+		{
+			return $"{Severity} at {Span}: {Message}";
+		}
 	}
 
 	public enum DiagnosticSeverity
