@@ -197,7 +197,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (docTxt);
 			parser.AssertEmpty ();
-			parser.AssertErrorCount (4);
+			parser.AssertErrorCount (5);
 		}
 
 		[Test]
@@ -207,7 +207,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (docTxt);
 			parser.AssertEmpty ();
-			parser.AssertErrorCount (5);
+			parser.AssertErrorCount (6);
 		}
 
 		[Test]
@@ -452,6 +452,26 @@ namespace MonoDevelop.Xml.Tests.Parser
 			parser.Parse (docTxt);
 			parser.AssertEmpty ();
 			parser.AssertErrorCount (4);
+		}
+
+		[Test]
+		public void InvalidNameState ()
+		{
+			var docTxt = "<a:<x";
+			var parser = new XmlTreeParser (CreateRootState ());
+			parser.Parse (docTxt);
+			parser.AssertErrorCount (2);
+		}
+
+		[Test]
+		public void TwoOpenAngles ()
+		{
+			var docTxt = "<<";
+			var parser = new XmlTreeParser (CreateRootState ());
+			parser.Parse (docTxt);
+			var diagnostic = parser.GetContext ().Diagnostics.Single ();
+			Assert.AreEqual (1, diagnostic.Span.Start);
+			Assert.AreEqual (1, diagnostic.Span.Length);
 		}
 	}
 }

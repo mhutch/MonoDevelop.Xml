@@ -89,8 +89,8 @@ namespace MonoDevelop.Xml.Parser
 					context.Diagnostics?.LogError (
 						"Incomplete tag opening; encountered unexpected '<'.",
 						TextSpan.FromBounds (
-							context.Position - LengthFromOpenBracket (context) - 1,
-							context.Position - 1
+							context.Position + 1 - LengthFromOpenBracket (context),
+							context.Position + 1
 						)
 					);
 				context.StateTag = BRACKET;

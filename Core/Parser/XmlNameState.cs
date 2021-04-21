@@ -56,7 +56,15 @@ namespace MonoDevelop.Xml.Parser
 					if (i < 0) {
 						namedObject.Name = s;
 					} else {
-						namedObject.Name = new XName (s.Substring (0, i), s.Substring (i + 1));
+						if (i == 0) {
+							context.Diagnostics?.LogError ("Zero-length namespace.", context.Position);
+							namedObject.Name = XName.Empty;
+						} else if (i == s.Length - 1) {
+							context.Diagnostics?.LogError ("Zero-length name with a non-empty namespace.", context.Position);
+							namedObject.Name = XName.Empty;
+						} else {
+							namedObject.Name = new XName (s.Substring (0, i), s.Substring (i + 1));
+						}
 					}
 				}
 				
