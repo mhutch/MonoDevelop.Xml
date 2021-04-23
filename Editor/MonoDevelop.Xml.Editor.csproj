@@ -21,10 +21,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Core\MonoDevelop.Xml.Core.csproj" />
-    <PackageReference Include="Microsoft.VisualStudio.ImageCatalog" Version="16.9.31023.347" />
-    <PackageReference Include="Microsoft.VisualStudio.Language.Intellisense" Version="16.9.227" />
-    <PackageReference Include="Microsoft.VisualStudio.Language.StandardClassification" Version="16.9.227" />
-    <PackageReference Include="Microsoft.VisualStudio.Threading" Version="16.9.60" />
+    <PackageReference Include="Microsoft.VisualStudio.ImageCatalog" Version="16.9.31023.347" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.VisualStudio.Language.Intellisense" Version="16.9.227" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.VisualStudio.Language.StandardClassification" Version="16.9.227" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading" Version="16.9.60" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.ComponentModel.Composition" />
   </ItemGroup>
 
 </Project>
