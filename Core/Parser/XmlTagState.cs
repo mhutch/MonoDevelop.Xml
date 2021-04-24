@@ -26,6 +26,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
 using System.Diagnostics;
 using System.Text;
 using MonoDevelop.Xml.Dom;
@@ -170,7 +171,7 @@ namespace MonoDevelop.Xml.Parser
 				el = (XElement) a.Parent;
 			}
 
-			if (el != null && position >= el.Span.Start && position < el.Span.End) {
+			if (el != null && position >= el.Span.Start && position < el.Span.End - 1) {
 				// recreating name builder and value builder state is a pain to get right
 				// for now, let parent recreate state at start of tag
 				if (position <= el.NameSpan.End) {
@@ -185,6 +186,7 @@ namespace MonoDevelop.Xml.Parser
 
 				var newEl = new XElement (el.Span.Start, el.Name);
 
+				int foundPosition = position;
 				int prevStateEnd = el.NameSpan.End;
 				XmlParserState prevState = NameState;
 
@@ -197,7 +199,7 @@ namespace MonoDevelop.Xml.Parser
 						continue;
 					}
 					if (att.Span.End > position) {
-						position = att.Span.Start;
+						foundPosition = Math.Min (position, att.Span.Start);
 						break;
 					}
 				}
@@ -207,9 +209,9 @@ namespace MonoDevelop.Xml.Parser
 
 				return new XmlParserContext {
 					CurrentState = this,
-					Position = position,
+					Position = foundPosition,
 					PreviousState = prevState,
-					CurrentStateLength = position - prevStateEnd,
+					CurrentStateLength = foundPosition - prevStateEnd,
 					KeywordBuilder = new StringBuilder (),
 					Nodes = parents,
 					StateTag = FREE

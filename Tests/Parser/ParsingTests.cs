@@ -26,12 +26,19 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
+using System.IO;
 using System.Linq;
-using NUnit.Framework;
+using System.Text;
 
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Parser;
-using System.Xml;
+using MonoDevelop.Xml.Tests.Utils;
+
+using NUnit.Framework;
+using NUnit.Framework.Internal;
+
+using XmlParserContext = MonoDevelop.Xml.Parser.XmlParserContext;
 
 namespace MonoDevelop.Xml.Tests.Parser
 {
@@ -472,6 +479,89 @@ namespace MonoDevelop.Xml.Tests.Parser
 			var diagnostic = parser.GetContext ().Diagnostics.Single ();
 			Assert.AreEqual (1, diagnostic.Span.Start);
 			Assert.AreEqual (1, diagnostic.Span.Length);
+		}
+
+		// This walks over the XHTML 1.0 Strict Schema and verifies at every character location
+		// that a recovered spine parser is equivalent to one created from scratch.
+		// It also calculates the recovery rate and verifies that it does not regress from the
+		// last recorded value.
+		[Test]
+		public void SpineParserRecovery ()
+		{
+			using var sr = new StreamReader (ResourceManager.GetXhtmlStrictSchema ());
+			var docTxt = sr.ReadToEnd ();
+
+			var rootState = CreateRootState ();
+
+			var treeParser = new XmlTreeParser (rootState);
+			foreach (char c in docTxt) {
+				treeParser.Push (c);
+			}
+			(var doc, var diag) = treeParser.FinalizeDocument ();
+
+			Assert.AreEqual (0, diag.Count);
+
+			var spineParser = new XmlSpineParser (rootState);
+
+			int totalNotRecovered = 0;
+
+			for (int i = 0; i < docTxt.Length; i++) {
+				char c = docTxt[i];
+				spineParser.Push (c);
+
+				var recoveredParser = XmlSpineParser.FromDocumentPosition (rootState, doc, i);
+				var delta = i - recoveredParser.Position;
+				totalNotRecovered += delta;
+
+				var end = Math.Min (i + 1, docTxt.Length);
+				for (int j = recoveredParser.Position; j < end; j++) {
+					recoveredParser.Push (docTxt[j]);
+				}
+
+				AssertEqual (spineParser.GetContext (), recoveredParser.GetContext ());
+			}
+
+			int total = docTxt.Length * docTxt.Length / 2;
+			float recoveryRate = 1f - totalNotRecovered / (float)total;
+			TestContext.WriteLine ($"Recovered {(recoveryRate * 100f):F2}%");
+
+			// check it never regresses
+			Assert.LessOrEqual (totalNotRecovered, 1118088);
+		}
+
+		void AssertEqual (XmlParserContext a, XmlParserContext b)
+		{
+			Assert.AreEqual (a.Position, b.Position);
+
+			Assert.AreEqual (a.CurrentState, b.CurrentState);
+
+			// NOTE: CurrentStateLength is not recovered for the root or tag states
+			// as it's not needed to resume those states
+			if (a.CurrentState is not XmlRootState && a.CurrentState is not XmlTagState) {
+				Assert.AreEqual (a.CurrentStateLength, b.CurrentStateLength);
+			}
+			Assert.AreEqual (a.StateTag, b.StateTag);
+
+			// NOTE: PreviousState is not reliably recovered _but_ the parser only recovers at positions where that doesn't matter
+
+			AssertEqual (a.KeywordBuilder, b.KeywordBuilder);
+
+			Assert.AreEqual (a.Nodes.Count, b.Nodes.Count);
+			Assert.AreEqual (a.Nodes.Peek().GetType(), b.Nodes.Peek().GetType());
+		}
+
+		// avoid allocating strings unless they're not equal
+		// makes the test marginally faster ( ~5%?)
+		void AssertEqual (StringBuilder a, StringBuilder b)
+		{
+			if (a.Length != b.Length) {
+				Assert.AreEqual (a.ToString (), b.ToString ());
+			}
+			for (int i = 0; i < a.Length; i++) {
+				if (a[i] != b[i]) {
+					Assert.AreEqual (a.ToString (), b.ToString ());
+				}
+			}
 		}
 	}
 }

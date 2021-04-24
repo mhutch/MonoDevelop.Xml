@@ -72,7 +72,7 @@ namespace MonoDevelop.Xml.Parser
 			if (xobject is XProcessingInstruction pi && position >= pi.Span.Start + STARTOFFSET && position < pi.Span.End) {
 				var parents = NodeStack.FromParents (pi);
 
-				var length = position - pi.Span.Start + STARTOFFSET;
+				var length = position - pi.Span.Start - 1;
 				if (length > 0) {
 					parents.Push (new XProcessingInstruction (pi.Span.Start));
 				}
@@ -83,7 +83,7 @@ namespace MonoDevelop.Xml.Parser
 					PreviousState = Parent,
 					CurrentStateLength = length,
 					KeywordBuilder = new System.Text.StringBuilder (),
-					StateTag = position == pi.Span.End - 2? QUESTION : NOMATCH,
+					StateTag = position == pi.Span.End - 1? QUESTION : NOMATCH,
 					Nodes = parents
 				};
 			}
