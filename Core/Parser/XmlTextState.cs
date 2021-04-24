@@ -56,6 +56,14 @@ namespace MonoDevelop.Xml.Parser
 					parents.Push (new XText (text.Span.Start));
 				}
 
+				int lastNonWhitespace = position;
+				for (int i = sb.Length - 1; i >= 0; i--) {
+					if (!XmlChar.IsWhitespace (text.Text[i])) {
+						lastNonWhitespace = position - sb.Length + i;
+						break;
+					}
+				}
+
 				return new XmlParserContext {
 					CurrentState = this,
 					Position = position,
@@ -63,7 +71,7 @@ namespace MonoDevelop.Xml.Parser
 					CurrentStateLength = sb.Length,
 					KeywordBuilder = sb,
 					Nodes = parents,
-					StateTag = position
+					StateTag = lastNonWhitespace
 				};
 			}
 
