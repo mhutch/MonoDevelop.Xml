@@ -7,4 +7,3 @@
 using System.Diagnostics.CodeAnalysis;
 
 [assembly: SuppressMessage ("Style", "VSTHRD200:Use \"Async\" suffix for async methods")]
-[assembly: SuppressMessage ("Usage", "VSTHRD002:Avoid problematic synchronous waits")]

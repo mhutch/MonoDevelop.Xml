@@ -136,7 +136,9 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 		public void EnsureLoaded ()
 		{
+#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
 			EnsureLoadedAsync ().Wait ();
+#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
 		}
 
 		public Task EnsureLoadedAsync ()

@@ -3,9 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Adornments;
 using Microsoft.VisualStudio.Text.Tagging;
+using Microsoft.VisualStudio.Threading;
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Editor.Completion;
 
@@ -38,11 +40,13 @@ namespace MonoDevelop.Xml.Editor.Tagging
 			var parseTask = parser.GetOrProcessAsync (snapshot, default);
 
 			if (parseTask.IsCompleted) {
+#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
 				return GetTags (parseTask.Result, spans, snapshot);
+#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
 			} else {
 				parseTask.ContinueWith (t => {
 					RaiseTagsChanged ();
-				});
+				}, TaskScheduler.Default).Forget ();
 			}
 
 			return emptyTagList;
