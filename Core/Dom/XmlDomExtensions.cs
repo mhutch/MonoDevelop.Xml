@@ -33,7 +33,8 @@ namespace MonoDevelop.Xml.Dom
 				if (att.Span.Start > offset) {
 					break;
 				}
-				if (att.Span.Contains (offset)) {
+				// If the position touches the end of the attribute, we still want to include the attribute
+				if (att.Span.ContainsOuter (offset)) {
 					return att;
 				}
 			}
