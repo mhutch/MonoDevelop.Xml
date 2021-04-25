@@ -11,7 +11,7 @@ using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-
+using Microsoft.VisualStudio.Threading;
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Editor.Options;
 
@@ -128,7 +128,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 					//explicitly trigger completion for the attribute value
 					RetriggerCompletion (session.TextView);
 					//if the user typed the quote char we're inserting, swallow it so they don't end up mismatched
-					return typedChar == quoteChar? CommitSwallowChar : CommitResult.Handled;
+					return typedChar == quoteChar ? CommitSwallowChar : CommitResult.Handled;
 				}
 			case XmlCompletionItemKind.Element:
 			case XmlCompletionItemKind.AttributeValue: {
@@ -173,7 +173,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			System.Threading.Tasks.Task.Run (async () => {
 				await provider.JoinableTaskContext.Factory.SwitchToMainThreadAsync ();
 				provider.CommandServiceFactory.GetService (textView).Execute ((v, b) => new Microsoft.VisualStudio.Text.Editor.Commanding.Commands.InvokeCompletionListCommandArgs (v, b), null);
-			});
+			}).Forget ();
 		}
 
 		static void ConsumeTrailingChar (ref SnapshotSpan span, char charToConsume)
@@ -196,7 +196,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			// completion may or may not include it depending how it was triggered
 			bool includesBracket = item.InsertText[0] == '<';
 
-			var insertTillName = item.InsertText.Substring (includesBracket? 2 : 1);
+			var insertTillName = item.InsertText.Substring (includesBracket ? 2 : 1);
 			var stack = item.Properties.GetProperty<List<XObject>> (typeof (List<XObject>));
 			var elements = new List<XElement> ();
 			for (int i = stack.Count - 1; i >= 0; i--) {

@@ -26,7 +26,7 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 	{
 		const int triggerDelayMilliseconds = 200;
 
-		protected ITextView TextView { get;  }
+		protected ITextView TextView { get; }
 		protected JoinableTaskContext JoinableTaskContext { get; }
 		readonly Timer timer;
 
@@ -66,7 +66,7 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 				try {
 					var position = TextView.Caret.Position.BufferPosition;
 					var newHighlights = await GetHighlightsAsync (position, token);
-					sourceSpan = newHighlights.highlights.Length == 0? (SnapshotSpan?)null : newHighlights.sourceSpan;
+					sourceSpan = newHighlights.highlights.Length == 0 ? (SnapshotSpan?)null : newHighlights.sourceSpan;
 
 					ImmutableArray<(TKind kind, SnapshotSpan location)> oldHighlights;
 					lock (highlightsLocker) {
@@ -90,7 +90,7 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 				} catch (Exception ex) when (!(ex is OperationCanceledException && token.IsCancellationRequested)) {
 					LogInternalError (ex);
 				}
-			}, token);
+			}, token).Forget ();
 		}
 
 		void LogInternalError (Exception ex)
@@ -133,7 +133,7 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 				);
 
 		SnapshotSpan UnionNonEmpty (SnapshotSpan a, SnapshotSpan b)
-			=> a.IsEmpty? b : b.IsEmpty? a :
+			=> a.IsEmpty ? b : b.IsEmpty ? a :
 			new SnapshotSpan (
 				//using both snapshots here validates that they're the same
 				new SnapshotPoint (a.Snapshot, Math.Min (a.Start, b.Start)),
