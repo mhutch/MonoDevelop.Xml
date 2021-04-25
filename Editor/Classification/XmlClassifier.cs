@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.Text;
+using System.Linq;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Utilities;
@@ -19,6 +19,21 @@ namespace MonoDevelop.Xml.Editor.Classification
 	sealed class XmlClassifierProvider : IClassifierProvider
 	{
 		internal IClassificationType[] Types;
+
+		[ImportMany]
+		private IEnumerable<Lazy<IXmlClassifierExtension, IOrderable>> xmlClassifierExtensions = null;
+
+		private IEnumerable<IXmlClassifierExtension> orderedXmlClassifierExtensions;
+
+		public IEnumerable<IXmlClassifierExtension> XmlClassifierExtensions {
+			get {
+				if (orderedXmlClassifierExtensions == null) {
+					orderedXmlClassifierExtensions = Orderer.Order (xmlClassifierExtensions).Select (e => e.Value).ToArray ();
+				}
+
+				return orderedXmlClassifierExtensions;
+			}
+		}
 
 		[ImportingConstructor]
 		public XmlClassifierProvider (IClassificationTypeRegistryService classificationTypeRegistryService)
@@ -41,20 +56,39 @@ namespace MonoDevelop.Xml.Editor.Classification
 
 		public IClassifier GetClassifier (ITextBuffer textBuffer)
 		{
-			return new XmlClassifier (textBuffer, Types);
+			foreach (var extension in XmlClassifierExtensions) {
+				if (!extension.ShouldClassify (textBuffer)) {
+					return null;
+				}
+			}
+
+			return new XmlClassifier (textBuffer, Types, CallExtensions);
+		}
+
+		internal void CallExtensions (ClassificationSpan classificationSpan, Action<ClassificationSpan> sink)
+		{
+			foreach (var extension in XmlClassifierExtensions) {
+				if (extension.TryReplace (classificationSpan, sink)) {
+					return;
+				}
+			}
+
+			sink (classificationSpan);
 		}
 	}
 
 	public sealed class XmlClassifier : IClassifier
 	{
 		private readonly IClassificationType[] types;
+		private readonly Action<ClassificationSpan, Action<ClassificationSpan>> classificationReplacer;
 		private readonly XmlBackgroundParser parser;
 
 		public event EventHandler<ClassificationChangedEventArgs> ClassificationChanged;
 
-		public XmlClassifier (ITextBuffer buffer, IClassificationType[] types = null)
+		public XmlClassifier (ITextBuffer buffer, IClassificationType[] types = null, Action<ClassificationSpan, Action<ClassificationSpan>> classificationReplacer = null)
 		{
 			this.types = types;
+			this.classificationReplacer = classificationReplacer;
 			this.parser = XmlBackgroundParser.GetParser (buffer);
 		}
 
@@ -113,7 +147,7 @@ namespace MonoDevelop.Xml.Editor.Classification
 					if (i > previousSpanStart) {
 						var previousSpan = new SnapshotSpan (snapshot, previousSpanStart, i - previousSpanStart);
 						var previousTag = new ClassificationSpan (previousSpan, previousClassification);
-						result.Add (previousTag);
+						AddSpan (previousTag, result.Add);
 					}
 
 					previousSpanStart = i;
@@ -129,10 +163,19 @@ namespace MonoDevelop.Xml.Editor.Classification
 			if (previousSpanStart < end) {
 				var lastSpan = new SnapshotSpan (snapshot, previousSpanStart, end - previousSpanStart);
 				var lastTag = new ClassificationSpan (lastSpan, previousClassification);
-				result.Add (lastTag);
+				AddSpan (lastTag, result.Add);
 			}
 
 			return result;
+		}
+
+		private void AddSpan (ClassificationSpan classificationSpan, Action<ClassificationSpan> callback)
+		{
+			if (classificationReplacer != null) {
+				classificationReplacer (classificationSpan, callback);
+			} else {
+				callback (classificationSpan);
+			}
 		}
 
 		private string GetStateName (XmlParserState state, int stateTag)
