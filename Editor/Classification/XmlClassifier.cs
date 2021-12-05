@@ -15,7 +15,9 @@ using static MonoDevelop.Xml.Editor.Classification.XmlClassificationTypes;
 namespace MonoDevelop.Xml.Editor.Classification
 {
 	[Export (typeof (IClassifierProvider))]
-	[ContentType (XmlContentTypeNames.XmlCore)]
+	[ContentType (XmlContentTypeNames.Xml)]
+	[ContentType (XmlContentTypeNames.Xslt)]
+	[ContentType (XmlContentTypeNames.Xsd)]
 	sealed class XmlClassifierProvider : IClassifierProvider
 	{
 		internal IClassificationType[] Types;
@@ -77,11 +79,11 @@ namespace MonoDevelop.Xml.Editor.Classification
 		}
 	}
 
-	public sealed class XmlClassifier : IClassifier
+	public class XmlClassifier : IClassifier
 	{
-		private readonly IClassificationType[] types;
-		private readonly Action<ClassificationSpan, Action<ClassificationSpan>> classificationReplacer;
-		private readonly XmlBackgroundParser parser;
+		protected readonly IClassificationType[] types;
+		protected readonly Action<ClassificationSpan, Action<ClassificationSpan>> classificationReplacer;
+		protected readonly XmlBackgroundParser parser;
 
 		public event EventHandler<ClassificationChangedEventArgs> ClassificationChanged;
 
@@ -92,10 +94,10 @@ namespace MonoDevelop.Xml.Editor.Classification
 			this.parser = XmlBackgroundParser.GetParser (buffer);
 		}
 
-		private XmlSpineParser spineParser;
-		private ITextSnapshot lastSnapshot;
+		protected XmlSpineParser spineParser;
+		protected ITextSnapshot lastSnapshot;
 
-		public IList<ClassificationSpan> GetClassificationSpans (SnapshotSpan span)
+		public virtual IList<ClassificationSpan> GetClassificationSpans (SnapshotSpan span)
 		{
 			var snapshot = span.Snapshot;
 
@@ -169,7 +171,7 @@ namespace MonoDevelop.Xml.Editor.Classification
 			return result;
 		}
 
-		private void AddSpan (ClassificationSpan classificationSpan, Action<ClassificationSpan> callback)
+		protected void AddSpan (ClassificationSpan classificationSpan, Action<ClassificationSpan> callback)
 		{
 			if (classificationReplacer != null) {
 				classificationReplacer (classificationSpan, callback);
@@ -178,7 +180,7 @@ namespace MonoDevelop.Xml.Editor.Classification
 			}
 		}
 
-		private string GetStateName (XmlParserState state, int stateTag)
+		protected string GetStateName (XmlParserState state, int stateTag)
 		{
 			string result = null;
 
@@ -198,7 +200,7 @@ namespace MonoDevelop.Xml.Editor.Classification
 			return result;
 		}
 
-		private XmlClassificationTypes GetClassification (
+		protected virtual XmlClassificationTypes GetClassification (
 			XmlParserState previousState,
 			char ch,
 			XmlParserState currentState,
@@ -289,7 +291,7 @@ namespace MonoDevelop.Xml.Editor.Classification
 			return None;
 		}
 
-		private void RaiseClassificationChanged (SnapshotSpan span)
+		protected void RaiseClassificationChanged (SnapshotSpan span)
 		{
 			ClassificationChanged?.Invoke (this, new ClassificationChangedEventArgs (span));
 		}
