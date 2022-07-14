@@ -30,15 +30,16 @@ using System.Threading.Tasks;
 using Microsoft.VisualStudio.Text;
 
 using MonoDevelop.Xml.Editor.Completion;
-using MonoDevelop.Xml.Editor.Tests;
 
 using NUnit.Framework;
 
-namespace MonoDevelop.Xml.Tests
+namespace MonoDevelop.Xml.Editor.Tests.Commands
 {
 	[TestFixture]
-	public class ExpandSelectionTests : EditorTest
+	public class ExpandSelectionTests : XmlEditorTest
 	{
+		public ExpandSelectionTests () { }
+
 		const string Document = @"<!-- this is
 a comment-->
 <foo hello=""hi"" goodbye=""bye"">

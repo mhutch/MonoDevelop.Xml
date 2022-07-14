@@ -10,14 +10,13 @@ using Microsoft.VisualStudio.Text;
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Editor.Commands;
 using MonoDevelop.Xml.Editor.Completion;
-using MonoDevelop.Xml.Editor.Tests;
 
 using NUnit.Framework;
 
-namespace MonoDevelop.Xml.Tests
+namespace MonoDevelop.Xml.Editor.Tests.Commands
 {
 	[TestFixture]
-	public class CommentUncommentTests : EditorTest
+	public class CommentUncommentTests : XmlEditorTest
 	{
 		public const char VirtualSpaceMarker = '→';
 		public const char SelectionStartMarker = '{';

@@ -8,10 +8,8 @@ using NUnit.Framework;
 namespace MonoDevelop.Xml.Editor.Tests.Completion
 {
 	[TestFixture]
-	public class CompletionTests : EditorTest
+	public class CompletionTests : XmlEditorTest
 	{
-		protected override string ContentTypeName => CompletionTestContentType.Name;
-
 		[Test]
 		public async Task TestElementStartCompletion ()
 		{

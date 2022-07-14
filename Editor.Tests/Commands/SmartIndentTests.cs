@@ -8,16 +8,13 @@ using Microsoft.VisualStudio.Text.Editor;
 
 using MonoDevelop.Xml.Editor.Completion;
 using MonoDevelop.Xml.Editor.SmartIndent;
-using MonoDevelop.Xml.Editor.Tests.Completion;
 
 using NUnit.Framework;
 
 namespace MonoDevelop.Xml.Editor.Tests.Commands
 {
-	class SmartIndentTests : EditorTest
+	class SmartIndentTests : XmlEditorTest
 	{
-		protected override string ContentTypeName => CompletionTestContentType.Name;
-
 		[Test]
 		[TestCase ("<a>|", 4)] // single indent inside one element
 		[TestCase ("<a b=''|", 8)] // double indent in element attributes

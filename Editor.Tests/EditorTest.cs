@@ -11,16 +11,16 @@ namespace MonoDevelop.Xml.Editor.Tests
 {
 	public abstract class EditorTest
 	{
-		public EditorTest () : this (XmlTestEnvironment.CreateEditorCatalog ()) { }
-
-		protected EditorTest (EditorCatalog catalog) => Catalog = catalog ?? throw new ArgumentNullException (nameof (catalog));
+		protected EditorTest () => Catalog = CreateCatalog ();
 
 		/// <summary>
 		/// The MEF composition for the test
 		/// </summary>
 		public EditorCatalog Catalog { get; }
 
-		protected virtual string ContentTypeName => XmlContentTypeNames.XmlCore;
+		protected abstract EditorCatalog CreateCatalog ();
+
+		protected abstract string ContentTypeName { get; }
 
 		public virtual IContentType ContentType => Catalog.ContentTypeRegistryService.GetContentType (ContentTypeName ?? StandardContentTypeNames.Text);
 

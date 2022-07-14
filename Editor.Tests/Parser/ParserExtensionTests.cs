@@ -13,7 +13,7 @@ using NUnit.Framework;
 namespace MonoDevelop.Xml.Tests.Parser
 {
 	[TestFixture]
-	public class ParserExtensionTests : EditorTest
+	public class ParserExtensionTests : XmlEditorTest
 	{
 		[Test]
 		[TestCase ("<a><b>", "")]

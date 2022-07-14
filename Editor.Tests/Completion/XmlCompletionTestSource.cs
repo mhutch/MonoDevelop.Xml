@@ -19,19 +19,10 @@ using MonoDevelop.Xml.Editor.Completion;
 
 namespace MonoDevelop.Xml.Editor.Tests.Completion
 {
-	static class CompletionTestContentType
-	{
-		public const string Name = "XmlCompletionTest";
-
-		[Export]
-		[Name (Name)]
-		[BaseDefinition (XmlContentTypeNames.XmlCore)]
-		public static readonly ContentTypeDefinition XmlCompletionTestContentTypeDefinition = null;
-	}
 
 	[Export (typeof (IAsyncCompletionSourceProvider))]
 	[Name ("Xml Completion Test Source Provider")]
-	[ContentType (CompletionTestContentType.Name)]
+	[ContentType (XmlEditorTestContentType.Name)]
 	class XmlCompletionTestSourceProvider : IAsyncCompletionSourceProvider
 	{
 		public IAsyncCompletionSource GetOrCreate (ITextView textView) => new XmlCompletionTestSource (textView);

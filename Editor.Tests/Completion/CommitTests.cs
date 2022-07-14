@@ -15,10 +15,8 @@ using NUnit.Framework;
 namespace MonoDevelop.Xml.Editor.Tests.Completion
 {
 	[TestFixture]
-	public class CommitTests : EditorTest
+	public class CommitTests : XmlEditorTest
 	{
-		protected override string ContentTypeName => CompletionTestContentType.Name;
-
 		[Test]
 		public Task SingleClosingTag ()
 			=> this.TestCommands (
