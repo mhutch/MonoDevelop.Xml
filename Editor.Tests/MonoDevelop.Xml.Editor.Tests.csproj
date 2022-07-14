@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <NUnitDisableSupportAssemblies>true</NUnitDisableSupportAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Core\MonoDevelop.Xml.Core.csproj" />
+    <ProjectReference Include="..\Core.Tests\MonoDevelop.Xml.Core.Tests.csproj" />
+    <ProjectReference Include="..\Editor\MonoDevelop.Xml.Editor.csproj" />
+    <ProjectReference Include="..\external\MiniEditor\Microsoft.VisualStudio.MiniEditor\Microsoft.VisualStudio.MiniEditor.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Schema\SchemaAssociationTests.cs" />
+    <Compile Remove="Schema\XmlSchemaNamespaceTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Schema\SchemaAssociationTests.cs" />
+    <None Include="Schema\XmlSchemaNamespaceTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.2.0" />
+    <PackageReference Include="NUnit" Version="3.13.3" />
+    <!-- this preview package is currently required for the adaptor to work on systems where .NET 7 previews are installed -->
+    <PackageReference Include="NUnit3TestAdapter" Version="4.3.0-alpha-net7.4" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.ImageCatalog" Version="17.2.32505.113" />
+    <PackageReference Include="Microsoft.VisualStudio.Language.Intellisense" Version="17.2.3194" />
+    <PackageReference Include="Microsoft.VisualStudio.Language.StandardClassification" Version="17.2.3194" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading" Version="17.2.32" />
+  </ItemGroup>
+</Project>

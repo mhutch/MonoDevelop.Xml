@@ -2,5 +2,10 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <!--
+    The assembly is called MonoDevelop.Xml.Core so as not to conflict with the original extension assembly in MonoDevelop
+    but the root namespace is still MonoDevelop.Xml
+    -->
+    <RootNamespace>MonoDevelop.Xml</RootNamespace>
   </PropertyGroup>
 </Project>
