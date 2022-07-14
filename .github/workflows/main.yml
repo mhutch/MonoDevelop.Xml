@@ -10,16 +10,16 @@ jobs:
         config: [ Debug ]
       fail-fast: false
     runs-on: ${{ matrix.os }}
-    
+
     steps:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0 # GitVersioning needs deep clone
         submodules: recursive
-  
+
     - uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: '5.0.x'
+        dotnet-version: '6.0.x'
 
     - name: Set up NuGet
       uses: nuget/setup-nuget@v1
