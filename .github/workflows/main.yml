@@ -12,17 +12,14 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 0 # GitVersioning needs deep clone
         submodules: recursive
 
-    - uses: actions/setup-dotnet@v1
+    - uses: actions/setup-dotnet@v2
       with:
         dotnet-version: '6.0.x'
-
-    - name: Set up NuGet
-      uses: nuget/setup-nuget@v1
 
     - name: Restore
       run: dotnet restore MonoDevelop.Xml.sln
@@ -30,16 +27,5 @@ jobs:
     - name: Build
       run: dotnet build MonoDevelop.Xml.sln -c ${{ matrix.config }} --no-restore
 
-    - name: Test (Windows)
-      if: startsWith (matrix.os, 'windows')
+    - name: Test
       run: dotnet test -c ${{ matrix.config }} --no-build
-
-      # dotnet test doesn't support mono so we have to use the nunit runner on Linux
-    - name: Test (Linux/Mac)
-      if: startsWith (matrix.os, 'windows') == false
-      run: |
-        dotnet test -c ${{ matrix.config }} --no-build -f net6.0 Core.Tests/MonoDevelop.Xml.Core.Tests.csproj
-        nuget install NUnit.ConsoleRunner -Version 3.15.2 -OutputDirectory testrunner
-        mono ./testrunner/NUnit.ConsoleRunner.3.15.2/tools/nunit3-console.exe --framework=mono-4.0 \
-          ./Core.Tests/bin/${{ matrix.config }}/net472/MonoDevelop.Xml.Core.Tests.dll \
-          ./Editor.Tests/bin/${{ matrix.config }}/net472/MonoDevelop.Xml.Editor.Tests.dll

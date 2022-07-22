@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFrameworks>net6.0</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('Windows'))">net48;net6.0</TargetFrameworks>
     <NUnitDisableSupportAssemblies>true</NUnitDisableSupportAssemblies>
   </PropertyGroup>
 
@@ -26,9 +27,9 @@
     <PackageReference Include="NUnit3TestAdapter" Version="4.3.0-alpha-net7.4" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.VisualStudio.ImageCatalog" Version="17.2.32505.113" />
-    <PackageReference Include="Microsoft.VisualStudio.Language.Intellisense" Version="17.2.3194" />
-    <PackageReference Include="Microsoft.VisualStudio.Language.StandardClassification" Version="17.2.3194" />
+    <PackageReference Include="Microsoft.VisualStudio.ImageCatalog" Version="17.2.32505.113" NoWarn="NU1701" />
+    <PackageReference Include="Microsoft.VisualStudio.Language.Intellisense" Version="17.2.3194" NoWarn="NU1701" />
+    <PackageReference Include="Microsoft.VisualStudio.Language.StandardClassification" Version="17.2.3194" NoWarn="NU1701" />
     <PackageReference Include="Microsoft.VisualStudio.Threading" Version="17.2.32" />
   </ItemGroup>
 </Project>
