@@ -126,7 +126,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 			LoggingService.LogDebug (
 				"Attempting completion for state '{0}'x{1}, character='{2}', trigger='{3}'",
-				spine.CurrentState, spine.CurrentStateLength, trigger.Character, trigger
+				spine.CurrentState, spine.CurrentStateLength, trigger.Character, trigger.Reason
 			);
 
 			var (kind, length) = XmlCompletionTriggering.GetTrigger (spine, reason.Value, trigger.Character);
