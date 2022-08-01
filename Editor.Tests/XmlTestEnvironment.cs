@@ -52,10 +52,11 @@ namespace MonoDevelop.Xml.Editor.Tests
 			MefJoinableTaskContext = mainloop.JoinableTaskContext;
 			System.Threading.SynchronizationContext.SetSynchronizationContext (mainloop);
 
-			EditorEnvironment.DefaultAssemblies = new string[2]
+			EditorEnvironment.DefaultAssemblies = new string[]
 			{
 				typeof(EditorEnvironment).Assembly.Location, // Microsoft.VisualStudio.MiniEditor
 				typeof (Microsoft.VisualStudio.Text.VirtualSnapshotPoint).Assembly.Location, //Microsoft.VisualStudio.Text.Logic
+				typeof (Microsoft.VisualStudio.Text.Editor.ScrollDirection).Assembly.Location // Microsoft.VisualStudio.Text.UI
 			}.ToImmutableArray ();
 
 			// Create the MEF composition
