@@ -69,7 +69,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		public static void Parse (this XmlParser parser, string doc, char trigger = '$', bool preserveWindowsNewlines = false, params Action[] asserts)
 		{
 			var context = parser.GetContext ();
-			Assert.AreEqual (context.Position, 0);
+			Assert.AreEqual (0, context.Position);
 			int assertNo = 0;
 			for (int i = 0; i < doc.Length; i++) {
 				char c = doc[i];

@@ -101,3 +101,7 @@ csharp_style_conditional_delegate_call = true:suggestion
 
 # VSTHRD200: Use "Async" suffix for async methods
 dotnet_diagnostic.VSTHRD200.severity = none
+
+# NUnit2005: Consider using Assert.That(actual, Is.EqualTo(expected)) instead of Assert.AreEqual(expected, actual)
+dotnet_diagnostic.NUnit2005.severity = none
+dotnet_diagnostic.NUnit2006.severity = none
