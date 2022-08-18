@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.Text;
 
 using MonoDevelop.Xml.Dom;
@@ -168,9 +168,9 @@ a=""a""/>-->")]
   <!--<![CDATA[bar]]>-->
 <x/>", false)]
 
-		public void TestComment (string sourceText, string expectedText, bool toggle = true)
+		public async Task TestComment (string sourceText, string expectedText, bool toggle = true)
 		{
-			var (buffer, snapshotSpans, document) = GetBufferSpansAndDocument (sourceText);
+			var (buffer, snapshotSpans, document) = await GetBufferSpansAndDocument (sourceText);
 
 			CommentUncommentCommandHandler.CommentSelection (buffer, snapshotSpans, document);
 
@@ -180,7 +180,7 @@ a=""a""/>-->")]
 
 			// toggle should also work in most scenarios for comment
 			if (toggle) {
-				TestToggle (sourceText, expectedText);
+				await TestToggle (sourceText, expectedText);
 			}
 		}
 
@@ -222,9 +222,9 @@ a=""a""/>-->")]
   <a/>
 </x>", false)]
 
-		public void TestUncomment (string sourceText, string expectedText, bool toggle = true)
+		public async Task TestUncomment (string sourceText, string expectedText, bool toggle = true)
 		{
-			var (buffer, snapshotSpans, document) = GetBufferSpansAndDocument (sourceText);
+			var (buffer, snapshotSpans, document) = await GetBufferSpansAndDocument (sourceText);
 
 			CommentUncommentCommandHandler.UncommentSelection (buffer, snapshotSpans, document);
 
@@ -234,13 +234,13 @@ a=""a""/>-->")]
 
 			// toggle should also work in most scenarios for uncomment
 			if (toggle) {
-				TestToggle (sourceText, expectedText);
+				await TestToggle (sourceText, expectedText);
 			}
 		}
 
-		void TestToggle (string sourceText, string expectedText)
+		async Task TestToggle (string sourceText, string expectedText)
 		{
-			var (buffer, snapshotSpans, document) = GetBufferSpansAndDocument (sourceText);
+			var (buffer, snapshotSpans, document) = await GetBufferSpansAndDocument (sourceText);
 
 			CommentUncommentCommandHandler.ToggleCommentSelection (buffer, snapshotSpans, document);
 
@@ -249,7 +249,7 @@ a=""a""/>-->")]
 			Assert.AreEqual (expectedText, actualText);
 		}
 
-		(ITextBuffer buffer, IEnumerable<VirtualSnapshotSpan> virtualSnapshotSpans, XDocument document) GetBufferSpansAndDocument (string sourceText)
+		async Task<(ITextBuffer buffer, IEnumerable<VirtualSnapshotSpan> virtualSnapshotSpans, XDocument document)> GetBufferSpansAndDocument (string sourceText)
 		{
 			var (text, spans) = GetTextAndSpans (sourceText);
 			var buffer = CreateTextBuffer (text);
@@ -259,7 +259,8 @@ a=""a""/>-->")]
 			var virtualSnapshotSpans = spans.Select (s => new VirtualSnapshotSpan (
 				 new VirtualSnapshotPoint (new SnapshotPoint (snapshot, s.Span.Start), s.VirtualSpacesAtStart),
 				 new VirtualSnapshotPoint (new SnapshotPoint (snapshot, s.Span.End), s.VirtualSpacesAtEnd)));
-			var document = parser.GetOrProcessAsync (buffer.CurrentSnapshot, default).Result.XDocument;
+			var parseResult = await parser.GetOrProcessAsync (buffer.CurrentSnapshot, default);
+			var document = parseResult.XDocument;
 
 			return (buffer, virtualSnapshotSpans, document);
 		}
