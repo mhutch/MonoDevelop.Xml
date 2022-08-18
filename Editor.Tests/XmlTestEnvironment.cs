@@ -1,9 +1,16 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.ComponentModel.Composition;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 using Microsoft.VisualStudio.MiniEditor;
 using Microsoft.VisualStudio.Threading;
@@ -18,50 +25,84 @@ namespace MonoDevelop.Xml.Editor.Tests
 {
 	public class XmlTestEnvironment
 	{
-		EditorEnvironment editorEnvironment;
-		static Exception initException;
+		EditorEnvironment? editorEnvironment;
 
-		protected static XmlTestEnvironment Instance { get; private set; }
+		static readonly object initLock = new ();
+		static Task<XmlTestEnvironment>? initTask;
 
 		[Export]
-		public static JoinableTaskContext MefJoinableTaskContext = null;
+		public static JoinableTaskContext? MefJoinableTaskContext = null;
 
-		public static EditorEnvironment EditorEnvironment => initException == null ? Instance.editorEnvironment : throw initException;
+		public static EditorCatalog CreateEditorCatalog () => new (GetInitialized<XmlTestEnvironment> ().GetEditorHost ());
 
-		public static EditorCatalog CreateEditorCatalog () => new (EnsureInitialized<XmlTestEnvironment> ().GetEditorHost ());
+		protected static EditorEnvironment GetInitialized<T> () where T : XmlTestEnvironment, new()
+			#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
+			=> GetInitializedAsync<T> ().Result;
+			#pragma warning restore VSTHRD002
 
-		protected static EditorEnvironment EnsureInitialized<T> () where T : XmlTestEnvironment, new()
+		protected static ValueTask<EditorEnvironment> GetInitializedAsync<T> () where T : XmlTestEnvironment, new()
 		{
-			try {
-				if (Instance == null) {
-					Instance = new T ();
-					Instance.OnInitialize ();
-				} else if (!(Instance is T)) {
-					throw new InvalidOperationException ($"Already initialized with type '{Instance.GetType ()}'");
-				}
-			} catch (Exception ex) {
-				initException = ex;
+			#pragma warning disable VSTHRD103 // Call async methods when in an async method
+
+			if (initTask is not null && initTask.IsCompleted) {
+				return new ValueTask<EditorEnvironment> (CheckResultType (initTask));
 			}
-			return EditorEnvironment;
+
+			return new ValueTask<EditorEnvironment> (
+				GetOrCreateInitTask<T> ()
+				.ContinueWith (CheckResultType, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default)
+			);
+
+			static EditorEnvironment CheckResultType (Task<XmlTestEnvironment> task)
+			{
+				if (task.Result is not T) {
+					throw new InvalidOperationException ($"Already initialized with type '{task.Result.GetType ()}'");
+				}
+				return task.Result.editorEnvironment!;
+			}
+
+			#pragma warning restore VSTHRD103
 		}
 
-		protected virtual void OnInitialize ()
+		static Task<XmlTestEnvironment> GetOrCreateInitTask<T> () where T : XmlTestEnvironment, new()
 		{
-			var mainloop = new Utils.MockMainLoop ();
-			mainloop.Start ().Wait ();
-			MefJoinableTaskContext = mainloop.JoinableTaskContext;
-			System.Threading.SynchronizationContext.SetSynchronizationContext (mainloop);
+			if (initTask is not null) {
+				return initTask;
+			}
 
-			EditorEnvironment.DefaultAssemblies = new string[]
+			lock (initLock) {
+				if (initTask != null) {
+					return initTask;
+				}
+
+				try {
+					var mainloop = new Utils.MockMainLoop ();
+					mainloop.Start ();
+
+					MefJoinableTaskContext = mainloop.JoinableTaskContext;
+					SynchronizationContext.SetSynchronizationContext (mainloop);
+
+					var instance = new T ();
+					return initTask = instance.OnInitialize ()
+						.ContinueWith<XmlTestEnvironment> (_ => instance, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+				}
+				catch (Exception ex) {
+					return initTask = Task.FromException<XmlTestEnvironment> (ex);
+				}
+			}
+		}
+
+		protected virtual async Task OnInitialize ()
+		{
+			EditorEnvironment.DefaultAssemblies = new string[2]
 			{
 				typeof(EditorEnvironment).Assembly.Location, // Microsoft.VisualStudio.MiniEditor
 				typeof (Microsoft.VisualStudio.Text.VirtualSnapshotPoint).Assembly.Location, //Microsoft.VisualStudio.Text.Logic
-				typeof (Microsoft.VisualStudio.Text.Editor.ScrollDirection).Assembly.Location // Microsoft.VisualStudio.Text.UI
 			}.ToImmutableArray ();
 
 			// Create the MEF composition
 			// can be awaited instead if your framework supports it
-			editorEnvironment = EditorEnvironment.InitializeAsync (GetAssembliesToCompose ().ToArray ()).Result;
+			editorEnvironment = await EditorEnvironment.InitializeAsync (GetAssembliesToCompose ().ToArray ());
 
 			if (editorEnvironment.CompositionErrors.Length > 0) {
 				var errors = editorEnvironment.CompositionErrors.Where (e => !ShouldIgnoreCompositionError (e)).ToArray ();
@@ -81,7 +122,7 @@ namespace MonoDevelop.Xml.Editor.Tests
 
 		protected virtual bool ShouldIgnoreCompositionError (string error) => false;
 
-		protected virtual void HandleError (object source, Exception ex)
+		protected virtual void HandleError (object? source, Exception ex)
 		{
 			TestExecutionContext.CurrentContext.CurrentResult.RecordAssertion (AssertionStatus.Error, ex.Message, ex.StackTrace);
 
