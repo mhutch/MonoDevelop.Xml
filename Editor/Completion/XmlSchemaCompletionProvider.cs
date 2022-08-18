@@ -90,7 +90,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				var list = new XmlSchemaCompletionBuilder (source);
 				var element = schema.FindElement (tagName);
 				if (element != null)
-					list.GetChildElementCompletionData (schema, element, "");
+					list.AddChildElements (schema, element, "");
 				return new CompletionContext (list.GetItems ());
 			}, token);
 
@@ -99,7 +99,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				var list = new XmlSchemaCompletionBuilder (source);
 				var element = schema.FindElement (tagName);
 				if (element != null) {
-					list.GetAttributeCompletionData (schema, element);
+					list.AddAttributes (schema, element);
 				}
 				return new CompletionContext (list.GetItems ());
 			}, token);
@@ -109,7 +109,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				var list = new XmlSchemaCompletionBuilder (source);
 				var element = schema.FindElement (tagName);
 				if (element != null)
-					list.GetAttributeValueCompletionData (schema, element, name);
+					list.AddAttributeValues (schema, element, name);
 				return new CompletionContext (list.GetItems ());
 			}, token);
 
@@ -143,7 +143,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				var builder = new XmlSchemaCompletionBuilder (source, path.Namespaces);
 				var element = schema.FindElement (path);
 				if (element != null) {
-					builder.GetAttributeCompletionData (schema, element);
+					builder.AddAttributes (schema, element);
 				}
 				return new CompletionContext (builder.GetItems ());
 			}, token);
@@ -158,7 +158,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				var element = schema.FindElement (path);
 				if (element != null) {
 					var last = path.Elements.LastOrDefault ();
-					builder.GetChildElementCompletionData (schema, element, last != null ? last.Prefix : "");
+					builder.AddChildElements (schema, element, last != null ? last.Prefix : "");
 				}
 				return new CompletionContext (builder.GetItems ());
 			}, token);
@@ -171,7 +171,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				var builder = new XmlSchemaCompletionBuilder (source, path.Namespaces);
 				var element = schema.FindElement (path);
 				if (element != null)
-					builder.GetAttributeValueCompletionData (schema, element, name);
+					builder.AddAttributeValues (schema, element, name);
 				return new CompletionContext (builder.GetItems ());
 			}, token);
 
