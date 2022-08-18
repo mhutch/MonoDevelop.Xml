@@ -48,10 +48,11 @@ namespace MonoDevelop.Xml.Dom
 				return attribute;
 			}
 
-			XContainer? currentContainer = container;
-			while (currentContainer is not null) {
+			XContainer? current = container;
+
+			while (current is not null) {
 				XNode? lastNodeBeforeOffset = null;
-				foreach (var node in currentContainer.Nodes) {
+				foreach (var node in current.Nodes) {
 					if (node.Span.Start > offset) {
 						break;
 					}
@@ -66,7 +67,7 @@ namespace MonoDevelop.Xml.Dom
 					}
 					lastNodeBeforeOffset = node;
 				}
-				currentContainer = lastNodeBeforeOffset as XContainer;
+				current = lastNodeBeforeOffset as XContainer;
 			}
 			return null;
 		}
@@ -78,9 +79,10 @@ namespace MonoDevelop.Xml.Dom
 			}
 
 			XNode? lastNodeBeforeOffset = null;
-			XContainer? currentContainer = container;
-			while (currentContainer is not null) {
-				foreach (var node in currentContainer.Nodes) {
+			XContainer? current = container;
+
+			while (current is not null) {
+				foreach (var node in current.Nodes) {
 					if (node.Span.Start > offset) {
 						break;
 					}
@@ -95,10 +97,10 @@ namespace MonoDevelop.Xml.Dom
 					}
 					lastNodeBeforeOffset = node;
 				}
-				if (lastNodeBeforeOffset == currentContainer) {
+				if (lastNodeBeforeOffset == current) {
 					return lastNodeBeforeOffset;
 				}
-				currentContainer = lastNodeBeforeOffset as XContainer;
+				current = lastNodeBeforeOffset as XContainer;
 			}
 			return lastNodeBeforeOffset;
 		}
@@ -193,29 +195,31 @@ namespace MonoDevelop.Xml.Dom
 		/// </summary>
 		public static IEnumerable<XNode> FollowingNodes (this XNode node)
 		{
-			XNode? currentNode = node;
-			while (currentNode is not null) {
-				yield return currentNode;
-				if (currentNode is XContainer c) {
+			XNode? current = node;
+
+			while (current is not null) {
+				yield return current;
+				if (current is XContainer c) {
 					foreach (var n in c.AllDescendentNodes) {
 						yield return n;
 					}
 				}
-				while (currentNode is not null && currentNode.NextSibling == null) {
-					currentNode = currentNode.Parent as XNode;
+				while (current is not null && current.NextSibling == null) {
+					current = current.Parent as XNode;
 				}
-				currentNode = currentNode?.NextSibling;
+				current = current?.NextSibling;
 			}
 		}
 
 		public static IEnumerable<T> SelfAndParentsOfType<T> (this XObject obj)
 		{
-			XObject? currentObj = obj;
-			while (currentObj is not null) {
-				if (obj is T t) {
+			XObject? current = obj;
+
+			while (current is not null) {
+				if (current is T t) {
 					yield return t;
 				}
-				currentObj = currentObj.Parent;
+				current = current.Parent;
 			}
 		}
 
