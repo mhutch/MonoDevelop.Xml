@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0;net48;net6.0</TargetFrameworks>
     <!--
     The assembly is called MonoDevelop.Xml.Core so as not to conflict with the original extension assembly in MonoDevelop
     but the root namespace is still MonoDevelop.Xml
