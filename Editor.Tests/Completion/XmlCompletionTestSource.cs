@@ -1,12 +1,16 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#nullable enable
+
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Microsoft.Extensions.Logging;
 
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
@@ -25,12 +29,22 @@ namespace MonoDevelop.Xml.Editor.Tests.Completion
 	[ContentType (XmlEditorTestContentType.Name)]
 	class XmlCompletionTestSourceProvider : IAsyncCompletionSourceProvider
 	{
-		public IAsyncCompletionSource GetOrCreate (ITextView textView) => new XmlCompletionTestSource (textView);
+		readonly ILogger logger;
+		readonly XmlParserProvider parserProvider;
+
+		[ImportingConstructor]
+		public XmlCompletionTestSourceProvider (ILogger logger, XmlParserProvider parserProvider)
+		{
+			this.logger = logger;
+			this.parserProvider = parserProvider;
+		}
+
+		public IAsyncCompletionSource GetOrCreate (ITextView textView) => new XmlCompletionTestSource (textView, logger, parserProvider);
 	}
 
 	class XmlCompletionTestSource : XmlCompletionSource
 	{
-		public XmlCompletionTestSource (ITextView textView) : base (textView)
+		public XmlCompletionTestSource (ITextView textView, ILogger logger, XmlParserProvider parserProvider) : base (textView, logger, parserProvider)
 		{
 		}
 

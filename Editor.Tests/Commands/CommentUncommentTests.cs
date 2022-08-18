@@ -253,7 +253,7 @@ a=""a""/>-->")]
 		{
 			var (text, spans) = GetTextAndSpans (sourceText);
 			var buffer = CreateTextBuffer (text);
-			var parser = XmlBackgroundParser.GetParser<XmlBackgroundParser> (buffer);
+			var parser = GetParser (buffer);
 
 			var snapshot = buffer.CurrentSnapshot;
 			var virtualSnapshotSpans = spans.Select (s => new VirtualSnapshotSpan (

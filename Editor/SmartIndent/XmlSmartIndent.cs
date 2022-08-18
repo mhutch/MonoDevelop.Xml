@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#nullable enable
+
 using System;
 using System.Linq;
 
@@ -19,15 +21,17 @@ namespace MonoDevelop.Xml.Editor.SmartIndent
 	{
 		readonly ITextView textView;
 		readonly IEditorOptions options;
+		readonly XmlParserProvider parserProvider;
 
-		public XmlSmartIndent (ITextView textView) : this (textView, textView.Options)
+		public XmlSmartIndent (ITextView textView, XmlParserProvider parserProvider) : this (textView, parserProvider, textView.Options)
 		{
 		}
 
-		public XmlSmartIndent (ITextView textView, IEditorOptions options)
+		public XmlSmartIndent (ITextView textView, XmlParserProvider parserProvider, IEditorOptions options)
 		{
 			this.textView = textView;
 			this.options = options;
+			this.parserProvider = parserProvider;
 		}
 		public virtual void Dispose ()
 		{
@@ -36,7 +40,7 @@ namespace MonoDevelop.Xml.Editor.SmartIndent
 		//FIXME: make this smarter, it's very simple right now
 		public virtual int? GetDesiredIndentation (ITextSnapshotLine line)
 		{
-			if (!XmlBackgroundParser.TryGetParser (textView.TextBuffer, out var parser)) {
+			if (!parserProvider.TryGetParser (textView.TextBuffer, out var parser)) {
 				return null;
 			}
 
@@ -65,7 +69,7 @@ namespace MonoDevelop.Xml.Editor.SmartIndent
 			return indent;
 		}
 
-		static ITextSnapshotLine GetPreviousNonEmptyLine (ITextSnapshotLine line)
+		static ITextSnapshotLine? GetPreviousNonEmptyLine (ITextSnapshotLine line)
 		{
 			const int MAX_ITERATIONS = 20;
 			int end = Math.Max (0, line.LineNumber - MAX_ITERATIONS);

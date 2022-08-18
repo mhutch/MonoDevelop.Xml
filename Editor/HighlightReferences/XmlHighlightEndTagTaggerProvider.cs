@@ -25,11 +25,13 @@ namespace MonoDevelop.MSBuild.Editor.HighlightReferences
 	class XmlHighlightEndTagTaggerProvider : IViewTaggerProvider
 	{
 		public JoinableTaskContext JoinableTaskContext { get; }
+		public XmlParserProvider ParserProvider { get; }
 
 		[ImportingConstructor]
-		public XmlHighlightEndTagTaggerProvider (JoinableTaskContext joinableTaskContext)
+		public XmlHighlightEndTagTaggerProvider (JoinableTaskContext joinableTaskContext, XmlParserProvider parserProvider)
 		{
 			JoinableTaskContext = joinableTaskContext;
+			ParserProvider = parserProvider;
 		}
 
 		public ITagger<T> CreateTagger<T> (ITextView textView, ITextBuffer buffer) where T : ITag
