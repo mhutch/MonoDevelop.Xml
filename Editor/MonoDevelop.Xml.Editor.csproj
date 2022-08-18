@@ -5,20 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="BaseXmlEditorExtension.cs" />
-    <Compile Remove="XmlEditorOptions.cs" />
-    <Compile Remove="XmlParsedDocument.cs" />
-    <Compile Remove="XmlTextEditorExtension.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="BaseXmlEditorExtension.cs" />
-    <None Include="XmlEditorOptions.cs" />
-    <None Include="XmlParsedDocument.cs" />
-    <None Include="XmlTextEditorExtension.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Core\MonoDevelop.Xml.Core.csproj" />
     <PackageReference Include="Microsoft.VisualStudio.ImageCatalog" Version="17.2.32505.113" ExcludeAssets="runtime" NoWarn="NU1701" />
     <PackageReference Include="Microsoft.VisualStudio.Language.Intellisense" Version="17.2.3194" ExcludeAssets="runtime" NoWarn="NU1701" />

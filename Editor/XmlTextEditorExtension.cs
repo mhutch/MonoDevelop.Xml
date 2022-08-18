@@ -27,6 +27,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+// unported code from MD
+#if false
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -859,3 +862,5 @@ namespace MonoDevelop.Xml.Editor
 		}
 	}
 }
+
+#endif
