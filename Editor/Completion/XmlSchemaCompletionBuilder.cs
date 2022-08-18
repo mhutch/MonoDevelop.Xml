@@ -53,96 +53,101 @@ namespace MonoDevelop.Xml.Editor.Completion
 		{
 		}
 
-		internal void AddNamespace (string namespaceUri)
+		internal XmlSchemaCompletionBuilder AddNamespace (string namespaceUri)
 		{
 			var item = new CompletionItem (namespaceUri, source, XmlImages.Namespace);
 			items.Add (item);
+			return this;
 		}
 
-		public void AddAttribute (XmlSchemaAttribute attribute)
+		public XmlSchemaCompletionBuilder AddAttribute (XmlSchemaAttribute attribute)
 		{
 			string? name = attribute.Name;
 			if (name is null) {
 				var ns = attribute.RefName.Namespace;
-				if (string.IsNullOrEmpty (ns))
-					return;
-				var prefix = nsMap.GetPrefix (ns);
-				if (prefix == null) {
-					if (ns == "http://www.w3.org/XML/1998/namespace")
+				if (string.IsNullOrEmpty (ns)) {
+					return this;
+				}
+				if (nsMap.GetPrefix (ns) is not string prefix) {
+					if (ns == "http://www.w3.org/XML/1998/namespace") {
 						prefix = "xml";
-					else
-						return;
+					} else {
+						return this;
+					}
 				}
 				name = attribute.RefName.Name;
 				if (prefix.Length > 0)
 					name = prefix + ":" + name;
 			}
-			if (!names.Add (name))
-				return;
+			if (!names.Add (name)) {
+				return this;
+			}
 			var item = new CompletionItem (name, source, XmlImages.Attribute);
 			if (attribute.Annotation is XmlSchemaAnnotation annotation) {
 				item.AddDocumentation (annotation);
 			}
 			items.Add (item);
+			return this;
 		}
-		
-		public void AddAttributeValue (string valueText)
+
+		public XmlSchemaCompletionBuilder AddAttributeValue (string valueText)
 		{
 			var item = new CompletionItem (valueText, source, XmlImages.AttributeValue);
 			items.Add (item);
+			return this;
 		}
 		
-		public void AddAttributeValue (string valueText, XmlSchemaAnnotation? annotation)
+		public XmlSchemaCompletionBuilder AddAttributeValue (string valueText, XmlSchemaAnnotation? annotation)
 		{
 			var item = new CompletionItem (valueText, source, XmlImages.AttributeValue);
 			if (annotation is not null) {
 				item.AddDocumentation (annotation);
 			}
 			items.Add (item);
-		}		
-		
+			return this;
+		}
+
 		/// <summary>
 		/// Adds an element completion data to the collection if it does not 
 		/// already exist.
 		/// </summary>
-		public void AddElement (string name, string prefix, string documentation)
+		public XmlSchemaCompletionBuilder AddElement (string name, string prefix, string documentation)
 		{
 			//FIXME: don't accept a prefix, accept a namespace and resolve it to a prefix
 			if (prefix.Length > 0)
 				name = string.Concat (prefix, ":", name);
 
 			if (!names.Add (name))
-				return;
+				return this;
 
 			var item = new CompletionItem (name, source, XmlImages.Element);
 			item.AddDocumentation (documentation);
 			items.Add (item);
+			return this;
 		}
 		
 		/// <summary>
 		/// Adds an element completion data to the collection if it does not 
 		/// already exist.
 		/// </summary>
-		public void AddElement (string name, string prefix, XmlSchemaAnnotation? annotation)
+		public XmlSchemaCompletionBuilder AddElement (string name, string prefix, XmlSchemaAnnotation? annotation)
 		{
 			//FIXME: don't accept a prefix, accept a namespace and resolve it to a prefix
 			if (prefix.Length > 0)
 				name = string.Concat (prefix, ":", name);
 
 			if (!names.Add (name))
-				return;
+				return this;
 
 			var item = new CompletionItem (name, source, XmlImages.Element);
 			if (annotation is not null) {
 				item.AddDocumentation (annotation);
 			}
 			items.Add (item);
+			return this;
 		}
 
-		public ImmutableArray<CompletionItem> GetItems ()
-		{
-			return ImmutableArray<CompletionItem>.Empty.AddRange (items);
-		}
+		public ImmutableArray<CompletionItem> GetItems () => ImmutableArray<CompletionItem>.Empty.AddRange (items);
 	}
 }
 
