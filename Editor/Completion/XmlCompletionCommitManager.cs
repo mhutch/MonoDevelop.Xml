@@ -5,8 +5,10 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 using Microsoft.CodeAnalysis.Text.Shared.Extensions;
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.Text;
@@ -17,7 +19,7 @@ using MonoDevelop.Xml.Editor.Options;
 
 namespace MonoDevelop.Xml.Editor.Completion
 {
-	class XmlCompletionCommitManager : IAsyncCompletionCommitManager
+	partial class XmlCompletionCommitManager : IAsyncCompletionCommitManager
 	{
 		static readonly char[] allCommitChars = { '>', '/', '=', ' ', ';', '"', '\'' };
 		static readonly char[] attributeCommitChars = { '=', ' ', '"', '\'' };
@@ -160,7 +162,8 @@ namespace MonoDevelop.Xml.Editor.Completion
 				}
 			}
 
-			LoggingService.LogWarning ($"XML commit manager did not handle unknown special completion kind {kind}");
+			LogDidNotHandleCompletionKind (provider.Logger, kind);
+
 			return CommitResult.Unhandled;
 
 			void SetCaretSpanOffset (int spanOffset)
@@ -168,12 +171,16 @@ namespace MonoDevelop.Xml.Editor.Completion
 					new SnapshotPoint (buffer.CurrentSnapshot, span.Start.Position + spanOffset));
 		}
 
+		[LoggerMessage (Level = LogLevel.Warning, Message = "Did not handle completion kind {kind}")]
+		static partial void LogDidNotHandleCompletionKind (ILogger logger, XmlCompletionItemKind kind);
+
 		void RetriggerCompletion (ITextView textView)
 		{
-			System.Threading.Tasks.Task.Run (async () => {
+			var task = Task.Run (async () => {
 				await provider.JoinableTaskContext.Factory.SwitchToMainThreadAsync ();
 				provider.CommandServiceFactory.GetService (textView).Execute ((v, b) => new Microsoft.VisualStudio.Text.Editor.Commanding.Commands.InvokeCompletionListCommandArgs (v, b), null);
 			});
+			task.CatchAndLogWarning (provider.Logger,  $"{nameof(XmlCompletionSource)}.{nameof(RetriggerCompletion)}");
 		}
 
 		static void ConsumeTrailingChar (ref SnapshotSpan span, char charToConsume)

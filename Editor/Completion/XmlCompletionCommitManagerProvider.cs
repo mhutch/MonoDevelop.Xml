@@ -5,6 +5,8 @@
 
 using System.ComponentModel.Composition;
 
+using Microsoft.Extensions.Logging;
+
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Editor.Commanding;
@@ -19,16 +21,18 @@ namespace MonoDevelop.Xml.Editor.Completion
 	class XmlCompletionCommitManagerProvider : IAsyncCompletionCommitManagerProvider
 	{
 		[ImportingConstructor]
-		public XmlCompletionCommitManagerProvider (JoinableTaskContext joinableTaskContext, ISmartIndentationService smartIndentationService, IEditorCommandHandlerServiceFactory commandServiceFactory)
+		public XmlCompletionCommitManagerProvider (JoinableTaskContext joinableTaskContext, ISmartIndentationService smartIndentationService, IEditorCommandHandlerServiceFactory commandServiceFactory, ILogger<XmlCompletionCommitManager> logger)
 		{
 			JoinableTaskContext = joinableTaskContext;
 			SmartIndentationService = smartIndentationService;
 			CommandServiceFactory = commandServiceFactory;
+			Logger = logger;
 		}
 
 		public JoinableTaskContext JoinableTaskContext { get; }
 		public ISmartIndentationService SmartIndentationService { get; }
 		public IEditorCommandHandlerServiceFactory CommandServiceFactory { get; }
+		public ILogger Logger { get; }
 
 		public IAsyncCompletionCommitManager GetOrCreate (ITextView textView) =>
 			textView.Properties.GetOrCreateSingletonProperty (
