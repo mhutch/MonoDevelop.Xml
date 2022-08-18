@@ -290,7 +290,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				if (!el.IsNamed || el.IsClosed)
 					yield break;
 
-				string name = el.Name.FullName;
+				string name = el.Name.FullName!;
 				if (!dedup.Add (name)) {
 					continue;
 				}
