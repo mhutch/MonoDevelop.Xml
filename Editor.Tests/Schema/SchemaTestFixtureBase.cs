@@ -1,6 +1,8 @@
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.Text.Adornments;
 using MonoDevelop.Xml.Editor.Completion;
+using MonoDevelop.Xml.Editor.Tests;
 using NUnit.Framework;
 using System;
 using System.IO;
@@ -12,7 +14,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 	[TestFixture]
 	public abstract class SchemaTestFixtureBase
 	{
-		XmlSchemaCompletionProvider schemaCompletionData;
+		IXmlSchemaCompletionProvider schemaCompletionData;
 
 		/// <summary>
 		/// Gets the <see cref="XmlSchemaCompletionProvider"/> object generated
@@ -20,11 +22,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		/// </summary>
 		/// <remarks>This object will be null until the <see cref="FixtureInitBase"/>
 		/// has been run.</remarks>
-		internal XmlSchemaCompletionProvider SchemaCompletionData {
-			get {
-				return schemaCompletionData;
-			}
-		}
+		internal IXmlSchemaCompletionProvider SchemaCompletionData => schemaCompletionData;
 		
 		/// <summary>
 		/// Creates the <see cref="XmlSchemaCompletionProvider"/> object from 
@@ -115,10 +113,11 @@ namespace MonoDevelop.Xml.Tests.Schema
 		/// Creates an <see cref="XmlSchemaCompletionProvider"/> object that 
 		/// will be used in the test fixture.
 		/// </summary>
-		internal virtual XmlSchemaCompletionProvider CreateSchemaCompletionDataObject()
+		internal virtual IXmlSchemaCompletionProvider CreateSchemaCompletionDataObject ()
 		{
-			StringReader reader = new StringReader(GetSchema());
-			return new XmlSchemaCompletionProvider(reader);
+			ILogger logger = TestLoggers.CreateLogger<SchemaTestFixtureBase> ();
+			var reader = new StringReader(GetSchema());
+			return XmlSchemaCompletionProvider.Create (reader, logger);
 		}
 
 		protected async Task AssertDescription(string expected, CompletionItem item)

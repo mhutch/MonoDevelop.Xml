@@ -23,19 +23,41 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
+
+#nullable enable
+
 using System;
 using System.Xml;
 
+using Microsoft.Extensions.Logging;
+
 namespace MonoDevelop.Xml.Editor.Completion
 {
-	public class LocalOnlyXmlResolver : XmlUrlResolver
+	partial class LocalOnlyXsdResolver : XmlUrlResolver
 	{
-		public override Uri ResolveUri (Uri baseUri, string relativeUri)
+		readonly ILogger logger;
+		readonly string originFile;
+
+		public LocalOnlyXsdResolver (ILogger logger, string originFile)
+		{
+			this.logger = logger;
+			this.originFile = originFile;
+		}
+
+		#pragma warning disable CS8764 // annotation appears to be incorrect, docs say returning null is okay
+		public override Uri? ResolveUri (Uri? baseUri, string? relativeUri)
+		#pragma warning restore CS8764
 		{
 			var absoluteUri = base.ResolveUri (baseUri, relativeUri);
 			if (absoluteUri.IsFile && absoluteUri.LocalPath.EndsWith (".xsd", StringComparison.OrdinalIgnoreCase))
 				return absoluteUri;
-			throw new NotSupportedException ($"URI '{absoluteUri}' not supported");
+
+			LogUrlResolutionBlocked (logger, absoluteUri, originFile);
+
+			return null;
 		}
+
+		[LoggerMessage (Level = LogLevel.Trace, Message = "LocalOnlyXmlResolver discarded non-local URI '{absoluteUri}' in file '{originFile}'")]
+		static partial void LogUrlResolutionBlocked (ILogger logger, Uri absoluteUri, string originFile);
 	}
 }

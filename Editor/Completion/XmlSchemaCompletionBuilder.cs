@@ -24,23 +24,22 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-using System;
+#nullable enable
+
 using System.Collections.Generic;
-using System.Text;
+using System.Collections.Immutable;
 using System.Xml.Schema;
-using System.Xml;
+
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
-using MonoDevelop.Xml.Editor.Completion;
-using System.Collections.Immutable;
 
 namespace MonoDevelop.Xml.Editor.Completion
 {
 	class XmlSchemaCompletionBuilder
 	{
-		List<CompletionItem> items = new List<CompletionItem> ();
+		readonly List<CompletionItem> items = new ();
 
-		HashSet<string> names = new HashSet<string> ();
+		readonly HashSet<string> names = new ();
 		readonly XmlNamespacePrefixMap nsMap;
 		readonly IAsyncCompletionSource source;
 
@@ -62,8 +61,8 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 		public void AddAttribute (XmlSchemaAttribute attribute)
 		{
-			string name = attribute.Name;
-			if (name == null) {
+			string? name = attribute.Name;
+			if (name is null) {
 				var ns = attribute.RefName.Namespace;
 				if (string.IsNullOrEmpty (ns))
 					return;
@@ -81,7 +80,9 @@ namespace MonoDevelop.Xml.Editor.Completion
 			if (!names.Add (name))
 				return;
 			var item = new CompletionItem (name, source, XmlImages.Attribute);
-			item.AddDocumentation (attribute.Annotation);
+			if (attribute.Annotation is XmlSchemaAnnotation annotation) {
+				item.AddDocumentation (annotation);
+			}
 			items.Add (item);
 		}
 		
@@ -91,10 +92,12 @@ namespace MonoDevelop.Xml.Editor.Completion
 			items.Add (item);
 		}
 		
-		public void AddAttributeValue (string valueText, XmlSchemaAnnotation annotation)
+		public void AddAttributeValue (string valueText, XmlSchemaAnnotation? annotation)
 		{
 			var item = new CompletionItem (valueText, source, XmlImages.AttributeValue);
-			item.AddDocumentation (annotation);
+			if (annotation is not null) {
+				item.AddDocumentation (annotation);
+			}
 			items.Add (item);
 		}		
 		
@@ -104,11 +107,12 @@ namespace MonoDevelop.Xml.Editor.Completion
 		/// </summary>
 		public void AddElement (string name, string prefix, string documentation)
 		{
-			if (!names.Add (name))
-				return;
 			//FIXME: don't accept a prefix, accept a namespace and resolve it to a prefix
 			if (prefix.Length > 0)
 				name = string.Concat (prefix, ":", name);
+
+			if (!names.Add (name))
+				return;
 
 			var item = new CompletionItem (name, source, XmlImages.Element);
 			item.AddDocumentation (documentation);
@@ -119,16 +123,19 @@ namespace MonoDevelop.Xml.Editor.Completion
 		/// Adds an element completion data to the collection if it does not 
 		/// already exist.
 		/// </summary>
-		public void AddElement (string name, string prefix, XmlSchemaAnnotation annotation)
+		public void AddElement (string name, string prefix, XmlSchemaAnnotation? annotation)
 		{
-			if (!names.Add (name))
-				return;
 			//FIXME: don't accept a prefix, accept a namespace and resolve it to a prefix
 			if (prefix.Length > 0)
 				name = string.Concat (prefix, ":", name);
 
+			if (!names.Add (name))
+				return;
+
 			var item = new CompletionItem (name, source, XmlImages.Element);
-			item.AddDocumentation (annotation);
+			if (annotation is not null) {
+				item.AddDocumentation (annotation);
+			}
 			items.Add (item);
 		}
 
