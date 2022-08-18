@@ -1,7 +1,12 @@
+#nullable enable
+
+using System.IO;
+
 using MonoDevelop.Xml.Editor.Completion;
 using NUnit.Framework;
-using System.IO;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
+using Microsoft.Extensions.Logging;
+using MonoDevelop.Xml.Editor.Tests;
 
 namespace MonoDevelop.Xml.Tests.Schema
 {
@@ -19,14 +24,15 @@ namespace MonoDevelop.Xml.Tests.Schema
 		[OneTimeSetUp]
 		public void FixtureInit()
 		{
-			XmlSchemaCompletionDataCollection items = new XmlSchemaCompletionDataCollection();
-			
-			StringReader reader = new StringReader(GetSchema(firstNamespace));
-			XmlSchemaCompletionProvider schema = new XmlSchemaCompletionProvider(reader);
+			var  items = new XmlSchemaCompletionDataCollection();
+
+			var reader = new StringReader(GetSchema(firstNamespace));
+			ILogger logger = TestLoggers.CreateLogger<NamespaceCompletionTestFixture> ();
+			var schema = XmlSchemaCompletionProvider.Create (reader, logger);
 			items.Add(schema);
 			
 			reader = new StringReader(GetSchema(secondNamespace));
-			schema = new XmlSchemaCompletionProvider(reader);
+			schema = XmlSchemaCompletionProvider.Create (reader, logger);
 			items.Add(schema);
 			var builder = new XmlSchemaCompletionBuilder (DummyCompletionSource.Instance);
 			items.GetNamespaceCompletionData (builder);
