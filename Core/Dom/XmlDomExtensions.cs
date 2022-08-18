@@ -172,9 +172,9 @@ namespace MonoDevelop.Xml.Dom
 		/// <summary>
 		/// Get the nodes from the document that intersect a particular range.
 		/// </summary>
-		public static IEnumerable<XNode> GetNodesIntersectingRange (this XDocument document, TextSpan span)
+		public static IEnumerable<XNode> GetNodesIntersectingRange (this XContainer container, TextSpan span)
 		{
-			if (document.FindAtOrBeforeOffset (span.Start) is not XObject startObj) {
+			if (container.FindAtOrBeforeOffset (span.Start) is not XObject startObj) {
 				yield break;
 			}
 
