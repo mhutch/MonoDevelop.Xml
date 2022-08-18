@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#nullable enable
+
 using System;
 using System.ComponentModel.Composition;
 
@@ -25,10 +27,15 @@ namespace MonoDevelop.Xml.Editor.Commands
 	[TextViewRole (PredefinedTextViewRoles.Interactive)]
 	class AutoClosingTagCommandHandler : IChainedCommandHandler<TypeCharCommandArgs>
 	{
-		[Import]
-		internal IAsyncCompletionBroker CompletionBroker { get; set; }
-
 		const string Name = "Closing Tag Completion";
+
+		[ImportingConstructor]
+		public AutoClosingTagCommandHandler (IAsyncCompletionBroker completionBroker)
+		{
+			this.completionBroker = completionBroker;
+		}
+
+		readonly IAsyncCompletionBroker completionBroker;
 
 		public string DisplayName => Name;
 
@@ -51,7 +58,7 @@ namespace MonoDevelop.Xml.Editor.Commands
 
 		void InsertCloseTag (TypeCharCommandArgs args, CommandExecutionContext executionContext)
 		{
-			if (!XmlBackgroundParser.TryGetParser (args.SubjectBuffer, out var parser)) {
+			if (!parserProvider.TryGetParser (args.SubjectBuffer, out var parser)) {
 				return;
 			}
 
@@ -95,7 +102,7 @@ namespace MonoDevelop.Xml.Editor.Commands
 			// Since we cannot update the ApplicableToSpan at this point, we explicitly dismiss and
 			// re-trigger completion instead.
 
-			var completionSession = CompletionBroker.GetSession (args.TextView);
+			var completionSession = completionBroker.GetSession (args.TextView);
 			if (completionSession != null) {
 				completionSession.Dismiss ();
 			}
@@ -111,9 +118,9 @@ namespace MonoDevelop.Xml.Editor.Commands
 				var location = args.TextView.Caret.Position.BufferPosition;
 				var token = executionContext.OperationContext.UserCancellationToken;
 
-				completionSession = CompletionBroker.GetSession (args.TextView);
+				completionSession = completionBroker.GetSession (args.TextView);
 				if (completionSession == null) {
-					completionSession = CompletionBroker.TriggerCompletion (args.TextView, trigger, location, token);
+					completionSession = completionBroker.TriggerCompletion (args.TextView, trigger, location, token);
 				}
 
 				completionSession?.OpenOrUpdate (trigger, location, token);

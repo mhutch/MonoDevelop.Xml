@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#nullable enable
+
 using System.ComponentModel.Composition;
 
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
@@ -16,14 +18,17 @@ namespace MonoDevelop.Xml.Editor.Completion
 	[ContentType (XmlContentTypeNames.XmlCore)]
 	class XmlCompletionCommitManagerProvider : IAsyncCompletionCommitManagerProvider
 	{
-		[Import]
-		public JoinableTaskContext JoinableTaskContext { get; set; }
+		[ImportingConstructor]
+		public XmlCompletionCommitManagerProvider (JoinableTaskContext joinableTaskContext, ISmartIndentationService smartIndentationService, IEditorCommandHandlerServiceFactory commandServiceFactory)
+		{
+			JoinableTaskContext = joinableTaskContext;
+			SmartIndentationService = smartIndentationService;
+			CommandServiceFactory = commandServiceFactory;
+		}
 
-		[Import]
-		public ISmartIndentationService SmartIndentationService { get; set; }
-
-		[Import]
-		public IEditorCommandHandlerServiceFactory CommandServiceFactory { get; set; }
+		public JoinableTaskContext JoinableTaskContext { get; }
+		public ISmartIndentationService SmartIndentationService { get; }
+		public IEditorCommandHandlerServiceFactory CommandServiceFactory { get; }
 
 		public IAsyncCompletionCommitManager GetOrCreate (ITextView textView) =>
 			textView.Properties.GetOrCreateSingletonProperty (

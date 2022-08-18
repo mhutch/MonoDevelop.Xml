@@ -1,10 +1,13 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
+
 using Microsoft.VisualStudio.Commanding;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -12,6 +15,7 @@ using Microsoft.VisualStudio.Text.Editor.Commanding;
 using Microsoft.VisualStudio.Text.Editor.Commanding.Commands;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Utilities;
+
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Editor.Completion;
 using MonoDevelop.Xml.Parser;
@@ -32,11 +36,17 @@ namespace MonoDevelop.Xml.Editor.Commands
 		const string OpenComment = "<!--";
 		const string CloseComment = "-->";
 
-		[Import]
-		ITextUndoHistoryRegistry undoHistoryRegistry { get; set; }
+		[ImportingConstructor]
+		public CommentUncommentCommandHandler (
+			ITextUndoHistoryRegistry undoHistoryRegistry,
+			IEditorOperationsFactoryService editorOperationsFactoryService)
+		{
+			this.undoHistoryRegistry = undoHistoryRegistry;
+			this.editorOperationsFactoryService = editorOperationsFactoryService;
+		}
 
-		[Import]
-		IEditorOperationsFactoryService editorOperationsFactoryService { get; set; }
+		readonly ITextUndoHistoryRegistry undoHistoryRegistry;
+		readonly IEditorOperationsFactoryService editorOperationsFactoryService;
 
 		public string DisplayName => Name;
 
@@ -115,8 +125,8 @@ namespace MonoDevelop.Xml.Editor.Commands
 			ITextBuffer textBuffer,
 			IEnumerable<VirtualSnapshotSpan> selectedSpans,
 			XDocument xmlDocumentSyntax,
-			IEditorOperations editorOperations = null,
-			IMultiSelectionBroker multiSelectionBroker = null)
+			IEditorOperations? editorOperations = null,
+			IMultiSelectionBroker? multiSelectionBroker = null)
 		{
 			var snapshot = textBuffer.CurrentSnapshot;
 
@@ -195,8 +205,8 @@ namespace MonoDevelop.Xml.Editor.Commands
 			ITextBuffer textBuffer,
 			IEnumerable<VirtualSnapshotSpan> selectedSpans,
 			XDocument xmlDocumentSyntax,
-			IEditorOperations editorOperations = null,
-			IMultiSelectionBroker multiSelectionBroker = null)
+			IEditorOperations? editorOperations = null,
+			IMultiSelectionBroker? multiSelectionBroker = null)
 		{
 			var commentedSpans = GetCommentedSpansInSelection (xmlDocumentSyntax, selectedSpans);
 			if (!commentedSpans.Any ()) {
@@ -226,12 +236,12 @@ namespace MonoDevelop.Xml.Editor.Commands
 		/// <summary>
 		/// Inserts a new comment at each virtual point, materializing the virtual space if necessary
 		/// </summary>
-		static void CommentEmptySpans (ITextEdit edit, IEnumerable<VirtualSnapshotPoint> virtualPoints, IEditorOperations editorOperations)
+		static void CommentEmptySpans (ITextEdit edit, IEnumerable<VirtualSnapshotPoint> virtualPoints, IEditorOperations? editorOperations)
 		{
 			foreach (var virtualPoint in virtualPoints) {
 				if (virtualPoint.IsInVirtualSpace) {
 					string leadingWhitespace;
-					if (editorOperations != null) {
+					if (editorOperations is not null) {
 						leadingWhitespace = editorOperations.GetWhitespaceForVirtualSpace (virtualPoint);
 					} else {
 						leadingWhitespace = new string (' ', virtualPoint.VirtualSpaces);
