@@ -1,4 +1,4 @@
-﻿//
+//
 // XContainer.cs
 //
 // Author:
@@ -24,6 +24,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#nullable enable
+
 using System.Collections.Generic;
 using System.Text;
 
@@ -33,12 +35,12 @@ namespace MonoDevelop.Xml.Dom
 	{
 		protected XContainer (int startOffset) : base (startOffset) { }
 
-		public XNode FirstChild { get; private set; }
-		public XNode LastChild { get; private set; }
+		public XNode? FirstChild { get; private set; }
+		public XNode? LastChild { get; private set; }
 
 		public IEnumerable<XNode> Nodes {
 			get {
-				XNode next = FirstChild;
+				XNode? next = FirstChild;
 				while (next != null) {
 					yield return next;
 					next = next.NextSibling;
@@ -50,8 +52,7 @@ namespace MonoDevelop.Xml.Dom
 			get {
 				foreach (XNode n in Nodes) {
 					yield return n;
-					var c = n as XContainer;
-					if (c != null)
+					if (n is XContainer c)
 						foreach (XNode n2 in c.AllDescendentNodes)
 							yield return n2;
 				}

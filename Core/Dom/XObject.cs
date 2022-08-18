@@ -24,6 +24,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#nullable enable
+
 using System.Collections.Generic;
 using System.Text;
 
@@ -31,22 +33,16 @@ namespace MonoDevelop.Xml.Dom
 {
 	public abstract class XObject
 	{
-		protected XObject (int startOffset)
-		{
-			Span = new TextSpan (startOffset, 0);
-		}
+		protected XObject (int startOffset) => Span = new TextSpan (startOffset, 0);
 
-		protected XObject (TextSpan span)
-		{
-			Span = span;
-		}
+		protected XObject (TextSpan span) => Span = span;
 
-		public XObject Parent { get; internal protected set; }
+		public XObject? Parent { get; internal protected set; }
 
 		public IEnumerable<XNode> Parents {
 			get {
 				var next = Parent as XNode;
-				while (next != null) {
+				while (next is not null) {
 					yield return next;
 					next = next.Parent as XNode;
 				}
@@ -57,24 +53,17 @@ namespace MonoDevelop.Xml.Dom
 
 		public virtual TextSpan OuterSpan => Span;
 
-		public void End (int offset)
-		{
-			Span = TextSpan.FromBounds (Span.Start, offset);
-		}
+		public void End (int offset) => Span = TextSpan.FromBounds (Span.Start, offset);
 
 		/// <summary>
 		/// Whether this node is fully parsed i.e. has an end position.
 		/// </summary>
-		public bool IsEnded {
-			get { return Span.Length > 0; }
-		}
+		public bool IsEnded => Span.Length > 0;
 
 		/// <summary>
 		/// Whether this node is complete. Will be false if it was ended prematurely due to an error or EOF.
 		/// </summary>
-		public virtual bool IsComplete {
-			get { return IsEnded; }
-		}
+		public virtual bool IsComplete => IsEnded;
 
 		public virtual void BuildTreeString (StringBuilder builder, int indentLevel)
 		{
@@ -83,10 +72,7 @@ namespace MonoDevelop.Xml.Dom
 			builder.AppendLine ();
 		}
 
-		public override string ToString ()
-		{
-			return string.Format ("[{0} Location='{1}']", GetType (), Span);
-		}
+		public override string ToString () => $"[{GetType ()} Location='{Span}']";
 
 		//creates a parallel tree -- should NOT retain references into old tree
 		public XObject ShallowCopy ()
@@ -105,8 +91,6 @@ namespace MonoDevelop.Xml.Dom
 
 		protected XObject () {}
 
-		public virtual string FriendlyPathRepresentation {
-			get { return GetType ().ToString (); }
-		}
+		public virtual string FriendlyPathRepresentation => GetType ().ToString ();
 	}
 }

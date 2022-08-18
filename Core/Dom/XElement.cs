@@ -24,8 +24,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#nullable enable
+
 using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace MonoDevelop.Xml.Dom
@@ -42,8 +44,12 @@ namespace MonoDevelop.Xml.Dom
 			this.Name = name;
 		}
 
-		public XNode ClosingTag { get; private set; }
+		public XNode? ClosingTag { get; private set; }
+
+		[MemberNotNullWhen(true, nameof(ClosingTag))]
 		public bool IsClosed { get { return ClosingTag != null; } }
+
+		[MemberNotNullWhen(true, nameof(ClosingTag))]
 		public bool IsSelfClosing { get { return ClosingTag == this; } }
 
 		public void Close (XNode closingTag)
@@ -112,16 +118,14 @@ namespace MonoDevelop.Xml.Dom
 			builder.AppendLine ("]");
 		}
 
-		public override string FriendlyPathRepresentation {
-			get { return Name.FullName; }
-		}
+		public override string FriendlyPathRepresentation => Name.FullName ?? "[Unnamed Element]";
 
 		public IEnumerable<XElement> Elements {
 			get {
-				XElement el;
+				XElement? el;
 				foreach (XNode node in Nodes) {
 					el = node as XElement;
-					if (el != null)
+					if (el is not null)
 						yield return el;
 				}
 			}
@@ -141,7 +145,7 @@ namespace MonoDevelop.Xml.Dom
 
 		public TextSpan NameSpan => new TextSpan (Span.Start + 1, Name.Length);
 
-		public XElement GetNextSiblingElement ()
+		public XElement? GetNextSiblingElement ()
 		{
 			var node = NextSibling;
 			while (node != null) {
@@ -165,14 +169,16 @@ namespace MonoDevelop.Xml.Dom
 			}
 		}
 
-		public XElement ParentElement => Parent as XElement;
+		public XElement? ParentElement => Parent as XElement;
 
 		IEnumerable<XNode> WithClosingTag (IEnumerable<XNode> nodes)
 		{
 			foreach (var n in nodes) {
 				yield return n;
 			}
-			yield return ClosingTag;
+			if (ClosingTag is XNode ct) {
+				yield return ct;
+			}
 		}
 
 		public override IEnumerable<XNode> AllDescendentNodes {
@@ -194,6 +200,6 @@ namespace MonoDevelop.Xml.Dom
 		/// <summary>
 		/// The span from the start of this element to the end of its closing tag.
 		/// </summary>
-		public override TextSpan OuterSpan => ClosingTag == null? Span : TextSpan.FromBounds (Span.Start, ClosingTag.Span.End);
+		public override TextSpan OuterSpan => ClosingTag is null? Span : TextSpan.FromBounds (Span.Start, ClosingTag.Span.End);
 	}
 }

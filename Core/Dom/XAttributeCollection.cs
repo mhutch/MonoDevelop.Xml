@@ -24,8 +24,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace MonoDevelop.Xml.Dom
 {
@@ -33,30 +36,31 @@ namespace MonoDevelop.Xml.Dom
 	{
 		readonly XObject parent;
 
-		public XAttribute Last { get; private set; }
-		public XAttribute First { get; private set; }
+		public XAttribute? Last { get; private set; }
+		public XAttribute? First { get; private set; }
+
 		public int Count { get; private set; }
 
-		public XAttributeCollection (XObject parent)
-		{
-			this.parent = parent;
-		}
+		[MemberNotNullWhen(false, nameof (First), nameof (Last))]
+		public bool IsEmpty => First == null;
+
+		public XAttributeCollection (XObject parent) => this.parent = parent;
 
 		public Dictionary<XName, XAttribute> ToDictionary ()
 		{
 			var dict = new Dictionary<XName,XAttribute> ();
-			XAttribute current = First;
-			while (current != null) {
+			XAttribute? current = First;
+			while (current is not null) {
 				dict.Add (current.Name, current);
 				current = current.NextSibling;
 			}
 			return dict;
 		}
 
-		public XAttribute this [XName name] {
+		public XAttribute? this [XName name] {
 			get {
-				XAttribute current = First;
-				while (current != null) {
+				XAttribute? current = First;
+				while (current is not null) {
 					if (current.Name == name)
 						return current;
 					current = current.NextSibling;
@@ -65,10 +69,10 @@ namespace MonoDevelop.Xml.Dom
 			}
 		}
 
-		public XAttribute this [int index] {
+		public XAttribute? this [int index] {
 			get {
-				XAttribute current = First;
-				while (current != null) {
+				XAttribute? current = First;
+				while (current is not null) {
 					if (index == 0)
 						return current;
 					index--;
@@ -78,10 +82,10 @@ namespace MonoDevelop.Xml.Dom
 			}
 		}
 
-		public XAttribute Get (XName name, bool ignoreCase)
+		public XAttribute? Get (XName name, bool ignoreCase)
 		{
-			XAttribute current = First;
-			while (current != null) {
+			XAttribute? current = First;
+			while (current is not null) {
 				if (XName.Equals (current.Name, name, ignoreCase))
 					return current;
 				current = current.NextSibling;
@@ -89,37 +93,28 @@ namespace MonoDevelop.Xml.Dom
 			return null;
 		}
 
-		public string GetValue (XName name, bool ignoreCase)
-		{
-			var att = Get (name, ignoreCase);
-			return att != null? att.Value : null;
-		}
+		public string? GetValue (XName name, bool ignoreCase) => Get (name, ignoreCase)?.Value;
 
 		public void AddAttribute (XAttribute newChild)
 		{
 			newChild.Parent = parent;
-			if (Last != null) {
+			if (Last is not null) {
 				Last.NextSibling = newChild;
 			}
-			if (First == null)
-				First = newChild;
+			First ??= newChild;
 			Last = newChild;
 			Count++;
 		}
 
 		public IEnumerator<XAttribute> GetEnumerator ()
 		{
-			XAttribute current = First;
-			while (current != null) {
+			XAttribute? current = First;
+			while (current is not null) {
 				yield return current;
 				current = current.NextSibling;
 			}
 		}
 
-		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator ()
-		{
-			IEnumerator<XAttribute> en = GetEnumerator ();
-			return en;
-		}
+		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator () => GetEnumerator ();
 	}
 }

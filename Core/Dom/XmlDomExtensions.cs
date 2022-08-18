@@ -1,10 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using MonoDevelop.Xml.Dom;
+using System.Xml.Linq;
 
 namespace MonoDevelop.Xml.Dom
 {
@@ -12,7 +14,7 @@ namespace MonoDevelop.Xml.Dom
 	{
 		public static TextSpan GetSquiggleSpan (this XNode node)
 		{
-			return node is XElement el ? el.NameSpan : node.NextSibling.Span;
+			return node is XElement el ? el.NameSpan : node.NextSibling?.Span ?? node.Span;
 		}
 
 		public static bool NameEquals (this INamedXObject obj, string name, bool ignoreCase)
@@ -27,7 +29,7 @@ namespace MonoDevelop.Xml.Dom
 			return att != null && string.Equals (att.Value, "true", StringComparison.OrdinalIgnoreCase);
 		}
 
-		static XAttribute FindAttribute (this IAttributedXObject attContainer, int offset)
+		static XAttribute? FindAttribute (this IAttributedXObject attContainer, int offset)
 		{
 			foreach (var att in attContainer.Attributes) {
 				if (att.Span.Start > offset) {
@@ -40,15 +42,16 @@ namespace MonoDevelop.Xml.Dom
 			return null;
 		}
 
-		public static XObject FindAtOffset (this XContainer container, int offset)
+		public static XObject? FindAtOffset (this XContainer container, int offset)
 		{
 			if (container.Span.Contains (offset) && container is IAttributedXObject attObj && attObj.FindAttribute (offset) is XAttribute attribute) {
 				return attribute;
 			}
 
-			while (container != null) {
-				XNode lastNodeBeforeOffset = null;
-				foreach (var node in container.Nodes) {
+			XContainer? currentContainer = container;
+			while (currentContainer is not null) {
+				XNode? lastNodeBeforeOffset = null;
+				foreach (var node in currentContainer.Nodes) {
 					if (node.Span.Start > offset) {
 						break;
 					}
@@ -63,20 +66,21 @@ namespace MonoDevelop.Xml.Dom
 					}
 					lastNodeBeforeOffset = node;
 				}
-				container = lastNodeBeforeOffset as XContainer;
+				currentContainer = lastNodeBeforeOffset as XContainer;
 			}
 			return null;
 		}
 
-		public static XObject FindAtOrBeforeOffset (this XContainer container, int offset)
+		public static XObject? FindAtOrBeforeOffset (this XContainer container, int offset)
 		{
 			if (container.Span.Contains (offset) && container is IAttributedXObject attObj && attObj.FindAttribute (offset) is XAttribute attribute) {
 				return attribute;
 			}
 
-			XNode lastNodeBeforeOffset = null;
-			while (container != null) {
-				foreach (var node in container.Nodes) {
+			XNode? lastNodeBeforeOffset = null;
+			XContainer? currentContainer = container;
+			while (currentContainer is not null) {
+				foreach (var node in currentContainer.Nodes) {
 					if (node.Span.Start > offset) {
 						break;
 					}
@@ -91,32 +95,33 @@ namespace MonoDevelop.Xml.Dom
 					}
 					lastNodeBeforeOffset = node;
 				}
-				if (lastNodeBeforeOffset == container) {
+				if (lastNodeBeforeOffset == currentContainer) {
 					return lastNodeBeforeOffset;
 				}
-				container = lastNodeBeforeOffset as XContainer;
+				currentContainer = lastNodeBeforeOffset as XContainer;
 			}
 			return lastNodeBeforeOffset;
 		}
 
 		public static TextSpan? GetAttributesSpan (this IAttributedXObject obj)
-			=> obj.Attributes.First == null
-			? (TextSpan?)null
+			=> obj.Attributes.IsEmpty
+			? null
 			: TextSpan.FromBounds (obj.Attributes.First.Span.Start, obj.Attributes.Last.Span.End);
 
 		public static Dictionary<string, string> ToDictionary (this XAttributeCollection attributes, StringComparer comparer)
 		{
 			var dict = new Dictionary<string, string> (comparer);
 			foreach (XAttribute a in attributes) {
-				dict[a.Name.FullName] = a.Value ?? string.Empty;
+				if (a.Name.IsValid) {
+					dict[a.Name.FullName] = a.Value ?? string.Empty;
+				}
 			}
 			return dict;
 		}
 
-		public static XNode FindPreviousNode (this XNode node)
-			=> node.FindPreviousSibling () ?? node.Parent as XNode;
+		public static XNode? FindPreviousNode (this XNode node) => node.FindPreviousSibling () ?? node.Parent as XNode;
 
-		public static XNode FindPreviousSibling (this XNode node)
+		public static XNode? FindPreviousSibling (this XNode node)
 		{
 			if (node.Parent is XContainer container) {
 				var n = container.FirstChild;
@@ -130,11 +135,11 @@ namespace MonoDevelop.Xml.Dom
 			return null;
 		}
 
-		public static XElement GetPreviousSiblingElement (this XElement element)
+		public static XElement? GetPreviousSiblingElement (this XElement element)
 		{
 			if (element.Parent is XElement parentEl) {
 				var node = parentEl.FirstChild;
-				XElement prevElement = null;
+				XElement? prevElement = null;
 				while (node != null) {
 					if (node is XElement nextElement) {
 						if (nextElement == element) {
@@ -148,7 +153,7 @@ namespace MonoDevelop.Xml.Dom
 			return null;
 		}
 
-		public static XAttribute FindPreviousSibling (this XAttribute att)
+		public static XAttribute? FindPreviousSibling (this XAttribute att)
 		{
 			if (att.Parent is IAttributedXObject p && p.Attributes is XAttributeCollection atts) {
 				var a = atts.First;
@@ -167,7 +172,10 @@ namespace MonoDevelop.Xml.Dom
 		/// </summary>
 		public static IEnumerable<XNode> GetNodesIntersectingRange (this XDocument document, TextSpan span)
 		{
-			var startObj = document.FindAtOrBeforeOffset (span.Start);
+			if (document.FindAtOrBeforeOffset (span.Start) is not XObject startObj) {
+				yield break;
+			}
+
 			var node = startObj as XNode ?? startObj.Parents.OfType<XNode> ().First ();
 
 			foreach (var n in node.FollowingNodes ()) {
@@ -185,31 +193,33 @@ namespace MonoDevelop.Xml.Dom
 		/// </summary>
 		public static IEnumerable<XNode> FollowingNodes (this XNode node)
 		{
-			while (node != null) {
-				yield return node;
-				if (node is XContainer c) {
+			XNode? currentNode = node;
+			while (currentNode is not null) {
+				yield return currentNode;
+				if (currentNode is XContainer c) {
 					foreach (var n in c.AllDescendentNodes) {
 						yield return n;
 					}
 				}
-				while (node != null && node.NextSibling == null) {
-					node = (XNode)node.Parent as XNode;
+				while (currentNode is not null && currentNode.NextSibling == null) {
+					currentNode = currentNode.Parent as XNode;
 				}
-				node = node?.NextSibling;
+				currentNode = currentNode?.NextSibling;
 			}
 		}
 
 		public static IEnumerable<T> SelfAndParentsOfType<T> (this XObject obj)
 		{
-			while (obj != null) {
+			XObject? currentObj = obj;
+			while (currentObj is not null) {
 				if (obj is T t) {
 					yield return t;
 				}
-				obj = obj.Parent;
+				currentObj = currentObj.Parent;
 			}
 		}
 
-		public static XNode GetNodeContainingRange (this XNode node, TextSpan span)
+		public static XNode? GetNodeContainingRange (this XNode node, TextSpan span)
 		{
 			if (node is XContainer container) {
 				foreach (var child in container.Nodes) {

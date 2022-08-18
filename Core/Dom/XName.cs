@@ -24,7 +24,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#nullable enable
+
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace MonoDevelop.Xml.Dom
 {
@@ -42,40 +45,31 @@ namespace MonoDevelop.Xml.Dom
 			Name = name;
 		}
 
-		public static XName Empty => new XName (null);
+		public static XName Empty => default;
 
-		public string Prefix { get; }
-		public string Name { get; }
-		public string FullName { get { return Prefix == null ? Name : Prefix + ':' + Name; } }
+		public string? Prefix { get; }
 
+		public string? Name { get; }
+
+		public string? FullName => Prefix == null ? Name : Prefix + ':' + Name;
+
+		[MemberNotNullWhen(true, nameof(Name), nameof (FullName))]
 		public bool IsValid { get { return !string.IsNullOrEmpty (Name); } }
+
+		[MemberNotNullWhen(true, nameof(Prefix))]
 		public bool HasPrefix { get { return !string.IsNullOrEmpty (Prefix); } }
 
 		public int Length => (Name?.Length ?? 0) + (Prefix != null ? Prefix.Length + 1 : 0);
 
 		#region Equality
 
-		public static bool operator == (XName x, XName y)
-		{
-			return x.Equals (y);
-		}
+		public static bool operator == (XName x, XName y) => x.Equals (y);
 
-		public static bool operator != (XName x, XName y)
-		{
-			return !x.Equals (y);
-		}
+		public static bool operator != (XName x, XName y) => !x.Equals (y);
 
-		public bool Equals (XName other)
-		{
-			return Prefix == other.Prefix && Name == other.Name;
-		}
+		public bool Equals (XName other) => Prefix == other.Prefix && Name == other.Name;
 
-		public override bool Equals (object obj)
-		{
-			if (!(obj is XName))
-				return false;
-			return Equals ((XName)obj);
-		}
+		public override bool Equals (object? obj) => (obj is not XName other) || Equals (other);
 
 		public override int GetHashCode ()
 		{
@@ -96,10 +90,10 @@ namespace MonoDevelop.Xml.Dom
 		public override string ToString ()
 		{
 			if (!HasPrefix)
-				return Name;
+				return Name ?? "[Empty Name]";
 			return Prefix + ":" + Name;
 		}
 
-		public static implicit operator XName (string name) => new XName (name);
+		public static implicit operator XName (string name) => new(name);
 	}
 }

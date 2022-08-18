@@ -24,6 +24,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#nullable enable
+
 namespace MonoDevelop.Xml.Dom
 {
 	public class XAttribute : XObject, INamedXObject
@@ -31,21 +33,21 @@ namespace MonoDevelop.Xml.Dom
 
 		public XAttribute (int startOffset, XName name, string value) : base (startOffset)
 		{
-			this.Name = name;
-			this.Value = value;
+			Name = name;
+			Value = value;
 		}
 
-		public XAttribute (int startOffset) : base (startOffset)
-		{
-		}
+		public XAttribute (int startOffset) : base (startOffset) { }
 
 		public XName Name { get; set; }
 
-		public override bool IsComplete { get { return base.IsComplete && IsNamed; } }
-		public bool IsNamed { get { return Name.IsValid; } }
+		public override bool IsComplete => base.IsComplete && IsNamed;
 
-		public string Value { get; set; }
-		public XAttribute NextSibling { get; internal protected set; }
+		public bool IsNamed => Name.IsValid;
+
+		public string? Value { get; set; }
+
+		public XAttribute? NextSibling { get; internal protected set; }
 
 		protected XAttribute () {}
 		protected override XObject NewInstance () { return new XAttribute (); }
@@ -59,20 +61,16 @@ namespace MonoDevelop.Xml.Dom
 			Value = copyFromAtt.Value;
 		}
 
-		public override string ToString ()
-		{
-			return string.Format (
-				"[XAttribute Name='{0}' Location='{1}' Value='{2}']", Name.FullName, Span, Value);
-		}
+		public override string ToString () => $"[XAttribute Name='{Name.FullName}' Location='{Span}' Value='{Value}']";
 
-		public override string FriendlyPathRepresentation {
-			get { return "@" + Name.FullName; }
-		}
+		public override string FriendlyPathRepresentation => "@" + Name.FullName;
 
-		public TextSpan NameSpan => new TextSpan (Span.Start, Name.Length);
+		public TextSpan NameSpan => new (Span.Start, Name.Length);
 
-		public int ValueOffset => Span.End - Value.Length - 1;
+		int ValueLength => Value?.Length ?? 0;
 
-		public TextSpan ValueSpan => new TextSpan (Span.End - Value.Length - 1, Value.Length);
+		public int ValueOffset => Span.End - ValueLength - 1;
+
+		public TextSpan ValueSpan => new (Span.End - ValueLength - 1, ValueLength);
 	}
 }
