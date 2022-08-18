@@ -1,9 +1,15 @@
-using System;
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+#nullable enable
+
 using System.ComponentModel.Composition;
 
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Operations;
+
 using Microsoft.VisualStudio.Utilities;
+using MonoDevelop.Xml.Editor.Completion;
 
 namespace MonoDevelop.Xml.Editor.TextStructure
 {
@@ -11,25 +17,24 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 	[ContentType (XmlContentTypeNames.XmlCore)]
 	class XmlTextStructureNavigatorProvider : ITextStructureNavigatorProvider
 	{
-		readonly ITextStructureNavigatorSelectorService navigatorService;
-		readonly IContentTypeRegistryService contentTypeRegistry;
+		public ITextStructureNavigatorSelectorService NavigatorService { get; }
+		public IContentTypeRegistryService ContentTypeRegistry { get; }
+		public XmlParserProvider ParserProvider { get; }
 
 		[ImportingConstructor]
 		public XmlTextStructureNavigatorProvider (
 			ITextStructureNavigatorSelectorService navigatorService,
-			IContentTypeRegistryService contentTypeRegistry)
+			IContentTypeRegistryService contentTypeRegistry,
+			XmlParserProvider parserProvider)
 		{
-			this.navigatorService = navigatorService;
-			this.contentTypeRegistry = contentTypeRegistry;
+			NavigatorService = navigatorService;
+			ContentTypeRegistry = contentTypeRegistry;
+			ParserProvider = parserProvider;
 		}
 
 		public ITextStructureNavigator CreateTextStructureNavigator (ITextBuffer textBuffer)
 		{
-			var codeNavigator = navigatorService.CreateTextStructureNavigator (
-				textBuffer,
-				contentTypeRegistry.GetContentType (StandardContentTypeNames.Code)
-			);
-			return new XmlTextStructureNavigator (textBuffer, codeNavigator);
+			return new XmlTextStructureNavigator (textBuffer, this);
 		}
 	}
 }

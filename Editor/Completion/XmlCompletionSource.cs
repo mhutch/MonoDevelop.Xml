@@ -1,9 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,6 +18,7 @@ using Microsoft.VisualStudio.Text.Adornments;
 using Microsoft.VisualStudio.Text.Editor;
 
 using MonoDevelop.Xml.Dom;
+using MonoDevelop.Xml.Parser;
 
 namespace MonoDevelop.Xml.Editor.Completion
 {
@@ -24,9 +28,9 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 		protected ITextView TextView { get; }
 
-		protected XmlCompletionSource (ITextView textView)
+		protected XmlCompletionSource (ITextView textView, XmlParserProvider parserProvider)
 		{
-			XmlParser = XmlBackgroundParser.GetParser (textView.TextBuffer);
+			XmlParser = parserProvider.GetParser (textView.TextBuffer);
 			TextView = textView;
 			InitializeBuiltinItems ();
 		}
@@ -68,7 +72,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 					return await GetElementCompletionsAsync (session, triggerLocation, nodePath, kind == XmlCompletionTrigger.ElementWithBracket, token);
 
 				case XmlCompletionTrigger.Attribute:
-					IAttributedXObject attributedOb = (parser.Spine.Peek () as IAttributedXObject) ?? parser.Spine.Peek (1) as IAttributedXObject;
+					IAttributedXObject attributedOb = (parser.Spine.Peek () as IAttributedXObject) ?? (IAttributedXObject) parser.Spine.Peek (1);
 					parser.Clone ().AdvanceUntilEnded ((XObject)attributedOb, triggerLocation.Snapshot, 1000);
 					var attributes = attributedOb.Attributes.ToDictionary (StringComparer.OrdinalIgnoreCase);
 					return await GetAttributeCompletionsAsync (session, triggerLocation, nodePath, attributedOb, attributes, token);
@@ -190,13 +194,17 @@ namespace MonoDevelop.Xml.Editor.Completion
 					)
 				);
 
-		CompletionContext CreateCompletionContext (IEnumerable<CompletionItem> items)
-			=> new CompletionContext (ImmutableArray<CompletionItem>.Empty.AddRange (items), null, InitialSelectionHint.SoftSelection);
+		static CompletionContext CreateCompletionContext (IEnumerable<CompletionItem> items)
+			=> new (ImmutableArray<CompletionItem>.Empty.AddRange (items), null, InitialSelectionHint.SoftSelection);
 
 		CompletionItem cdataItem, commentItem, prologItem;
 		CompletionItem cdataItemWithBracket, commentItemWithBracket, prologItemWithBracket;
 		CompletionItem[] entityItems;
 
+		[MemberNotNull(
+			nameof(cdataItem), nameof (commentItem), nameof (prologItem),
+			nameof(cdataItemWithBracket), nameof (commentItemWithBracket), nameof (prologItemWithBracket),
+			nameof(entityItems))]
 		void InitializeBuiltinItems ()
 		{
 			cdataItem = new CompletionItem ("![CDATA[", this, XmlImages.CData)

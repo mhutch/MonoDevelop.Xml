@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#nullable enable
+
 using System.ComponentModel.Composition;
 
 using Microsoft.VisualStudio.Text;
@@ -10,6 +12,7 @@ using Microsoft.VisualStudio.Threading;
 using Microsoft.VisualStudio.Utilities;
 
 using MonoDevelop.Xml.Editor;
+using MonoDevelop.Xml.Editor.Completion;
 
 namespace MonoDevelop.MSBuild.Editor
 {
@@ -20,15 +23,17 @@ namespace MonoDevelop.MSBuild.Editor
 
 	class XmlSyntaxValidationTaggerProvider : ITaggerProvider
 	{
-		readonly JoinableTaskContext joinableTaskContext;
+		public JoinableTaskContext JoinableTaskContext { get; }
+		public XmlParserProvider ParserProvider { get; }
 
 		[ImportingConstructor]
-		public XmlSyntaxValidationTaggerProvider (JoinableTaskContext joinableTaskContext)
+		public XmlSyntaxValidationTaggerProvider (JoinableTaskContext joinableTaskContext, XmlParserProvider parserProvider)
 		{
-			this.joinableTaskContext = joinableTaskContext;
+			JoinableTaskContext = joinableTaskContext;
+			ParserProvider = parserProvider;
 		}
 
 		public ITagger<T> CreateTagger<T> (ITextBuffer buffer) where T : ITag
-			=> (ITagger<T>)buffer.Properties.GetOrCreateSingletonProperty (() => new XmlSyntaxValidationTagger (buffer, joinableTaskContext));
+			=> (ITagger<T>)buffer.Properties.GetOrCreateSingletonProperty (() => new XmlSyntaxValidationTagger (buffer, this));
 	}
 }

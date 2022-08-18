@@ -39,14 +39,14 @@ namespace MonoDevelop.Xml.Editor.Tests.Commands
 
 			var textView = CreateTextView (doc);
 			var line = textView.TextBuffer.CurrentSnapshot.GetLineFromPosition (caretPos);
-			XmlBackgroundParser.GetParser (textView.TextBuffer);
+			GetParser (textView.TextBuffer);
 
 			var options = new TestEditorOptions ();
 			options.SetOptionValue (DefaultOptions.ConvertTabsToSpacesOptionId, true);
 			options.SetOptionValue (DefaultOptions.IndentSizeOptionId, 4);
 			options.SetOptionValue (DefaultOptions.TabSizeOptionId, 4);
 
-			var smartIndent = new XmlSmartIndent (textView, options);
+			var smartIndent = new XmlSmartIndent (textView, Catalog.GetService<XmlParserProvider> (), options);
 			var indent = smartIndent.GetDesiredIndentation (line);
 			Assert.AreEqual (expectedIndent, indent);
 		}

@@ -104,7 +104,7 @@ a comment-->";
 		public async Task TestExpandShrink (object[] args)
 		{
 			var buffer = CreateTextBuffer ((string)args[0]);
-			var parser = XmlBackgroundParser.GetParser<XmlBackgroundParser> ((ITextBuffer2)buffer);
+			var parser = GetParser (buffer);
 			var snapshot = buffer.CurrentSnapshot;
 			var navigator = Catalog.TextStructureNavigatorSelectorService.GetTextStructureNavigator (buffer);
 

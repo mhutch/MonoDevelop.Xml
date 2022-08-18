@@ -30,12 +30,14 @@ namespace MonoDevelop.Xml.Editor.Commands
 		const string Name = "Closing Tag Completion";
 
 		[ImportingConstructor]
-		public AutoClosingTagCommandHandler (IAsyncCompletionBroker completionBroker)
+		public AutoClosingTagCommandHandler (XmlParserProvider parserProvider, IAsyncCompletionBroker completionBroker)
 		{
+			this.parserProvider = parserProvider;
 			this.completionBroker = completionBroker;
 		}
 
 		readonly IAsyncCompletionBroker completionBroker;
+		readonly XmlParserProvider parserProvider;
 
 		public string DisplayName => Name;
 

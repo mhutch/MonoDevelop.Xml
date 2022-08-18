@@ -1,11 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#nullable enable
+
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Text;
 
 using MonoDevelop.Xml.Dom;
@@ -13,16 +14,19 @@ using MonoDevelop.Xml.Parser;
 
 namespace MonoDevelop.Xml.Editor.Completion
 {
-	public class XmlBackgroundParser : BufferParser<XmlParseResult>
+	public partial class XmlBackgroundParser : BufferParser<XmlParseResult>
 	{
-		protected override void Initialize ()
+		private readonly ILogger logger;
+
+		public XmlBackgroundParser (ITextBuffer2 buffer, ILogger logger) : base (buffer)
 		{
 			StateMachine = CreateParserStateMachine ();
+			this.logger = logger;
 		}
 
 		protected override string ContentType => XmlContentTypeNames.XmlCore;
 
-		protected virtual XmlRootState CreateParserStateMachine () => new XmlRootState ();
+		protected virtual XmlRootState CreateParserStateMachine () => new ();
 
 		// the state machine does not store any state itself, so we can re-use it
 		protected XmlRootState StateMachine { get; private set; }
@@ -48,9 +52,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			var newVersion = snapshotA.Version;
 			var oldVersion = snapshotB.Version;
 			if (newVersion.VersionNumber < oldVersion.VersionNumber) {
-				var v = newVersion;
-				newVersion = oldVersion;
-				oldVersion = v;
+				(oldVersion, newVersion) = (newVersion, oldVersion);
 			}
 
 			int position = Math.Min (newVersion.Length, oldVersion.Length);
@@ -69,7 +71,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 		public XmlSpineParser GetSpineParser (SnapshotPoint point)
 		{
-			XmlSpineParser parser = null;
+			XmlSpineParser? parser = null;
 
 			var prevParse = LastOutput;
 			if (prevParse != null) {
@@ -81,7 +83,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 					if (obj != null) {
 						var state = StateMachine.TryRecreateState (obj, startPos);
 						if (state != null) {
-							LoggingService.LogDebug ($"XML parser recovered {state.Position}/{point.Position} state");
+							LogRecovered (logger, state.Position, point.Position);
 							parser = new XmlSpineParser (state, StateMachine);
 						}
 					}
@@ -89,7 +91,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			}
 
 			if (parser == null) {
-				LoggingService.LogDebug ($"XML parser failed to recover any state");
+				LogRecoveryFailed (logger);
 				parser = new XmlSpineParser (StateMachine);
 			}
 
@@ -101,23 +103,10 @@ namespace MonoDevelop.Xml.Editor.Completion
 			return parser;
 		}
 
-		public static bool TryGetParser (ITextBuffer buffer, out XmlBackgroundParser parser)
-			=> buffer.Properties.TryGetProperty (typeof (XmlBackgroundParser), out parser);
+		[LoggerMessage (EventId = 3, Level = LogLevel.Trace, Message = "XML parser recovered {recoveredPos}/{requestedPos} state'")]
+		static partial void LogRecovered (ILogger logger, int recoveredPos, int requestedPos);
 
-		public static XmlBackgroundParser GetParser (ITextBuffer buffer) => GetParser<XmlBackgroundParser> (buffer);
-	}
-
-	public class XmlParseResult
-	{
-		public XmlParseResult (XDocument xDocument, List<XmlDiagnosticInfo> parseDiagnostics, ITextSnapshot textSnapshot)
-		{
-			XDocument = xDocument;
-			ParseDiagnostics = parseDiagnostics;
-			TextSnapshot = textSnapshot;
-		}
-
-		public List<XmlDiagnosticInfo> ParseDiagnostics { get; }
-		public XDocument XDocument { get; }
-		public ITextSnapshot TextSnapshot { get; }
+		[LoggerMessage (EventId = 4, Level = LogLevel.Trace, Message = "XML parser failed to recover any state'")]
+		static partial void LogRecoveryFailed (ILogger logger);
 	}
 }

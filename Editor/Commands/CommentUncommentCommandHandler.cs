@@ -38,13 +38,15 @@ namespace MonoDevelop.Xml.Editor.Commands
 
 		[ImportingConstructor]
 		public CommentUncommentCommandHandler (
-			ITextUndoHistoryRegistry undoHistoryRegistry,
+			XmlParserProvider parserProvider, ITextUndoHistoryRegistry undoHistoryRegistry,
 			IEditorOperationsFactoryService editorOperationsFactoryService)
 		{
+			this.parserProvider = parserProvider;
 			this.undoHistoryRegistry = undoHistoryRegistry;
 			this.editorOperationsFactoryService = editorOperationsFactoryService;
 		}
 
+		readonly XmlParserProvider parserProvider;
 		readonly ITextUndoHistoryRegistry undoHistoryRegistry;
 		readonly IEditorOperationsFactoryService editorOperationsFactoryService;
 
@@ -82,7 +84,7 @@ namespace MonoDevelop.Xml.Editor.Commands
 			ITextView textView = args.TextView;
 			ITextBuffer textBuffer = args.SubjectBuffer;
 
-			if (!XmlBackgroundParser.TryGetParser (textBuffer, out var parser)) {
+			if (!parserProvider.TryGetParser (textBuffer, out var parser)) {
 				return false;
 			}
 

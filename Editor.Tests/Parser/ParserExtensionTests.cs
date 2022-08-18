@@ -28,7 +28,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 			var snapshot = buffer.CurrentSnapshot;
 			var caretPoint = new SnapshotPoint (snapshot, snapshot.Length);
 
-			var spine = XmlBackgroundParser.GetParser (buffer).GetSpineParser (caretPoint);
+			var spine = GetParser (buffer).GetSpineParser (caretPoint);
 			var actual = spine.GetIncompleteValue (snapshot);
 
 			Assert.AreEqual (expected, actual);
@@ -38,7 +38,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		public async Task TestIncremental ()
 		{
 			var buffer = CreateTextBuffer (" ");
-			var parser = XmlBackgroundParser.GetParser (buffer);
+			var parser = GetParser (buffer);
 			await parser.GetOrProcessAsync (buffer.CurrentSnapshot, default);
 
 			buffer.Insert (0, " ");

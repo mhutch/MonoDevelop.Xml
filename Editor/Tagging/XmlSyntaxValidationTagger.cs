@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 
@@ -18,16 +20,16 @@ namespace MonoDevelop.MSBuild.Editor
 	{
 		readonly XmlBackgroundParser parser;
 		readonly JoinableTaskContext joinableTaskContext;
-		ParseCompletedEventArgs<XmlParseResult> lastArgs;
+		ParseCompletedEventArgs<XmlParseResult>? lastArgs;
 
-		public XmlSyntaxValidationTagger (ITextBuffer buffer, JoinableTaskContext joinableTaskContext)
+		public XmlSyntaxValidationTagger (ITextBuffer buffer, XmlSyntaxValidationTaggerProvider provider)
 		{
-			parser = XmlBackgroundParser.GetParser (buffer);
+			parser = provider.ParserProvider.GetParser (buffer);
 			parser.ParseCompleted += ParseCompleted;
-			this.joinableTaskContext = joinableTaskContext;
+			joinableTaskContext = provider.JoinableTaskContext;
 		}
 
-		void ParseCompleted (object sender, ParseCompletedEventArgs<XmlParseResult> args)
+		void ParseCompleted (object? sender, ParseCompletedEventArgs<XmlParseResult> args)
 		{
 			lastArgs = args;
 
@@ -38,7 +40,7 @@ namespace MonoDevelop.MSBuild.Editor
 			});
 		}
 
-		public event EventHandler<SnapshotSpanEventArgs> TagsChanged;
+		public event EventHandler<SnapshotSpanEventArgs>? TagsChanged;
 
 		public void Dispose ()
 		{

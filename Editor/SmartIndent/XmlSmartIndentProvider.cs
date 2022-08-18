@@ -6,15 +6,25 @@ using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 
+using MonoDevelop.Xml.Editor.Completion;
+
 namespace MonoDevelop.Xml.Editor.SmartIndent
 {
 	[Export (typeof (ISmartIndentProvider))]
 	[ContentType (XmlContentTypeNames.XmlCore)]
 	class XmlSmartIndentProvider : ISmartIndentProvider
 	{
+		readonly XmlParserProvider parserProvider;
+
+		[ImportingConstructor]
+		public XmlSmartIndentProvider (XmlParserProvider parserProvider)
+		{
+			this.parserProvider = parserProvider;
+		}
+
 		public ISmartIndent CreateSmartIndent (ITextView textView)
 		{
-			return textView.Properties.GetOrCreateSingletonProperty (() => new XmlSmartIndent (textView));
+			return textView.Properties.GetOrCreateSingletonProperty (() => new XmlSmartIndent (textView, parserProvider));
 		}
 	}
 }
