@@ -24,16 +24,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#nullable enable
+
 namespace MonoDevelop.Xml.Dom
 {
 	public class XClosingTag : XNode, INamedXObject
 	{
 		public XClosingTag (int startOffset) : base (startOffset) {}
 
-		public XClosingTag (XName name, int startOffset) : base (startOffset)
-		{
-			this.Name = name;
-		}
+		public XClosingTag (XName name, int startOffset) : base (startOffset) => Name = name;
 
 		public XName Name { get; set; }
 
@@ -46,7 +45,7 @@ namespace MonoDevelop.Xml.Dom
 		/// <summary>
 		/// Gets the element that this tag closes. May be null.
 		/// </summary>
-		public XElement GetElement ()
+		public XElement? GetElement ()
 		{
 			var possible = Parent as XElement;
 			if (possible != null && possible.ClosingTag == this) {
@@ -63,10 +62,8 @@ namespace MonoDevelop.Xml.Dom
 			Name = copyFromAtt.Name;
 		}
 
-		public override string FriendlyPathRepresentation {
-			get { return "/" + Name.FullName; }
-		}
+		public override string FriendlyPathRepresentation => "/" + Name.FullName;
 
-		public TextSpan NameSpan => new TextSpan (Span.Start + 2, Name.Length);
+		public TextSpan NameSpan => new (Span.Start + 2, Name.Length);
 	}
 }

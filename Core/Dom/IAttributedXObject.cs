@@ -26,6 +26,8 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+#nullable enable
+
 namespace MonoDevelop.Xml.Dom
 {
 	public interface IAttributedXObject : INamedXObject

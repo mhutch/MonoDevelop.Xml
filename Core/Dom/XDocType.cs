@@ -24,6 +24,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#nullable enable
+
 namespace MonoDevelop.Xml.Dom
 {
 	public class XDocType : XNode, INamedXObject
@@ -35,10 +37,10 @@ namespace MonoDevelop.Xml.Dom
 		protected override XObject NewInstance () { return new XDocType (); }
 
 		public XName RootElement { get; set; }
-		public string PublicFpi { get; set; }
-		public bool IsPublic { get { return PublicFpi != null; } }
+		public string? PublicFpi { get; set; }
+		public bool IsPublic => PublicFpi is not null;
 		public TextSpan InternalDeclarationRegion { get; set; }
-		public string Uri { get; set; }
+		public string? Uri { get; set; }
 
 		public override string FriendlyPathRepresentation {
 			get { return "<!DOCTYPE>"; }
@@ -47,7 +49,7 @@ namespace MonoDevelop.Xml.Dom
 		protected override void ShallowCopyFrom (XObject copyFrom)
 		{
 			base.ShallowCopyFrom (copyFrom);
-			XDocType copyFromDT = (XDocType) copyFrom;
+			var copyFromDT = (XDocType) copyFrom;
 			//immutable types
 			RootElement = copyFromDT.RootElement;
 			PublicFpi = copyFromDT.PublicFpi;
@@ -60,16 +62,11 @@ namespace MonoDevelop.Xml.Dom
 			set { RootElement = value; }
 		}
 
-		bool INamedXObject.IsNamed {
-			get { return RootElement.IsValid; }
-		}
+		bool INamedXObject.IsNamed => RootElement.IsValid;
 
-		TextSpan INamedXObject.NameSpan => new TextSpan (Span.Start + 10, RootElement.Length);
+		TextSpan INamedXObject.NameSpan => new (Span.Start + 10, RootElement.Length);
 
 		public override string ToString ()
-		{
-			return string.Format("[DocType: RootElement='{0}', PublicFpi='{1}',  InternalDeclarationRegion='{2}', Uri='{3}']",
-			                     RootElement.FullName, PublicFpi, InternalDeclarationRegion, Uri);
-		}
+			=> $"[DocType: RootElement='{RootElement.FullName}', PublicFpi='{PublicFpi}',  InternalDeclarationRegion='{InternalDeclarationRegion}', Uri='{Uri}']";
 	}
 }

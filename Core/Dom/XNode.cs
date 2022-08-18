@@ -24,6 +24,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#nullable enable
+
 namespace MonoDevelop.Xml.Dom
 {
 	public abstract class XNode : XObject
@@ -32,6 +34,6 @@ namespace MonoDevelop.Xml.Dom
 		protected XNode (TextSpan span) : base (span) {}
 		protected XNode () {}
 
-		public XNode NextSibling { get; internal protected set; }
+		public XNode? NextSibling { get; internal protected set; }
 	}
 }

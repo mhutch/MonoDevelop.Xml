@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#nullable enable
+
 namespace MonoDevelop.Xml.Dom
 {
 	public class XText : XNode
@@ -11,10 +13,10 @@ namespace MonoDevelop.Xml.Dom
 		protected XText () { }
 		protected override XObject NewInstance () { return new XText (); }
 
-		public string Text { get; private set; }
+		public string? Text { get; private set; }
 
 		public override string FriendlyPathRepresentation {
-			get { return Ellipsize (Text, 20); }
+			get { return Ellipsize (Text ?? "", 20); }
 		}
 
 		public void End (string text)
