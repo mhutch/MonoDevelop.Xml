@@ -5,6 +5,8 @@
 
 using System.ComponentModel.Composition;
 
+using Microsoft.Extensions.Logging;
+
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Utilities;
@@ -19,12 +21,14 @@ namespace MonoDevelop.Xml.Editor.Tagging
 	[TagType (typeof (IStructureTag))]
 	class StructureTaggerProvider : ITaggerProvider
 	{
+		public ILogger Logger { get; }
 		public XmlParserProvider ParserProvider { get; }
 
 		[ImportingConstructor]
-		public StructureTaggerProvider (XmlParserProvider parserProvider)
+		public StructureTaggerProvider (XmlParserProvider parserProvider, ILogger<StructureTagger> logger)
 		{
 			ParserProvider = parserProvider;
+			Logger = logger;
 		}
 
 		public ITagger<T> CreateTagger<T> (ITextBuffer buffer) where T : ITag =>

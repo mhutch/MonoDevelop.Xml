@@ -21,12 +21,14 @@ namespace MonoDevelop.Xml.Editor.Tagging
 	class StructureTagger : ITagger<IStructureTag>
 	{
 		readonly ITextBuffer buffer;
+		readonly ILogger logger;
 		readonly XmlBackgroundParser parser;
 		static readonly IEnumerable<ITagSpan<IStructureTag>> emptyTagList = Array.Empty<ITagSpan<IStructureTag>> ();
 
 		public StructureTagger (ITextBuffer buffer, StructureTaggerProvider provider)
 		{
 			this.buffer = buffer;
+			this.logger = provider.Logger;
 			parser = provider.ParserProvider.GetParser (buffer);
 		}
 
@@ -43,11 +45,13 @@ namespace MonoDevelop.Xml.Editor.Tagging
 			var parseTask = parser.GetOrProcessAsync (snapshot, default);
 
 			if (parseTask.IsCompleted) {
+				#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
 				return GetTags (parseTask.Result, spans, snapshot);
+				#pragma warning restore VSTHRD002
 			} else {
 				parseTask.ContinueWith (t => {
 					RaiseTagsChanged ();
-				});
+				}, TaskScheduler.Default).CatchAndLogWarning (logger, nameof(StructureTagger));
 			}
 
 			return emptyTagList;

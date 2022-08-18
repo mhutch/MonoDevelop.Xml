@@ -11,6 +11,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.Logging;
+
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.Text;
@@ -22,16 +24,19 @@ using MonoDevelop.Xml.Parser;
 
 namespace MonoDevelop.Xml.Editor.Completion
 {
-	public abstract class XmlCompletionSource : IAsyncCompletionSource
+	public abstract partial class XmlCompletionSource : IAsyncCompletionSource
 	{
 		protected XmlBackgroundParser XmlParser { get; }
 
 		protected ITextView TextView { get; }
 
-		protected XmlCompletionSource (ITextView textView, XmlParserProvider parserProvider)
+		readonly ILogger logger;
+
+		protected XmlCompletionSource (ITextView textView, ILogger logger, XmlParserProvider parserProvider)
 		{
 			XmlParser = parserProvider.GetParser (textView.TextBuffer);
 			TextView = textView;
+			this.logger = logger;
 			InitializeBuiltinItems ();
 		}
 
@@ -128,10 +133,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 			var spine = XmlParser.GetSpineParser (triggerLocation);
 
-			LoggingService.LogDebug (
-				"Attempting completion for state '{0}'x{1}, character='{2}', trigger='{3}'",
-				spine.CurrentState, spine.CurrentStateLength, trigger.Character, trigger
-			);
+			LogAttemptingCompletion (logger, spine.CurrentState, spine.CurrentStateLength, trigger.Character, trigger.Reason);
 
 			var (kind, length) = XmlCompletionTriggering.GetTrigger (spine, reason.Value, trigger.Character);
 			if (kind != XmlCompletionTrigger.None) {
@@ -142,6 +144,10 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 			return CompletionStartData.DoesNotParticipateInCompletion;
 		}
+
+		[LoggerMessage (EventId = 2, Level = LogLevel.Trace, Message = "Attempting completion for state '{state}'x{currentSpineLength}, character='{triggerChar}', trigger='{triggerReason}'")]
+		static partial void LogAttemptingCompletion (ILogger logger, XmlParserState state, int currentSpineLength, char triggerChar, CompletionTriggerReason triggerReason);
+
 
 		protected virtual Task<CompletionContext> GetElementCompletionsAsync (
 			IAsyncCompletionSession session,
