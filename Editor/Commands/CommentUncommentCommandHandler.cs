@@ -424,28 +424,19 @@ namespace MonoDevelop.Xml.Editor.Commands
 				int currentStart = currentRegion.Start;
 
 				// Creates comments such that current comments are excluded
-				var parentNode = node.GetNodeContainingRange (currentRegion.ToTextSpan ());
-
-				parentNode.VisitSelfAndDescendents (child => {
-					if (child is XComment comment) {
-						// ignore comments outside our range
-						if (!currentRegion.IntersectsWith (comment.Span.ToSpan ())) {
-							return;
+				foreach (var comment in node.GetNodesIntersectingRange (currentRegion.ToTextSpan ()).OfType<XComment> ()) {
+					var commentNodeSpan = comment.Span;
+					if (returnComments)
+						commentSpans.Add (commentNodeSpan);
+					else {
+						var validCommentSpan = TextSpan.FromBounds (currentStart, commentNodeSpan.Start);
+						if (validCommentSpan.Length != 0) {
+							commentSpans.Add (validCommentSpan);
 						}
 
-						var commentNodeSpan = comment.Span;
-						if (returnComments)
-							commentSpans.Add (commentNodeSpan);
-						else {
-							var validCommentSpan = TextSpan.FromBounds (currentStart, commentNodeSpan.Start);
-							if (validCommentSpan.Length != 0) {
-								commentSpans.Add (validCommentSpan);
-							}
-
-							currentStart = commentNodeSpan.End;
-						}
+						currentStart = commentNodeSpan.End;
 					}
-				});
+				}
 
 				if (!returnComments) {
 					if (currentStart <= currentRegion.End) {
@@ -492,7 +483,7 @@ namespace MonoDevelop.Xml.Editor.Commands
 
 			// if the selection starts or ends in text, we want to preserve the 
 			// exact span the user has selected and split the text at that boundary
-			if (nodeAtPosition is XText) {
+			if (nodeAtPosition is XText || nodeAtPosition is null) {
 				return span;
 			}
 
