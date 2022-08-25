@@ -20,6 +20,8 @@ using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Editor.Completion;
 using MonoDevelop.Xml.Parser;
 
+using JoinableTaskContext = Microsoft.VisualStudio.Threading.JoinableTaskContext;
+
 namespace MonoDevelop.Xml.Editor.Commands
 {
 	[Export (typeof (ICommandHandler))]
@@ -38,17 +40,21 @@ namespace MonoDevelop.Xml.Editor.Commands
 
 		[ImportingConstructor]
 		public CommentUncommentCommandHandler (
-			XmlParserProvider parserProvider, ITextUndoHistoryRegistry undoHistoryRegistry,
-			IEditorOperationsFactoryService editorOperationsFactoryService)
+			XmlParserProvider parserProvider,
+			ITextUndoHistoryRegistry undoHistoryRegistry,
+			IEditorOperationsFactoryService editorOperationsFactoryService,
+			JoinableTaskContext joinableTaskContext)
 		{
 			this.parserProvider = parserProvider;
 			this.undoHistoryRegistry = undoHistoryRegistry;
 			this.editorOperationsFactoryService = editorOperationsFactoryService;
+			this.joinableTaskContext = joinableTaskContext;
 		}
 
 		readonly XmlParserProvider parserProvider;
 		readonly ITextUndoHistoryRegistry undoHistoryRegistry;
 		readonly IEditorOperationsFactoryService editorOperationsFactoryService;
+		readonly JoinableTaskContext joinableTaskContext;
 
 		public string DisplayName => Name;
 
@@ -88,9 +94,14 @@ namespace MonoDevelop.Xml.Editor.Commands
 				return false;
 			}
 
-			var xmlParseResult = parser.GetOrProcessAsync (textBuffer.CurrentSnapshot, default).Result;
-			var xmlDocumentSyntax = xmlParseResult.XDocument;
-			if (xmlDocumentSyntax == null) {
+			// the rest of this method needs to run on the the main thread anyways
+			#pragma warning disable VSTHRD102 // Implement internal logic asynchronously
+
+			var xmlParseResult = joinableTaskContext.Factory.Run (() => parser.GetOrProcessAsync (textBuffer.CurrentSnapshot, context.OperationContext.UserCancellationToken));
+
+			#pragma warning restore VSTHRD102
+
+			if (xmlParseResult?.XDocument is not XDocument xmlDocumentSyntax || context.OperationContext.UserCancellationToken.IsCancellationRequested) {
 				return false;
 			}
 
