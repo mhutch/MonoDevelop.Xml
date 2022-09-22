@@ -57,21 +57,13 @@ namespace MonoDevelop.Xml.Parser
 			XmlProcessingInstructionState processingInstructionState,
 			XmlTextState textState)
 		{
-			TagState = tagState;
-			ClosingTagState = closingTagState;
-			CommentState = commentState;
-			CDataState = cDataState;
-			DocTypeState = docTypeState;
-			ProcessingInstructionState = processingInstructionState;
-			TextState = textState;
-
-			Adopt (TagState);
-			Adopt (ClosingTagState);
-			Adopt (CommentState);
-			Adopt (CDataState);
-			Adopt (DocTypeState);
-			Adopt (ProcessingInstructionState);
-			Adopt (TextState);
+			TagState = Adopt (tagState);
+			ClosingTagState = Adopt (closingTagState);
+			CommentState = Adopt (commentState);
+			CDataState = Adopt (cDataState);
+			DocTypeState = Adopt (docTypeState);
+			ProcessingInstructionState = Adopt (processingInstructionState);
+			TextState = Adopt (textState);
 		}
 
 		protected XmlTagState TagState { get; }
@@ -82,7 +74,7 @@ namespace MonoDevelop.Xml.Parser
 		protected XmlProcessingInstructionState ProcessingInstructionState { get; }
 		protected XmlTextState TextState { get; }
 
-		public override XmlParserState PushChar (char c, XmlParserContext context, ref string rollback)
+		public override XmlParserState? PushChar (char c, XmlParserContext context, ref string? rollback)
 		{
 			if (c == '<') {
 				if (context.StateTag != FREE)
@@ -176,28 +168,17 @@ namespace MonoDevelop.Xml.Parser
 		}
 
 		static int LengthFromOpenBracket (XmlParserContext context)
-		{
-			switch (context.StateTag) {
-			case BRACKET:
-				return 1;
-			case BRACKET_EXCLAM:
-				return 2;
-			case COMMENT:
-				return 3;
-			case CDATA:
-			case DOCTYPE:
-				return 3 + context.KeywordBuilder.Length;
-			default:
-				return 1;
-			}
-		}
+			=> context.StateTag switch {
+				BRACKET => 1,
+				BRACKET_EXCLAM => 2,
+				COMMENT => 3,
+				CDATA or DOCTYPE => 3 + context.KeywordBuilder.Length,
+				_ => 1
+			};
 
-		public virtual XDocument CreateDocument ()
-		{
-			return new XDocument ();
-		}
+		public virtual XDocument CreateDocument () => new ();
 
-		public override XmlParserContext TryRecreateState (XObject xobject, int position)
+		public override XmlParserContext? TryRecreateState (XObject xobject, int position)
 		{
 			return
 				TagState.TryRecreateState (xobject, position)
@@ -207,15 +188,14 @@ namespace MonoDevelop.Xml.Parser
 				?? DocTypeState.TryRecreateState (xobject, position)
 				?? ProcessingInstructionState.TryRecreateState (xobject, position)
 				?? TextState.TryRecreateState (xobject, position)
-				?? new XmlParserContext {
-					CurrentState = this,
-					Position = xobject.Span.Start,
-					PreviousState = Parent,
-					CurrentStateLength = 0,
-					KeywordBuilder = new System.Text.StringBuilder (),
-					Nodes = NodeStack.FromParents (xobject),
-					StateTag = FREE
-				};
+				?? new (
+					currentState: this,
+					position: xobject.Span.Start,
+					previousState: Parent,
+					currentStateLength: 0,
+					nodes: NodeStack.FromParents (xobject),
+					stateTag: FREE
+				);
 		}
 
 		internal static bool IsFree (XmlParserContext context) => context.CurrentState is XmlRootState && context.StateTag == FREE;

@@ -180,10 +180,11 @@ namespace MonoDevelop.Xml.Parser
 
 		public static List<XObject> GetPath (this XObject obj)
 		{
+			XObject? current = obj;
 			var path = new List<XObject> ();
-			while (obj != null) {
-				path.Add (obj);
-				obj = obj.Parent;
+			while (current is not null) {
+				path.Add (current);
+				current = current.Parent;
 			}
 			path.Reverse ();
 			return path;

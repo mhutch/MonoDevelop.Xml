@@ -68,7 +68,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				if (string.IsNullOrEmpty (ns)) {
 					return this;
 				}
-				if (nsMap.GetPrefix (ns) is not string prefix) {
+				if (!nsMap.TryGetPrefix (ns, out string? prefix)) {
 					if (ns == "http://www.w3.org/XML/1998/namespace") {
 						prefix = "xml";
 					} else {

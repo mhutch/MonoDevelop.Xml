@@ -41,13 +41,10 @@ namespace MonoDevelop.Xml.Parser
 		{
 			RootState = rootState;
 
-			Context = new XmlParserContext {
-				CurrentStateLength = 0,
-				CurrentState = rootState,
-				PreviousState = rootState,
-				KeywordBuilder = new StringBuilder (),
-				Nodes = new NodeStack ()
-			};
+			Context = new XmlParserContext (
+				currentState: rootState,
+				previousState: rootState
+			);
 
 			Context.Nodes.Push (RootState.CreateDocument ());
 		}
@@ -67,7 +64,7 @@ namespace MonoDevelop.Xml.Parser
 			Context.Position = 0;
 			Context.StateTag = 0;
 			Context.CurrentStateLength = 0;
-			Context.KeywordBuilder.Length = 0;
+			Context.ResetKeywordBuilder ();
 			Context.Diagnostics?.Clear ();
 			Context.Nodes.Clear ();
 			Context.Nodes.Push (RootState.CreateDocument ());
@@ -84,10 +81,10 @@ namespace MonoDevelop.Xml.Parser
 		public void Push (char c)
 		{
 			for (int loopLimit = 0; loopLimit < 10; loopLimit++) {
-				string rollback = null;
+				string? rollback = null;
 				if (Context.CurrentState == null)
 					goto done;
-				XmlParserState nextState = Context.CurrentState.PushChar (c, Context, ref rollback);
+				XmlParserState? nextState = Context.CurrentState.PushChar (c, Context, ref rollback);
 
 				// no state change
 				if (nextState == Context.CurrentState || nextState == null) {
@@ -100,11 +97,8 @@ namespace MonoDevelop.Xml.Parser
 				Context.CurrentState = nextState;
 				Context.StateTag = 0;
 				Context.CurrentStateLength = 0;
-				if (Context.KeywordBuilder.Length < 50)
-					Context.KeywordBuilder.Length = 0;
-				else
-					Context.KeywordBuilder = new StringBuilder ();
 
+				Context.ResetKeywordBuilder ();
 
 				// only loop if the same char should be run through the new state
 				if (rollback == null)

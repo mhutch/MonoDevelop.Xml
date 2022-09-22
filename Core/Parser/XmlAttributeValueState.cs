@@ -41,7 +41,7 @@ namespace MonoDevelop.Xml.Parser
 		protected const int TagMask = 3;
 		protected const int TagShift = 2;
 
-		public override XmlParserState PushChar (char c, XmlParserContext context, ref string rollback)
+		public override XmlParserState? PushChar (char c, XmlParserContext context, ref string? rollback)
 		{
 			System.Diagnostics.Debug.Assert (((XAttribute) context.Nodes.Peek ()).Value == null);
 
@@ -80,7 +80,7 @@ namespace MonoDevelop.Xml.Parser
 			return null;
 		}
 
-		XmlParserState BuildUnquotedValue (char c, XmlParserContext context, ref string rollback)
+		XmlParserState? BuildUnquotedValue (char c, XmlParserContext context, ref string? rollback)
 		{
 			if (char.IsLetterOrDigit (c) || c == '_' || c == '.') {
 				context.KeywordBuilder.Append (c);

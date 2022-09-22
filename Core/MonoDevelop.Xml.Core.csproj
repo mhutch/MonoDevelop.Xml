@@ -1,12 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net48;net6.0</TargetFrameworks>
+    <TargetFrameworks>net48;net6.0</TargetFrameworks>
     <!--
     The assembly is called MonoDevelop.Xml.Core so as not to conflict with the original extension assembly in MonoDevelop
     but the root namespace is still MonoDevelop.Xml
     -->
     <RootNamespace>MonoDevelop.Xml</RootNamespace>
+    
+    <Nullable>enable</Nullable>
+    <Nullable Condition="$(TargetFramework)=='net48'">annotations</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

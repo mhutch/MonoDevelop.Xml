@@ -38,7 +38,7 @@ namespace MonoDevelop.Xml.Parser
 		const int SINGLE_BRACKET = 1;
 		const int DOUBLE_BRACKET = 2;
 		
-		public override XmlParserState PushChar (char c, XmlParserContext context, ref string rollback)
+		public override XmlParserState? PushChar (char c, XmlParserContext context, ref string? rollback)
 		{
 			if (context.CurrentStateLength == 0) {
 				context.Nodes.Push (new XCData (context.Position - STARTOFFSET));
@@ -69,7 +69,7 @@ namespace MonoDevelop.Xml.Parser
 			return null;
 		}
 
-		public override XmlParserContext TryRecreateState (XObject xobject, int position)
+		public override XmlParserContext? TryRecreateState (XObject xobject, int position)
 		{
 			if (xobject is XCData cd && position >= cd.Span.Start + STARTOFFSET && position < cd.Span.End) {
 				var parents = NodeStack.FromParents (cd);
@@ -79,15 +79,15 @@ namespace MonoDevelop.Xml.Parser
 					parents.Push (new XCData (cd.Span.Start));
 				}
 
-				return new XmlParserContext {
-					CurrentState = this,
-					Position = position,
-					PreviousState = Parent,
-					CurrentStateLength = length,
-					KeywordBuilder = new System.Text.StringBuilder (),
-					StateTag = position == cd.Span.End - 3 ? SINGLE_BRACKET : (position == cd.Span.End - 2? DOUBLE_BRACKET : NOMATCH),
-					Nodes = parents
-				};
+				return new XmlParserContext (
+					previousState: Parent,
+					currentState: this,
+					position: position,
+					currentStateLength: length,
+					keywordBuilder: new System.Text.StringBuilder (),
+					stateTag: position == cd.Span.End - 3 ? SINGLE_BRACKET : (position == cd.Span.End - 2 ? DOUBLE_BRACKET : NOMATCH),
+					nodes: parents
+				);
 			}
 
 			return null;

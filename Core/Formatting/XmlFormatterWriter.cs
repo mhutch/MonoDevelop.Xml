@@ -28,7 +28,6 @@
 //
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -38,52 +37,42 @@ using MonoDevelop.Xml.Parser;
 
 namespace MonoDevelop.Xml.Formatting
 {
-	public class XmlFormatterWriter : XmlWriter
+	public partial class XmlFormatterWriter : XmlWriter
 	{
 		// Static/constant members.
 
 		const string XmlNamespace = "http://www.w3.org/XML/1998/namespace";
 		const string XmlnsNamespace = "http://www.w3.org/2000/xmlns/";
 
-		static readonly Encoding unmarked_utf8encoding =
-			new UTF8Encoding (false, false);
-		static char [] escaped_text_chars;
-		static char [] escaped_attr_chars;
+		static readonly Encoding unmarked_utf8encoding = new UTF8Encoding (false, false);
+
+		static char[] escaped_attr_chars = new [] { '"', '&', '<', '>', '\r', '\n' };
+		static char[] escaped_text_chars_with_newlines = new[] { '&', '<', '>', '\r', '\n' };
+		static char[] escaped_text_chars_without_newlines = new[] { '&', '<', '>' };
 
 		// Internal classes
 
 		class XmlNodeInfo
 		{
-			public string Prefix;
-			public string LocalName;
-			public string NS;
+			public string? Prefix;
+			public string? LocalName;
+			public string? NS;
 			public bool HasSimple;
 			public bool HasElements;
-			public string XmlLang;
+			public string? XmlLang;
 			public XmlSpace XmlSpace;
 		}
 
 		internal class StringUtil
 		{
-			static CultureInfo cul = CultureInfo.InvariantCulture;
-			static CompareInfo cmp =
-				CultureInfo.InvariantCulture.CompareInfo;
+			static readonly CultureInfo cul = CultureInfo.InvariantCulture;
+			static readonly CompareInfo cmp = CultureInfo.InvariantCulture.CompareInfo;
 
-			public static int IndexOf (string src, string target)
-			{
-				return cmp.IndexOf (src, target);
-			}
+			public static int IndexOf (string src, string target) => cmp.IndexOf (src, target);
 
-			public static int Compare (string s1, string s2)
-			{
-				return cmp.Compare (s1, s2);
-			}
+			public static int Compare (string s1, string s2) => cmp.Compare (s1, s2);
 
-			public static string Format (
-				string format, params object [] args)
-			{
-				return String.Format (cul, format, args);
-			}
+			public static string Format (string format, params object[] args) => string.Format (cul, format, args);
 		}
 
 		enum XmlDeclState {
@@ -95,40 +84,40 @@ namespace MonoDevelop.Xml.Formatting
 
 		// Instance fields
 
-		Stream base_stream;
 		TextWriter source; // the input TextWriter to .ctor().
 		TextWriterWrapper writer;
+
 		// It is used for storing xml:space, xml:lang and xmlns values.
-		StringWriter preserver;
-		string preserved_name;
+		StringWriter? preserver;
+		string? preserved_name;
 		bool is_preserved_xmlns;
 
-		bool allow_doc_fragment;
+		bool allow_doc_fragment = true;
 		bool close_output_stream = true;
 		bool ignore_encoding;
 		bool namespaces = true;
 		XmlDeclState xmldecl_state = XmlDeclState.Allow;
 
-		bool check_character_validity;
+		bool check_character_validity = false;
 		NewLineHandling newline_handling = NewLineHandling.None;
 
 		bool is_document_entity;
 		WriteState state = WriteState.Start;
 		XmlNodeType node_state = XmlNodeType.None;
-		XmlNamespaceManager nsmanager;
+		XmlNamespaceManager nsmanager = new (new NameTable ());
 		int open_count;
 		XmlNodeInfo [] elements = new XmlNodeInfo [10];
-		Stack new_local_namespaces = new Stack ();
-		ArrayList explicit_nsdecls = new ArrayList ();
+		readonly Stack<string> new_local_namespaces = new ();
+		readonly List<string> explicit_nsdecls = new ();
 
-		string newline;
+		string? newline;
 		bool v2;
 		int lastEmptyLineCount;
 		
 		XmlFormattingSettings formatSettings = new XmlFormattingSettings ();
 		XmlFormattingSettings defaultFormatSettings = new XmlFormattingSettings ();
-		internal TextStylePolicy TextPolicy;
-		
+		internal TextStylePolicy? TextPolicy;
+
 		// Constructors
 
 		public XmlFormatterWriter (string filename, Encoding encoding)
@@ -136,58 +125,43 @@ namespace MonoDevelop.Xml.Formatting
 		{
 		}
 
-		public XmlFormatterWriter (Stream stream, Encoding encoding)
-			: this (new StreamWriter (stream,
-				encoding == null ? unmarked_utf8encoding : encoding))
+		public XmlFormatterWriter (Stream stream, Encoding? encoding)
+			: this (new StreamWriter (stream, encoding == null ? unmarked_utf8encoding : encoding))
 		{
 			ignore_encoding = (encoding == null);
-			Initialize (writer);
-			allow_doc_fragment = true;
 		}
 
 		public XmlFormatterWriter (TextWriter writer)
 		{
 			if (writer == null)
-				throw new ArgumentNullException ("writer");
+				throw new ArgumentNullException (nameof (writer));
 			ignore_encoding = (writer.Encoding == null);
-			Initialize (writer);
-			allow_doc_fragment = true;
+
+			if (writer is StreamWriter streamWriter)
+				BaseStream = streamWriter.BaseStream;
+			source = writer;
+
+			this.writer = new TextWriterWrapper (writer, this);
+
 			xmldecl_state = formatSettings.OmitXmlDeclaration ? XmlDeclState.Ignore : XmlDeclState.Allow;
 			check_character_validity = false;
 			v2 = true;
-		}
-
-		void Initialize (TextWriter writer)
-		{
-			if (writer == null)
-				throw new ArgumentNullException ("writer");
-			XmlNameTable name_table = new NameTable ();
-			this.writer = new TextWriterWrapper (writer, this);
-			if (writer is StreamWriter)
-				base_stream = ((StreamWriter) writer).BaseStream;
-			source = writer;
-			nsmanager = new XmlNamespaceManager (name_table);
-
-			escaped_text_chars =
-				newline_handling != NewLineHandling.None ?
-				new char [] {'&', '<', '>', '\r', '\n'} :
-				new char [] {'&', '<', '>'};
-			escaped_attr_chars =
-				new char [] {'"', '&', '<', '>', '\r', '\n'};
 		}
 		
 		Dictionary<XmlNode,XmlFormattingSettings> formatMap = new Dictionary<XmlNode, XmlFormattingSettings> ();
 		
 		public void WriteNode (XmlNode node, XmlFormattingPolicy formattingPolicy, TextStylePolicy textPolicy)
 		{
-			this.TextPolicy = textPolicy;
+			TextPolicy = textPolicy;
 			newline = TextPolicy.GetEolMarker ();
 			formatMap.Clear ();
 			defaultFormatSettings = formattingPolicy.DefaultFormat;
 			foreach (XmlFormattingSettings format in formattingPolicy.Formats) {
 				foreach (string xpath in format.ScopeXPath) {
-					foreach (XmlNode n in node.SelectNodes (xpath))
-						formatMap [n] = format;
+					if (node.SelectNodes (xpath) is XmlNodeList match) {
+						foreach (XmlNode n in match)
+							formatMap[n] = format;
+					}
 				}
 			}
 			WriteNode (node);
@@ -208,7 +182,7 @@ namespace MonoDevelop.Xml.Formatting
 				case XmlNodeType.Attribute: {
 					XmlAttribute at = (XmlAttribute) node;
 					if (at.Specified) {
-						WriteStartAttribute (at.NamespaceURI.Length > 0 ? at.Prefix : String.Empty, at.LocalName, at.NamespaceURI);
+						WriteStartAttribute (at.NamespaceURI.Length > 0 ? at.Prefix : string.Empty, at.LocalName, at.NamespaceURI);
 						WriteContent (node);
 						WriteEndAttribute ();
 					}
@@ -223,8 +197,8 @@ namespace MonoDevelop.Xml.Formatting
 					break;
 				}
 				case XmlNodeType.DocumentFragment: {
-					for (int i = 0; i < node.ChildNodes.Count; i++)
-						WriteNode (node.ChildNodes [i]);
+					foreach (XmlNode child in node.ChildNodes)
+						WriteNode (child);
 					break;
 				}
 				case XmlNodeType.DocumentType: {
@@ -236,7 +210,7 @@ namespace MonoDevelop.Xml.Formatting
 					XmlElement elem = (XmlElement) node;
 					writer.AttributesIndent = -1;
 					WriteStartElement (
-						elem.NamespaceURI == null || elem.NamespaceURI.Length == 0 ? String.Empty : elem.Prefix,
+						elem.NamespaceURI == null || elem.NamespaceURI.Length == 0 ? string.Empty : elem.Prefix,
 						elem.LocalName,
 						elem.NamespaceURI);
 		
@@ -299,7 +273,7 @@ namespace MonoDevelop.Xml.Formatting
 				case XmlNodeType.XmlDeclaration: {
 					if (!defaultFormatSettings.OmitXmlDeclaration) {
 						XmlDeclaration dec = (XmlDeclaration) node;
-						WriteRaw (String.Format ("<?xml {0}?>", dec.Value));
+						WriteRaw (string.Format ("<?xml {0}?>", dec.Value));
 					}
 					break;
 				}
@@ -316,7 +290,7 @@ namespace MonoDevelop.Xml.Formatting
 		
 		void WriteContent (XmlNode node)
 		{
-			for (XmlNode n = node.FirstChild; n != null; n = n.NextSibling)
+			for (XmlNode? n = node.FirstChild; n != null; n = n.NextSibling)
 				WriteNode (n);
 		}
 
@@ -331,13 +305,11 @@ namespace MonoDevelop.Xml.Formatting
 		
 		void SetFormat (XmlNode node)
 		{
-			XmlFormattingSettings s;
-			if (formatMap.TryGetValue (node, out s)) {
+			if (formatMap.TryGetValue (node, out var s)) {
 				formatSettings = s;
 			}
-			else {
-				if (node is XmlElement)
-					formatSettings = defaultFormatSettings;
+			else if (node is XmlElement) {
+				formatSettings = defaultFormatSettings;
 			}
 		}
 
@@ -351,27 +323,21 @@ namespace MonoDevelop.Xml.Formatting
 
 		// Context Retriever
 
-		public override string XmlLang {
-			get { return open_count == 0 ? null : elements [open_count - 1].XmlLang; }
-		}
+		public override string? XmlLang => open_count == 0 ? null : elements [open_count - 1].XmlLang;
 
-		public override XmlSpace XmlSpace {
-			get { return open_count == 0 ? XmlSpace.None : elements [open_count - 1].XmlSpace; }
-		}
+		public override XmlSpace XmlSpace => open_count == 0 ? XmlSpace.None : elements [open_count - 1].XmlSpace;
 
-		public override WriteState WriteState {
-			get { return state; }
-		}
+		public override WriteState WriteState => state;
 
-		public override string LookupPrefix (string namespaceUri)
+		public override string? LookupPrefix (string namespaceUri)
 		{
-			if (namespaceUri == null || namespaceUri == String.Empty)
+			if (namespaceUri == null || namespaceUri == string.Empty)
 				throw ArgumentError ("The Namespace cannot be empty.");
 
 			if (namespaceUri == nsmanager.DefaultNamespace)
-				return String.Empty;
+				return string.Empty;
 
-			string prefix = nsmanager.LookupPrefixExclusive (namespaceUri, false);
+			string? prefix = nsmanager.LookupPrefixExclusive (namespaceUri, false);
 
 			// XmlNamespaceManager has changed to return null
 			// when NSURI not found.
@@ -381,9 +347,7 @@ namespace MonoDevelop.Xml.Formatting
 
 		// Stream Control
 
-		public Stream BaseStream {
-			get { return base_stream; }
-		}
+		public Stream? BaseStream { get; }
 
 		public override void Close ()
 		{
@@ -486,7 +450,7 @@ namespace MonoDevelop.Xml.Formatting
 		// DocType Declaration
 
 		public override void WriteDocType (string name,
-			string pubid, string sysid, string subset)
+			string? pubid, string? sysid, string? subset)
 		{
 			if (name == null)
 				throw ArgumentError ("name");
@@ -536,15 +500,13 @@ namespace MonoDevelop.Xml.Formatting
 		// StartElement
 
 		public override void WriteStartElement (
-			string prefix, string localName, string namespaceUri)
+			string? prefix, string localName, string? namespaceUri)
 		{
 			if (state == WriteState.Error || state == WriteState.Closed)
 				throw StateError ("StartTag");
 			node_state = XmlNodeType.Element;
 
 			bool anonPrefix = (prefix == null);
-			if (prefix == null)
-				prefix = String.Empty;
 
 			// Crazy namespace check goes here.
 			//
@@ -557,9 +519,9 @@ namespace MonoDevelop.Xml.Formatting
 			//    not considered.
 			// 4. prefix must not be equivalent to "XML" in
 			//    case-insensitive comparison.
-			if (!namespaces && namespaceUri != null && namespaceUri.Length > 0)
+			if (!namespaces && !string.IsNullOrEmpty (namespaceUri))
 				throw ArgumentError ("Namespace is disabled in this XmlTextWriter.");
-			if (!namespaces && prefix.Length > 0)
+			if (!namespaces && !string.IsNullOrEmpty (prefix))
 				throw ArgumentError ("Namespace prefix is disabled in this XmlTextWriter.");
 
 			// If namespace URI is empty, then either prefix
@@ -597,7 +559,7 @@ namespace MonoDevelop.Xml.Formatting
 				if (anonPrefix && namespaceUri.Length > 0)
 					prefix = LookupPrefix (namespaceUri);
 				if (prefix == null || namespaceUri.Length == 0)
-					prefix = String.Empty;
+					prefix = null;
 			}
 			
 			WriteEmptyLines (formatSettings.EmptyLinesBeforeStart);
@@ -606,14 +568,14 @@ namespace MonoDevelop.Xml.Formatting
 
 			writer.Write ("<");
 
-			if (prefix.Length > 0) {
+			if (!string.IsNullOrEmpty (prefix)) {
 				writer.Write (prefix);
 				writer.Write (':');
 			}
 			writer.Write (localName);
 
 			if (elements.Length == open_count) {
-				XmlNodeInfo [] tmp = new XmlNodeInfo [open_count << 1];
+				var tmp = new XmlNodeInfo [open_count << 1];
 				Array.Copy (elements, tmp, open_count);
 				elements = tmp;
 			}
@@ -631,7 +593,7 @@ namespace MonoDevelop.Xml.Formatting
 			open_count++;
 
 			if (namespaces && namespaceUri != null) {
-				string oldns = nsmanager.LookupNamespace (prefix, false);
+				string? oldns = nsmanager.LookupNamespace (prefix, false);
 				if (oldns != namespaceUri) {
 					nsmanager.AddNamespace (prefix, namespaceUri);
 					new_local_namespaces.Push (prefix);
@@ -707,7 +669,7 @@ namespace MonoDevelop.Xml.Formatting
 
 			for (int i = idx; i < explicit_nsdecls.Count; i++) {
 				string prefix = (string) explicit_nsdecls [i];
-				string ns = nsmanager.LookupNamespace (prefix, false);
+				string? ns = nsmanager.LookupNamespace (prefix, false);
 				if (ns == null)
 					continue; // superceded
 				if (prefix.Length > 0) {
@@ -788,7 +750,7 @@ namespace MonoDevelop.Xml.Formatting
 		// Attribute
 
 		public override void WriteStartAttribute (
-			string prefix, string localName, string namespaceUri)
+			string? prefix, string localName, string? namespaceUri)
 		{
 			// LAMESPEC: this violates the expected behavior of
 			// this method, as it incorrectly allows unbalanced
@@ -801,8 +763,8 @@ namespace MonoDevelop.Xml.Formatting
 			if (state != WriteState.Element && state != WriteState.Start)
 				throw StateError ("Attribute");
 
-			if ((object) prefix == null)
-				prefix = String.Empty;
+			if (prefix is null)
+				prefix = string.Empty;
 
 			// For xmlns URI, prefix is forced to be "xmlns"
 			bool isNSDecl = false;
@@ -822,11 +784,11 @@ namespace MonoDevelop.Xml.Formatting
 				if (prefix == "xml")
 					namespaceUri = XmlNamespace;
 				// infer namespace URI.
-				else if ((object) namespaceUri == null) {
+				else if (namespaceUri is null) {
 					if (isNSDecl)
 						namespaceUri = XmlnsNamespace;
 					else
-						namespaceUri = String.Empty;
+						namespaceUri = string.Empty;
 				}
 
 				// It is silly design - null namespace with
@@ -835,7 +797,7 @@ namespace MonoDevelop.Xml.Formatting
 				// On the other hand, namespace "" is not 
 				// allowed.
 				if (isNSDecl && namespaceUri != XmlnsNamespace)
-					throw ArgumentError (String.Format ("The 'xmlns' attribute is bound to the reserved namespace '{0}'", XmlnsNamespace));
+					throw ArgumentError (string.Format ("The 'xmlns' attribute is bound to the reserved namespace '{0}'", XmlnsNamespace));
 
 				// If namespace URI is empty, then either prefix
 				// must be empty as well, or there is an
@@ -887,8 +849,7 @@ namespace MonoDevelop.Xml.Formatting
 					preserved_name = localName;
 				} else {
 					is_preserved_xmlns = true;
-					preserved_name = localName == "xmlns" ? 
-						String.Empty : localName;
+					preserved_name = localName == "xmlns" ? string.Empty : localName;
 				}
 			}
 
@@ -897,33 +858,33 @@ namespace MonoDevelop.Xml.Formatting
 
 		// See also:
 		// "DetermineAttributePrefix(): local mapping overwrite"
-		string DetermineAttributePrefix (
-			string prefix, string local, string ns)
+		string DetermineAttributePrefix (string prefix, string local, string ns)
 		{
 			bool mockup = false;
 			if (prefix.Length == 0) {
-				prefix = LookupPrefix (ns);
-				if (prefix != null && prefix.Length > 0)
-					return prefix;
+				if (LookupPrefix (ns) is string foundPrefix && foundPrefix.Length > 0) {
+					return foundPrefix;
+				}
 				mockup = true;
-			} else {
+			}
+			else {
 				prefix = nsmanager.NameTable.Add (prefix);
-				string existing = nsmanager.LookupNamespace (prefix, true);
+				string? existing = nsmanager.LookupNamespace (prefix, true);
 				if (existing == ns)
 					return prefix;
-				if (existing != null) {
+				if (existing is not null) {
 					// See code comment on the head of
 					// this source file.
 					nsmanager.RemoveNamespace (prefix, existing);
 					if (nsmanager.LookupNamespace (prefix, true) != existing) {
-						mockup = true;
 						nsmanager.AddNamespace (prefix, existing);
+						mockup = true;
 					}
 				}
 			}
-
-			if (mockup)
+			if (mockup) {
 				prefix = MockupPrefix (ns, true);
+			}
 			new_local_namespaces.Push (prefix);
 			nsmanager.AddNamespace (prefix, ns);
 
@@ -932,16 +893,14 @@ namespace MonoDevelop.Xml.Formatting
 
 		string MockupPrefix (string ns, bool skipLookup)
 		{
-			string prefix = skipLookup ? null :
-				LookupPrefix (ns);
+			string? prefix = skipLookup ? null : LookupPrefix (ns);
 			if (prefix != null && prefix.Length > 0)
 				return prefix;
 			for (int p = 1; ; p++) {
 				prefix = StringUtil.Format ("d{0}p{1}", open_count, p);
 				if (new_local_namespaces.Contains (prefix))
 					continue;
-				if (null != nsmanager.LookupNamespace (
-					nsmanager.NameTable.Get (prefix)))
+				if (null != nsmanager.LookupNamespace (nsmanager.NameTable.Get (prefix)))
 					continue;
 				nsmanager.AddNamespace (prefix, ns);
 				new_local_namespaces.Push (prefix);
@@ -968,9 +927,9 @@ namespace MonoDevelop.Xml.Formatting
 						if (v2 &&
 						    elements [open_count - 1].Prefix == preserved_name &&
 						    elements [open_count - 1].NS != value)
-							throw new XmlException (String.Format ("Cannot redefine the namespace for prefix '{0}' used at current element", preserved_name));
+							throw new XmlException (string.Format ("Cannot redefine the namespace for prefix '{0}' used at current element", preserved_name));
 
-						if (elements [open_count - 1].NS != String.Empty ||
+						if (elements [open_count - 1].NS != string.Empty ||
 						    elements [open_count - 1].Prefix != preserved_name) {
 							if (existing != value)
 								nsmanager.AddNamespace (preserved_name, value);
@@ -1019,7 +978,7 @@ namespace MonoDevelop.Xml.Formatting
 
 		// Non-Text Content
 
-		public override void WriteComment (string text)
+		public override void WriteComment (string? text)
 		{
 			if (text == null)
 				throw ArgumentError ("text");
@@ -1043,7 +1002,7 @@ namespace MonoDevelop.Xml.Formatting
 		}
 
 		// LAMESPEC: see comments on the top of this source.
-		public override void WriteProcessingInstruction (string name, string text)
+		public override void WriteProcessingInstruction (string? name, string? text)
 		{
 			if (name == null)
 				throw ArgumentError ("name");
@@ -1073,7 +1032,7 @@ namespace MonoDevelop.Xml.Formatting
 
 		// Text Content
 
-		public override void WriteWhitespace (string text)
+		public override void WriteWhitespace (string? text)
 		{
 			if (text == null)
 				throw ArgumentError ("text");
@@ -1089,10 +1048,10 @@ namespace MonoDevelop.Xml.Formatting
 			ResetEmptyLineCount ();
 		}
 
-		public override void WriteCData (string text)
+		public override void WriteCData (string? text)
 		{
 			if (text == null)
-				text = String.Empty;
+				text = string.Empty;
 			ShiftStateContent ("CData", false);
 
 			if (StringUtil.IndexOf (text, "]]>") >= 0)
@@ -1103,7 +1062,7 @@ namespace MonoDevelop.Xml.Formatting
 			ResetEmptyLineCount ();
 		}
 
-		public override void WriteString (string text)
+		public override void WriteString (string? text)
 		{
 			if (text == null || text.Length == 0)
 				return; // do nothing, including state transition.
@@ -1141,9 +1100,9 @@ namespace MonoDevelop.Xml.Formatting
 			if (surrogate &&
 			    ('\uD800' > high || high > '\uDC00' ||
 			     '\uDC00' > ch || ch > '\uDFFF'))
-				throw ArgumentError (String.Format ("Invalid surrogate pair was found. Low: &#x{0:X}; High: &#x{1:X};", (int) ch, (int) high));
+				throw ArgumentError (string.Format ("Invalid surrogate pair was found. Low: &#x{0:X}; High: &#x{1:X};", (int) ch, (int) high));
 			else if (check_character_validity && XmlChar.IsInvalid (ch))
-				throw ArgumentError (String.Format ("Invalid character &#x{0:X};", (int) ch));
+				throw ArgumentError ($"Invalid character &#x{(int)ch:X};");
 
 			ShiftStateContent ("Character", true);
 
@@ -1188,12 +1147,12 @@ namespace MonoDevelop.Xml.Formatting
 		}
 
 		public override void WriteQualifiedName (
-			string localName, string ns)
+			string localName, string? ns)
 		{
 			if (localName == null)
 				throw ArgumentError ("localName");
 			if (ns == null)
-				ns = String.Empty;
+				ns = string.Empty;
 
 			if (ns == XmlnsNamespace)
 				throw ArgumentError ("Prefix 'xmlns' is reserved and cannot be overriden.");
@@ -1202,15 +1161,15 @@ namespace MonoDevelop.Xml.Formatting
 
 			ShiftStateContent ("QName", true);
 
-			string prefix = ns.Length > 0 ? LookupPrefix (ns) : String.Empty;
+			string prefix = ns.Length > 0 ? LookupPrefix (ns) : string.Empty;
 			if (prefix == null) {
 				if (state == WriteState.Attribute)
 					prefix = MockupPrefix (ns, false);
 				else
-					throw ArgumentError (String.Format ("Namespace '{0}' is not declared.", ns));
+					throw ArgumentError ($"Namespace '{ns}' is not declared.");
 			}
 
-			if (prefix != String.Empty) {
+			if (prefix != string.Empty) {
 				writer.Write (prefix);
 				writer.Write (":");
 			}
@@ -1222,7 +1181,7 @@ namespace MonoDevelop.Xml.Formatting
 		void CheckChunkRange (Array buffer, int index, int count)
 		{
 			if (buffer == null)
-				throw new ArgumentNullException ("buffer");
+				throw new ArgumentNullException (nameof (buffer));
 			if (index < 0 || buffer.Length < index)
 				throw ArgumentOutOfRangeError ("index");
 			if (count < 0 || buffer.Length < index + count)
@@ -1248,15 +1207,15 @@ namespace MonoDevelop.Xml.Formatting
 		internal static void WriteBinHex (byte [] buffer, int index, int count, TextWriter w)
 		{
 			if (buffer == null)
-				throw new ArgumentNullException ("buffer");
+				throw new ArgumentNullException (nameof (buffer));
 			if (index < 0) {
 				throw new ArgumentOutOfRangeException (
-					"index", index,
+					nameof (index), index,
 					"index must be non negative integer.");
 			}
 			if (count < 0) {
 				throw new ArgumentOutOfRangeException (
-					"count", count,
+					nameof (count), count,
 					"count must be non negative integer.");
 			}
 			if (buffer.Length < index + count)
@@ -1418,7 +1377,10 @@ namespace MonoDevelop.Xml.Formatting
 		{
 			escaped_attr_chars [0] = formatSettings.QuoteChar;
 			char [] escaped = isAttribute ?
-				escaped_attr_chars : escaped_text_chars;
+				escaped_attr_chars :
+				(newline_handling != NewLineHandling.None
+					? escaped_text_chars_with_newlines
+					: escaped_text_chars_without_newlines);
 
 			int idx = text.IndexOfAny (escaped);
 			if (idx >= 0) {
@@ -1450,7 +1412,7 @@ namespace MonoDevelop.Xml.Formatting
 			int end = idx + length;
 			while ((idx = XmlChar.IndexOfInvalid (text, start, length, true)) >= 0) {
 				if (check_character_validity) // actually this is one time pass.
-					throw ArgumentError (String.Format ("Input contains invalid character at {0} : &#x{1:X};", idx, (int) text [idx]));
+					throw ArgumentError ($"Input contains invalid character at {idx} : &#x{(int)text[idx]:X};");
 				if (start < idx)
 					writer.Write (text, start, idx - start);
 				writer.Write ("&#x");
@@ -1547,442 +1509,7 @@ namespace MonoDevelop.Xml.Formatting
 
 		Exception StateError (string occurred)
 		{
-			return InvalidOperation (String.Format ("This XmlWriter does not accept {0} at this state {1}.", occurred, state));
-		}
-	}
-
-	internal class XmlNamespaceManager : IXmlNamespaceResolver, IEnumerable
-	{
-		#region Data
-		struct NsDecl {
-			public string Prefix, Uri;
-		}
-		
-		struct NsScope {
-			public int DeclCount;
-			public string DefaultNamespace;
-		}
-		
-		NsDecl [] decls;
-		int declPos = -1;
-		
-		NsScope [] scopes;
-		int scopePos = -1;
-		
-		string defaultNamespace;
-		int count;
-		
-		void InitData ()
-		{
-			decls = new NsDecl [10];
-			scopes = new NsScope [40];
-		}
-		
-		// precondition declPos == nsDecl.Length
-		void GrowDecls ()
-		{
-			NsDecl [] old = decls;
-			decls = new NsDecl [declPos * 2 + 1];
-			if (declPos > 0)
-				Array.Copy (old, 0, decls, 0, declPos);
-		}
-		
-		// precondition scopePos == scopes.Length
-		void GrowScopes ()
-		{
-			NsScope [] old = scopes;
-			scopes = new NsScope [scopePos * 2 + 1];
-			if (scopePos > 0)
-				Array.Copy (old, 0, scopes, 0, scopePos);
-		}
-		
-		#endregion
-		
-		#region Fields
-
-		private XmlNameTable nameTable;
-		internal const string XmlnsXml = "http://www.w3.org/XML/1998/namespace";
-		internal const string XmlnsXmlns = "http://www.w3.org/2000/xmlns/";
-		internal const string PrefixXml = "xml";
-		internal const string PrefixXmlns = "xmlns";
-
-		#endregion
-
-		#region Constructor
-
-		public XmlNamespaceManager (XmlNameTable nameTable)
-		{
-			if (nameTable == null)
-				throw new ArgumentNullException ("nameTable");
-			this.nameTable = nameTable;
-
-			nameTable.Add (PrefixXmlns);
-			nameTable.Add (PrefixXml);
-			nameTable.Add (String.Empty);
-			nameTable.Add (XmlnsXmlns);
-			nameTable.Add (XmlnsXml);
-			
-			InitData ();
-		}
-
-		#endregion
-
-		#region Properties
-
-		public virtual string DefaultNamespace {
-			get { return defaultNamespace == null ? string.Empty : defaultNamespace; }
-		}
-
-		public virtual XmlNameTable NameTable {
-			get { return nameTable; }
-		}
-
-		#endregion
-
-		#region Methods
-
-		public virtual void AddNamespace (string prefix, string uri)
-		{
-			AddNamespace (prefix, uri, false);
-		}
-
-		internal virtual void AddNamespace (string prefix, string uri, bool atomizedNames)
-		{
-			if (prefix == null)
-				throw new ArgumentNullException ("prefix", "Value cannot be null.");
-
-			if (uri == null)
-				throw new ArgumentNullException ("uri", "Value cannot be null.");
-			if (!atomizedNames) {
-				prefix = nameTable.Add (prefix);
-				uri = nameTable.Add (uri);
-			}
-
-			if (prefix == PrefixXml && uri == XmlnsXml)
-				return;
-
-			IsValidDeclaration (prefix, uri, true);
-
-			if (prefix.Length == 0)
-				defaultNamespace = uri;
-			
-			for (int i = declPos; i > declPos - count; i--) {
-				if (object.ReferenceEquals (decls [i].Prefix, prefix)) {
-					decls [i].Uri = uri;
-					return;
-				}
-			}
-			
-			declPos ++;
-			count ++;
-			
-			if (declPos == decls.Length)
-				GrowDecls ();
-			decls [declPos].Prefix = prefix;
-			decls [declPos].Uri = uri;
-		}
-
-		static string IsValidDeclaration (string prefix, string uri, bool throwException)
-		{
-			string message = null;
-			// It is funky, but it does not check whether prefix
-			// is equivalent to "xml" in case-insensitive means.
-			if (prefix == PrefixXml && uri != XmlnsXml)
-				message = String.Format ("Prefix \"xml\" can only be bound to the fixed namespace URI \"{0}\". \"{1}\" is invalid.", XmlnsXml, uri);
-			else if (message == null && prefix == "xmlns")
-				message = "Declaring prefix named \"xmlns\" is not allowed to any namespace.";
-			else if (message == null && uri == XmlnsXmlns)
-				message = String.Format ("Namespace URI \"{0}\" cannot be declared with any namespace.", XmlnsXmlns);
-			if (message != null && throwException)
-				throw new ArgumentException (message);
-			else
-				return message;
-		}
-
-		public virtual IEnumerator GetEnumerator ()
-		{
-			// In fact it returns such table's enumerator that contains all the namespaces.
-			// while HasNamespace() ignores pushed namespaces.
-			
-			Hashtable ht = new Hashtable ();
-			for (int i = 0; i <= declPos; i++) {
-				if (decls [i].Prefix != string.Empty && decls [i].Uri != null) {
-					ht [decls [i].Prefix] = decls [i].Uri;
-				}
-			}
-			
-			ht [string.Empty] = DefaultNamespace;
-			ht [PrefixXml] = XmlnsXml;
-			ht [PrefixXmlns] = XmlnsXmlns;
-			
-			return ht.Keys.GetEnumerator ();
-		}
-
-		public virtual IDictionary<string, string> GetNamespacesInScope (XmlNamespaceScope scope)
-		{
-			IDictionary namespaceTable = GetNamespacesInScopeImpl (scope);
-			IDictionary<string, string> namespaces = new Dictionary<string, string>(namespaceTable.Count);
-
-			foreach (DictionaryEntry entry in namespaceTable) {
-				namespaces[(string) entry.Key] = (string) entry.Value;
-			}
-			return namespaces;
-		}
-
-		internal virtual IDictionary GetNamespacesInScopeImpl (XmlNamespaceScope scope)
-		{
-			Hashtable table = new Hashtable ();
-
-			if (scope == XmlNamespaceScope.Local) {
-				for (int i = 0; i < count; i++)
-					if (decls [declPos - i].Prefix == String.Empty && decls [declPos - i].Uri == String.Empty) {
-						if (table.Contains (String.Empty))
-							table.Remove (String.Empty);
-					}
-					else if (decls [declPos - i].Uri != null)
-						table.Add (decls [declPos - i].Prefix, decls [declPos - i].Uri);
-				return table;
-			} else {
-				for (int i = 0; i <= declPos; i++) {
-					if (decls [i].Prefix == String.Empty && decls [i].Uri == String.Empty) {
-						// removal of default namespace
-						if (table.Contains (String.Empty))
-							table.Remove (String.Empty);
-					}
-					else if (decls [i].Uri != null)
-						table [decls [i].Prefix] = decls [i].Uri;
-				}
-
-				if (scope == XmlNamespaceScope.All)
-					table.Add ("xml", XmlNamespaceManager.XmlnsXml);
-				return table;
-			}
-		}
-
-		public virtual bool HasNamespace (string prefix)
-		{
-			return HasNamespace (prefix, false);
-		}
-
-		internal virtual bool HasNamespace (string prefix, bool atomizedNames)
-		{
-			if (prefix == null || count == 0)
-				return false;
-
-			for (int i = declPos; i > declPos - count; i--) {
-				if (decls [i].Prefix == prefix)
-					return true;
-			}
-			
-			return false;
-		}
-
-		public virtual string LookupNamespace (string prefix)
-		{
-			return LookupNamespace (prefix, false);
-		}
-
-		internal virtual string LookupNamespace (string prefix, bool atomizedNames)
-		{
-			switch (prefix) {
-			case PrefixXmlns:
-				return nameTable.Get (XmlnsXmlns);
-			case PrefixXml:
-				return nameTable.Get (XmlnsXml);
-			case "":
-				return DefaultNamespace;
-			case null:
-				return null;
-			}
-
-			for (int i = declPos; i >= 0; i--) {
-				if (CompareString (decls [i].Prefix, prefix, atomizedNames) && decls [i].Uri != null /* null == flag for removed */)
-					return decls [i].Uri;
-			}
-			
-			return null;
-		}
-
-		public virtual string LookupPrefix (string uri)
-		{
-			return LookupPrefix (uri, false);
-		}
-
-		private bool CompareString (string s1, string s2, bool atomizedNames)
-		{
-			if (atomizedNames)
-				return object.ReferenceEquals (s1, s2);
-			else
-				return s1 == s2;
-		}
-
-		internal string LookupPrefix (string uri, bool atomizedName)
-		{
-			return LookupPrefixCore (uri, atomizedName, false);
-		}
-
-		internal string LookupPrefixExclusive (string uri, bool atomizedName)
-		{
-			return LookupPrefixCore (uri, atomizedName, true);
-		}
-
-		string LookupPrefixCore (string uri, bool atomizedName, bool excludeOverriden)
-		{
-			if (uri == null)
-				return null;
-
-			if (CompareString (uri, DefaultNamespace, atomizedName))
-				return string.Empty;
-
-			if (CompareString (uri, XmlnsXml, atomizedName))
-				return PrefixXml;
-			
-			if (CompareString (uri, XmlnsXmlns, atomizedName))
-				return PrefixXmlns;
-
-			for (int i = declPos; i >= 0; i--) {
-				if (CompareString (decls [i].Uri, uri, atomizedName) && decls [i].Prefix.Length > 0) // we already looked for ""
-					if (!excludeOverriden || !IsOverriden (i))
-						return decls [i].Prefix;
-			}
-
-			// ECMA specifies that this method returns String.Empty
-			// in case of no match. But actually MS.NET returns null.
-			// For more information,see
-			//  http://lists.ximian.com/archives/public/mono-list/2003-January/005071.html
-			//return String.Empty;
-			return null;
-		}
-
-		bool IsOverriden (int idx)
-		{
-			if (idx == declPos)
-				return false;
-			string prefix = decls [idx + 1].Prefix;
-			for (int i = idx + 1; i <= declPos; i++)
-				if ((object) decls [idx].Prefix == (object) prefix)
-					return true;
-			return false;
-		}
-
-		public virtual bool PopScope ()
-		{
-			if (scopePos == -1)
-				return false;
-
-			declPos -= count;
-			defaultNamespace = scopes [scopePos].DefaultNamespace;
-			count = scopes [scopePos].DeclCount;
-			scopePos --;
-			return true;
-		}
-
-		public virtual void PushScope ()
-		{
-			scopePos ++;
-			if (scopePos == scopes.Length)
-				GrowScopes ();
-			
-			scopes [scopePos].DefaultNamespace = defaultNamespace;
-			scopes [scopePos].DeclCount = count;
-			count = 0;
-		}
-
-		// It is rarely used, so we don't need NameTable optimization on it.
-		public virtual void RemoveNamespace (string prefix, string uri)
-		{
-			RemoveNamespace (prefix, uri, false);
-		}
-
-		internal virtual void RemoveNamespace (string prefix, string uri, bool atomizedNames)
-		{
-			if (prefix == null)
-				throw new ArgumentNullException ("prefix");
-
-			if (uri == null)
-				throw new ArgumentNullException ("uri");
-			
-			if (count == 0)
-				return;
-
-			for (int i = declPos; i > declPos - count; i--) {
-				if (CompareString (decls [i].Prefix, prefix, atomizedNames) && CompareString (decls [i].Uri, uri, atomizedNames))
-					decls [i].Uri = null;
-			}
-		}
-
-		#endregion
-	}
-	
-	class TextWriterWrapper: TextWriter
-	{
-		public TextWriter Wrapped;
-		public readonly TextWriterWrapper PreviousWrapper;
-		XmlFormatterWriter formatter;
-		StringBuilder sb;
-		bool inBlock;
-		
-		public int Column;
-		public int AttributesPerLine;
-		public int AttributesIndent;
-
-		public TextWriterWrapper (TextWriter wrapped, XmlFormatterWriter formatter)
-		{
-			this.Wrapped = wrapped;
-			this.formatter = formatter;
-		}
-
-		public TextWriterWrapper (TextWriter wrapped, XmlFormatterWriter formatter, TextWriterWrapper currentWriter)
-			: this (wrapped, formatter)
-		{
-			PreviousWrapper = currentWriter;
-		}
-
-		public void MarkBlockStart ()
-		{
-			sb = new StringBuilder ();
-			inBlock = true;
-		}
-		
-		public void MarkBlockEnd ()
-		{
-			inBlock = false;
-		}
-		
-		public void WriteBlock (bool wrappedLine)
-		{
-			if (wrappedLine)
-				Write (sb.ToString ());
-			else
-				Wrapped.Write (sb.ToString ());
-			sb = null;
-		}
-		
-		public bool InBlock {
-			get { return this.inBlock; }
-		}
-		
-		public override Encoding Encoding {
-			get { return Wrapped.Encoding; }
-		}
-		
-		public override void Write (char c)
-		{
-			if (inBlock)
-				sb.Append (c);
-			else
-				Wrapped.Write (c);
-			
-			if (c == '\n') {
-				AttributesPerLine = 0;
-				Column = 0;
-			}
-			else {
-				if (c == '\t')
-					Column += formatter.TextPolicy.TabWidth;
-				else
-					Column++;
-			}
+			return InvalidOperation ($"This XmlWriter does not accept {occurred} at this state {state}.");
 		}
 	}
 }

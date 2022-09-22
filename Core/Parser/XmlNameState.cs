@@ -34,7 +34,7 @@ namespace MonoDevelop.Xml.Parser
 {
 	public class XmlNameState : XmlParserState
 	{
-		public override XmlParserState PushChar (char c, XmlParserContext context, ref string rollback)
+		public override XmlParserState? PushChar (char c, XmlParserContext context, ref string? rollback)
 		{
 			var namedObject = context.Nodes.Peek () as INamedXObject;
 			if (namedObject == null || namedObject.Name.Prefix != null)

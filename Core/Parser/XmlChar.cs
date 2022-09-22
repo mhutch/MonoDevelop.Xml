@@ -126,7 +126,7 @@ namespace MonoDevelop.Xml.Parser
 		{
 			int end = start + length;
 			if (s.Length < end)
-				throw new ArgumentOutOfRangeException ("length");
+				throw new ArgumentOutOfRangeException (nameof (length));
 			for (int i = start; i < end; i++)
 				if (IsInvalid (s [i])) {
 					if (!allowSurrogate ||

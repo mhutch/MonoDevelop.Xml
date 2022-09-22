@@ -10,7 +10,7 @@
     <ProjectReference Include="..\Core\MonoDevelop.Xml.Core.csproj" />
     <ProjectReference Include="..\Core.Tests\MonoDevelop.Xml.Core.Tests.csproj" />
     <ProjectReference Include="..\Editor\MonoDevelop.Xml.Editor.csproj" />
-    <ProjectReference Include="..\external\MiniEditor\Microsoft.VisualStudio.MiniEditor\Microsoft.VisualStudio.MiniEditor.csproj" />
+    <ProjectReference Include="..\external\MiniEditor\Microsoft.VisualStudio.MiniEditor\Microsoft.VisualStudio.MiniEditor.csproj" NoWarn="NU1701" />
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Schema\SchemaAssociationTests.cs" />

@@ -35,14 +35,14 @@ namespace MonoDevelop.Xml.Parser
 	{
 		const int STARTOFFSET = 9; // "<!DOCTYPE";
 
-		readonly XmlNameState nameState = new XmlNameState ();
+		readonly XmlNameState nameState;
 		
 		public XmlDocTypeState ()
 		{
-			 Adopt (nameState);
+			nameState = Adopt (new XmlNameState ());
 		}
 		
-		public override XmlParserState PushChar (char c, XmlParserContext context, ref string rollback)
+		public override XmlParserState? PushChar (char c, XmlParserContext context, ref string? rollback)
 		{
 			var doc = context.Nodes.Peek () as XDocType;
 			if (doc == null) {
@@ -172,7 +172,7 @@ namespace MonoDevelop.Xml.Parser
 			return Parent;
 		}
 
-		public override XmlParserContext TryRecreateState (XObject xobject, int position)
+		public override XmlParserContext? TryRecreateState (XObject xobject, int position)
 		{
 			// we could attempt recovery but it's kinda complex due to URL keyword builder
 			// for now, let parent recreate state at start of tag

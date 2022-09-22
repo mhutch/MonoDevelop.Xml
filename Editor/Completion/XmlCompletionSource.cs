@@ -3,6 +3,10 @@
 
 #nullable enable
 
+#if NETFRAMEWORK
+#nullable disable warnings
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;

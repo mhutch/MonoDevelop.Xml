@@ -29,6 +29,7 @@
 using System;
 using System.Diagnostics;
 using System.Text;
+
 using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
@@ -59,7 +60,7 @@ namespace MonoDevelop.Xml.Parser
 			Adopt (NameState);
 		}
 		
-		public override XmlParserState PushChar (char c, XmlParserContext context, ref string rollback)
+		public override XmlParserState? PushChar (char c, XmlParserContext context, ref string? rollback)
 		{
 			var element = context.Nodes.Peek () as XElement;
 			
@@ -158,7 +159,7 @@ namespace MonoDevelop.Xml.Parser
 			element.End (endOffset);
 		}
 
-		public override XmlParserContext TryRecreateState (XObject xobject, int position)
+		public override XmlParserContext? TryRecreateState (XObject xobject, int position)
 		{
 			var fromAtt = AttributeState.TryRecreateState (xobject, position);
 			if (fromAtt != null) {
@@ -168,7 +169,7 @@ namespace MonoDevelop.Xml.Parser
 			// we can also recreate state for attributes within the tag, if the attribute state didn't
 			var el = xobject as XElement;
 			if (el == null && xobject is XAttribute a) {
-				el = (XElement) a.Parent;
+				el = (XElement?) a.Parent;
 			}
 
 			if (el != null && position >= el.Span.Start && position < el.Span.End - 1) {
@@ -207,15 +208,15 @@ namespace MonoDevelop.Xml.Parser
 				var parents = NodeStack.FromParents (el);
 				parents.Push (newEl);
 
-				return new XmlParserContext {
-					CurrentState = this,
-					Position = foundPosition,
-					PreviousState = prevState,
-					CurrentStateLength = foundPosition - prevStateEnd,
-					KeywordBuilder = new StringBuilder (),
-					Nodes = parents,
-					StateTag = FREE
-				};
+				return new XmlParserContext (
+					currentState: this,
+					position: foundPosition,
+					previousState: prevState,
+					currentStateLength: foundPosition - prevStateEnd,
+					keywordBuilder: new StringBuilder (),
+					nodes: parents,
+					stateTag: FREE
+				);
 			}
 
 			return null;

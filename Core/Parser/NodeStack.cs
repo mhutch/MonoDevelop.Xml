@@ -38,7 +38,7 @@ namespace MonoDevelop.Xml.Parser
 
 		public NodeStack (int capacity) : base (capacity) { }
 
-		public XObject Peek (int down)
+		public XObject? Peek (int down)
 		{
 			int i = 0;
 			foreach (XObject o in this) {
@@ -49,9 +49,9 @@ namespace MonoDevelop.Xml.Parser
 			return null;
 		}
 
-		public XDocument GetRoot ()
+		public XDocument? GetRoot ()
 		{
-			XObject last = null;
+			XObject? last = null;
 			foreach (XObject o in this)
 				last = o;
 			return last as XDocument;
