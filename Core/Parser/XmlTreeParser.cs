@@ -69,16 +69,18 @@ namespace MonoDevelop.Xml.Parser
 		/// </summary>
 		public (XDocument document, List<XmlDiagnosticInfo> diagnostic) FinalizeDocument ()
 		{
+			var diagnostics = Context.Diagnostics!;
+
 			bool loggedEof = false;
 			while (Context.Nodes.Count > 1) {
 				var node = Context.Nodes.Pop ();
 				if (node is XElement el && !el.IsClosed) {
-					Context.Diagnostics.LogError (string.Format ("Unclosed tag '{0}'", el.Name.FullName), el.Span);
+					diagnostics.LogError ($"Unclosed tag '{el.Name.FullName}'", el.Span);
 				}
 				if (!node.IsEnded) {
 					node.End (Context.Position);
 					if (!loggedEof) {
-						Context.Diagnostics.LogError ("Unexpected end of file", Context.Position);
+						diagnostics.LogError ("Unexpected end of file", Context.Position);
 						loggedEof = true;
 					}
 				}
@@ -87,7 +89,7 @@ namespace MonoDevelop.Xml.Parser
 			var doc = (XDocument)Context.Nodes.Pop ();
 			doc.End (Context.Position);
 
-			return (doc, Context.Diagnostics);
+			return (doc, diagnostics);
 		}
 	}
 }

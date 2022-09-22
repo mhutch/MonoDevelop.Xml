@@ -26,8 +26,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.ComponentModel;
 
 namespace MonoDevelop.Xml.Formatting
 {
@@ -48,8 +46,11 @@ namespace MonoDevelop.Xml.Formatting
 			get { return defaultFormat; }
 		}
 		
-		public bool Equals (XmlFormattingPolicy other)
+		public bool Equals (XmlFormattingPolicy? other)
 		{
+			if (other is null) {
+				return false;
+			}
 			if (!defaultFormat.Equals (other.defaultFormat))
 				return false;
 			
@@ -74,7 +75,7 @@ namespace MonoDevelop.Xml.Formatting
 		
 		public XmlFormattingPolicy Clone ()
 		{
-			XmlFormattingPolicy clone = new XmlFormattingPolicy ();
+			var clone = new XmlFormattingPolicy ();
 			clone.defaultFormat = defaultFormat.Clone ();
 			foreach (var f in formats)
 				clone.formats.Add (f.Clone ());
@@ -172,86 +173,5 @@ namespace MonoDevelop.Xml.Formatting
 		public int EmptyLinesBeforeEnd { get; set; }
 
 		public int EmptyLinesAfterEnd { get; set; }
-	}
-
-	class CStringsConverter : TypeConverter
-	{
-		public override bool CanConvertFrom (ITypeDescriptorContext context, Type sourceType)
-		{
-			return sourceType == typeof (string);
-		}
-	
-		public override bool CanConvertTo (ITypeDescriptorContext context, Type destinationType)
-		{
-			return destinationType == typeof (string);
-		}
-	
-		public override object ConvertFrom (ITypeDescriptorContext context, 
-		                                    System.Globalization.CultureInfo culture, object value)
-		{
-			return UnescapeString ((string) value);
-		}
-	
-		public override object ConvertTo (ITypeDescriptorContext context, System.Globalization.CultureInfo culture,
-		                                  object value, Type destinationType)
-		{
-			return EscapeString ((string)value);
-		}
-	
-		public static string EscapeString (string text)
-		{
-			StringBuilder sb = new StringBuilder ();
-			for (int i = 0; i < text.Length; i++) {
-				char c = text[i];
-				string txt;
-				switch (c) {
-					case '"': txt = "\\\""; break;
-					case '\0': txt = @"\0"; break;
-					case '\\': txt = @"\\"; break;
-					case '\a': txt = @"\a"; break;
-					case '\b': txt = @"\b"; break;
-					case '\f': txt = @"\f"; break;
-					case '\v': txt = @"\v"; break;
-					case '\n': txt = @"\n"; break;
-					case '\r': txt = @"\r"; break;
-					case '\t': txt = @"\t"; break;
-					default:
-						sb.Append (c);
-						continue;
-				}
-				sb.Append (txt);
-			}
-			return sb.ToString ();
-		}
-		
-		public static string UnescapeString (string text)
-		{
-			StringBuilder sb = new StringBuilder ();
-			for (int i = 0; i < text.Length; i++) {
-				char c = text[i];
-				if (c == '\\') {
-					if (++i >= text.Length)
-						break;
-					c = text [i];
-					char txt;
-					switch (c) {
-						case '"': txt = '"'; break;
-						case '0': txt = '\0'; break;
-						case '\\': txt = '\\'; break;
-						case 'a': txt = '\a'; break;
-						case 'b': txt = '\b'; break;
-						case 'f': txt = '\f'; break;
-						case 'v': txt = '\v'; break;
-						case 'n': txt = '\n'; break;
-						case 'r': txt = '\r'; break;
-						case 't': txt = '\t'; break;
-						default: txt = c; break;
-					}
-					sb.Append (txt);
-				} else
-					sb.Append (c);
-			}
-			return sb.ToString ();
-		}
 	}
 }

@@ -123,15 +123,12 @@ namespace MonoDevelop.Xml.Formatting
 		}
 
 
-		public string GetEolMarker ()
-		{
-			return GetEolMarker (EolMarker);
-		}
+		public string GetEolMarker () => GetEolMarker (EolMarker);
 
 
-		public bool Equals (TextStylePolicy other)
+		public bool Equals (TextStylePolicy? other)
 		{
-			return other != null && other.FileWidth == FileWidth && other.TabWidth == TabWidth
+			return other is not null && other.FileWidth == FileWidth && other.TabWidth == TabWidth
 				&& other.TabsToSpaces == TabsToSpaces && other.NoTabsAfterNonTabs == NoTabsAfterNonTabs
 				&& other.RemoveTrailingWhitespace == RemoveTrailingWhitespace && other.EolMarker == EolMarker && other.IndentWidth == IndentWidth;
 		}

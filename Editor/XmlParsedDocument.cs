@@ -1,4 +1,4 @@
-﻿// 
+// 
 // MoonlightParsedDocument.cs
 // 
 // Author:

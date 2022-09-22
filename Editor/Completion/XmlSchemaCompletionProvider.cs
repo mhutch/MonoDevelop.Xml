@@ -23,6 +23,10 @@
 
 #nullable enable
 
+#if NETFRAMEWORK
+#nullable disable warnings
+#endif
+
 using System;
 using System.IO;
 using System.Linq;
@@ -88,17 +92,16 @@ namespace MonoDevelop.Xml.Editor.Completion
 		public Task<CompletionContext> GetChildElementCompletionDataAsync (IAsyncCompletionSource source, string tagName, CancellationToken token) => Task.Run (
 			() => {
 				var list = new XmlSchemaCompletionBuilder (source);
-				var element = schema.FindElement (tagName);
-				if (element != null)
+				if (schema.FindElement (tagName) is XmlSchemaElement element) {
 					list.AddChildElements (schema, element, "");
+				}
 				return new CompletionContext (list.GetItems ());
 			}, token);
 
 		public Task<CompletionContext> GetAttributeCompletionDataAsync (IAsyncCompletionSource source, string tagName, CancellationToken token) => Task.Run (
 			() => {
 				var list = new XmlSchemaCompletionBuilder (source);
-				var element = schema.FindElement (tagName);
-				if (element != null) {
+				if (schema.FindElement (tagName) is XmlSchemaElement element) {
 					list.AddAttributes (schema, element);
 				}
 				return new CompletionContext (list.GetItems ());
@@ -107,9 +110,9 @@ namespace MonoDevelop.Xml.Editor.Completion
 		public Task<CompletionContext> GetAttributeValueCompletionDataAsync (IAsyncCompletionSource source, string tagName, string name, CancellationToken token) => Task.Run (
 			() => {
 				var list = new XmlSchemaCompletionBuilder (source);
-				var element = schema.FindElement (tagName);
-				if (element != null)
+				if (schema.FindElement (tagName) is XmlSchemaElement element) {
 					list.AddAttributeValues (schema, element, name);
+				}
 				return new CompletionContext (list.GetItems ());
 			}, token);
 
@@ -125,8 +128,8 @@ namespace MonoDevelop.Xml.Editor.Completion
 			() => {
 				var builder = new XmlSchemaCompletionBuilder (source);
 				foreach (XmlSchemaElement element in schema.Elements.Values) {
-					if (element.Name is not null) {
-						builder.AddElement (element.Name, namespacePrefix, element.Annotation);
+					if (element.Name is string elementName) {
+						builder.AddElement (elementName, namespacePrefix, element.Annotation);
 					} else {
 						// Do not add reference element.
 					}
@@ -141,8 +144,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 		public Task<CompletionContext> GetAttributeCompletionDataAsync (IAsyncCompletionSource source, XmlElementPath path, CancellationToken token) => Task.Run (
 			() => {
 				var builder = new XmlSchemaCompletionBuilder (source, path.Namespaces);
-				var element = schema.FindElement (path);
-				if (element != null) {
+				if (schema.FindElement (path) is XmlSchemaElement element) {
 					builder.AddAttributes (schema, element);
 				}
 				return new CompletionContext (builder.GetItems ());
@@ -155,10 +157,9 @@ namespace MonoDevelop.Xml.Editor.Completion
 		public Task<CompletionContext> GetChildElementCompletionDataAsync (IAsyncCompletionSource source, XmlElementPath path, CancellationToken token) => Task.Run (
 			() => {
 				var builder = new XmlSchemaCompletionBuilder (source, path.Namespaces);
-				var element = schema.FindElement (path);
-				if (element != null) {
+				if (schema.FindElement (path) is XmlSchemaElement element) {
 					var last = path.Elements.LastOrDefault ();
-					builder.AddChildElements (schema, element, last != null ? last.Prefix : "");
+					builder.AddChildElements (schema, element, last?.Prefix ?? "");
 				}
 				return new CompletionContext (builder.GetItems ());
 			}, token);
@@ -169,9 +170,9 @@ namespace MonoDevelop.Xml.Editor.Completion
 		public Task<CompletionContext> GetAttributeValueCompletionDataAsync (IAsyncCompletionSource source, XmlElementPath path, string name, CancellationToken token) => Task.Run (
 			() => {
 				var builder = new XmlSchemaCompletionBuilder (source, path.Namespaces);
-				var element = schema.FindElement (path);
-				if (element != null)
+				if (schema.FindElement (path) is XmlSchemaElement element) {
 					builder.AddAttributeValues (schema, element, name);
+				}
 				return new CompletionContext (builder.GetItems ());
 			}, token);
 

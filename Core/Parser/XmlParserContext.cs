@@ -26,7 +26,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -36,21 +35,34 @@ namespace MonoDevelop.Xml.Parser
 {
 	public class XmlParserContext
 	{
-		public XmlParserState PreviousState { get; set; }
+		public XmlParserContext (XmlParserState? previousState, XmlParserState currentState, int currentStateLength = 0, int stateTag = 0, StringBuilder? keywordBuilder = null, int position = 0, NodeStack? nodes = null, bool buildTree = false, List<XmlDiagnosticInfo>? diagnostics = null)
+		{
+			PreviousState = previousState;
+			CurrentState = currentState;
+			CurrentStateLength = currentStateLength;
+			StateTag = stateTag;
+			KeywordBuilder = keywordBuilder ?? new StringBuilder ();
+			Position = position;
+			Nodes = nodes ?? new NodeStack ();
+			BuildTree = buildTree;
+			Diagnostics = diagnostics;
+		}
+
+		public XmlParserState? PreviousState { get; set; }
 		public XmlParserState CurrentState { get; set; }
 		public int CurrentStateLength { get; set; }
 		public int StateTag { get; set; }
-		public StringBuilder KeywordBuilder { get; set; }
+		public StringBuilder KeywordBuilder { get; private set; }
 		public int Position { get; set; }
-		public NodeStack Nodes { get; set; }
+		public NodeStack Nodes { get; }
 		public bool BuildTree { get; set; }
-		public List<XmlDiagnosticInfo> Diagnostics { get; set; }
+		public List<XmlDiagnosticInfo>? Diagnostics { get; set; }
 
 		public void ConnectNodes ()
 		{
-			XNode prev = null;
+			XNode? prev = null;
 			foreach (XObject o in Nodes) {
-				XContainer container = o as XContainer;
+				XContainer? container = o as XContainer;
 				if (prev != null && container != null && prev.IsComplete)
 					container.AddChildNode (prev);
 				if (o.Parent != null)
@@ -59,17 +71,16 @@ namespace MonoDevelop.Xml.Parser
 			}
 		}
 
-		internal XmlParserContext ShallowCopy () =>
-			new XmlParserContext {
-				Position = Position,
-				CurrentState = CurrentState,
-				CurrentStateLength = CurrentStateLength,
-				StateTag = StateTag,
-				PreviousState = PreviousState,
-				BuildTree = false,
-				KeywordBuilder = new StringBuilder (KeywordBuilder.ToString ()),
-				Nodes = Nodes.ShallowCopy ()
-			};
+		internal XmlParserContext ShallowCopy () => new (
+				previousState: PreviousState,
+				currentState: CurrentState,
+				currentStateLength: CurrentStateLength,
+				stateTag: StateTag,
+				keywordBuilder: new StringBuilder (KeywordBuilder.ToString ()),
+				position: Position,
+				nodes: Nodes.ShallowCopy (),
+				buildTree: false,
+				diagnostics: null);
 
 		public void EndAll (bool pop)
 		{
@@ -99,7 +110,7 @@ namespace MonoDevelop.Xml.Parser
 			builder.Append (' ', 2);
 			builder.AppendLine ("Stack=");
 
-			XObject rootOb = null;
+			XObject? rootOb = null;
 			foreach (XObject ob in Nodes) {
 				rootOb = ob;
 				builder.Append (' ', 4);
@@ -109,7 +120,7 @@ namespace MonoDevelop.Xml.Parser
 
 			builder.Append (' ', 2);
 			builder.AppendLine ("States=");
-			XmlParserState s = CurrentState;
+			XmlParserState? s = CurrentState;
 			while (s != null) {
 				builder.Append (' ', 4);
 				builder.Append (s.ToString ());
@@ -123,7 +134,7 @@ namespace MonoDevelop.Xml.Parser
 				rootOb.BuildTreeString (builder, 3);
 			}
 
-			if (BuildTree && Diagnostics.Count > 0) {
+			if (BuildTree && Diagnostics?.Count > 0) {
 				builder.Append (' ', 2);
 				builder.AppendLine ("Errors=");
 				foreach (XmlDiagnosticInfo err in Diagnostics) {
@@ -134,6 +145,16 @@ namespace MonoDevelop.Xml.Parser
 
 			builder.AppendLine ("]");
 			return builder.ToString ();
+		}
+
+		public void ResetKeywordBuilder ()
+		{
+			//FIXME: use a pool here?
+			if (KeywordBuilder.Length < 50) {
+				KeywordBuilder.Length = 0;
+			} else {
+				KeywordBuilder = new StringBuilder ();
+			}
 		}
 	}
 }

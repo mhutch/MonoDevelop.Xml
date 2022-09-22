@@ -38,7 +38,7 @@ namespace MonoDevelop.Xml.Parser
 		const int SINGLE_DASH = 1;
 		const int DOUBLE_DASH = 2;
 		
-		public override XmlParserState PushChar (char c, XmlParserContext context, ref string rollback)
+		public override XmlParserState? PushChar (char c, XmlParserContext context, ref string? rollback)
 		{
 			if (context.CurrentStateLength == 0) {
 				context.Nodes.Push (new XComment (context.Position - STARTOFFSET));
@@ -76,7 +76,7 @@ namespace MonoDevelop.Xml.Parser
 			return null;
 		}
 
-		public override XmlParserContext TryRecreateState (XObject xobject, int position)
+		public override XmlParserContext? TryRecreateState (XObject xobject, int position)
 		{
 			if (xobject is XComment comment && position >= comment.Span.Start + STARTOFFSET && position < comment.Span.End) {
 				var parents = NodeStack.FromParents (comment);
@@ -86,15 +86,15 @@ namespace MonoDevelop.Xml.Parser
 					parents.Push (new XComment (comment.Span.Start));
 				}
 
-				return new XmlParserContext {
-					CurrentState = this,
-					Position = position,
-					PreviousState = Parent,
-					CurrentStateLength = length,
-					KeywordBuilder = new System.Text.StringBuilder (),
-					StateTag = position == comment.Span.End - 3 ? SINGLE_DASH : (position == comment.Span.End - 2 ? DOUBLE_DASH: NOMATCH),
-					Nodes = parents
-				};
+				return new XmlParserContext (
+					currentState: this,
+					position: position,
+					previousState: Parent,
+					currentStateLength: length,
+					keywordBuilder: new System.Text.StringBuilder (),
+					stateTag: position == comment.Span.End - 3 ? SINGLE_DASH : (position == comment.Span.End - 2 ? DOUBLE_DASH: NOMATCH),
+					nodes: parents
+				);
 			}
 
 			return null;

@@ -6,7 +6,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
 
 namespace MonoDevelop.Xml.Dom
 {
@@ -72,13 +71,18 @@ namespace MonoDevelop.Xml.Dom
 			return null;
 		}
 
-		public static XObject? FindAtOrBeforeOffset (this XContainer container, int offset)
+		public static XObject FindAtOrBeforeOffset (this XContainer container, int offset)
 		{
+			if (offset < container.Span.Start) {
+				// don't check end, if tree is incomplete the container may not be terminated
+				throw new ArgumentException ($"Offset '{0}' is before start of container '{container.Span.Start}'", nameof (offset));
+			}
+
 			if (container.Span.Contains (offset) && container is IAttributedXObject attObj && attObj.FindAttribute (offset) is XAttribute attribute) {
 				return attribute;
 			}
 
-			XNode? lastNodeBeforeOffset = null;
+			XNode lastNodeBeforeOffset = container;
 			XContainer? current = container;
 
 			while (current is not null) {

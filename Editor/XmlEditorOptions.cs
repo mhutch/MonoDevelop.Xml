@@ -78,7 +78,7 @@ namespace MonoDevelop.Xml.Editor
  			}
 		}
 		
-		#region Properties
+#region Properties
 
 		/// <summary>Raised when any use scheme association changes </summary>
 		public static event EventHandler<XmlFileAssociationChangedEventArgs> XmlFileAssociationChanged;
@@ -160,7 +160,7 @@ namespace MonoDevelop.Xml.Editor
 			}
 		}
 		
-		#endregion
+#endregion
 	}
 	
 	public class XmlFileAssociationChangedEventArgs : EventArgs

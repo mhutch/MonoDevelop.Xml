@@ -36,7 +36,7 @@ namespace MonoDevelop.Xml.Parser
 		const int NOMATCH = 0;
 		const int QUESTION = 1;
 		
-		public override XmlParserState PushChar (char c, XmlParserContext context, ref string rollback)
+		public override XmlParserState? PushChar (char c, XmlParserContext context, ref string? rollback)
 		{
 			if (context.CurrentStateLength == 0) {
 				context.Nodes.Push (new XProcessingInstruction (context.Position - QUESTION));
@@ -67,7 +67,7 @@ namespace MonoDevelop.Xml.Parser
 			return null;
 		}
 
-		public override XmlParserContext TryRecreateState (XObject xobject, int position)
+		public override XmlParserContext? TryRecreateState (XObject xobject, int position)
 		{
 			if (xobject is XProcessingInstruction pi && position >= pi.Span.Start + STARTOFFSET && position < pi.Span.End) {
 				var parents = NodeStack.FromParents (pi);
@@ -77,15 +77,14 @@ namespace MonoDevelop.Xml.Parser
 					parents.Push (new XProcessingInstruction (pi.Span.Start));
 				}
 
-				return new XmlParserContext {
-					CurrentState = this,
-					Position = position,
-					PreviousState = Parent,
-					CurrentStateLength = length,
-					KeywordBuilder = new System.Text.StringBuilder (),
-					StateTag = position == pi.Span.End - 1? QUESTION : NOMATCH,
-					Nodes = parents
-				};
+				return new (
+					currentState: this,
+					position: position,
+					previousState: Parent,
+					currentStateLength: length,
+					stateTag: position == pi.Span.End - 1? QUESTION : NOMATCH,
+					nodes: parents
+				);
 			}
 
 			return null;
