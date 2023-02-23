@@ -81,7 +81,9 @@ namespace MonoDevelop.Xml.Editor.Completion
 					return await GetElementCompletionsAsync (session, triggerLocation, nodePath, kind == XmlCompletionTrigger.ElementWithBracket, token);
 
 				case XmlCompletionTrigger.Attribute:
-					IAttributedXObject attributedOb = (parser.Spine.Peek () as IAttributedXObject) ?? (IAttributedXObject) parser.Spine.Peek (1);
+					if (parser.Spine.TryFind<IAttributedXObject> (maxDepth: 1) is not IAttributedXObject attributedOb) {
+						throw new InvalidOperationException ("Did not find IAttributedXObject in stack for XmlCompletionTrigger.Attribute");
+					}
 					parser.Clone ().AdvanceUntilEnded ((XObject)attributedOb, triggerLocation.Snapshot, 1000);
 					var attributes = attributedOb.Attributes.ToDictionary (StringComparer.OrdinalIgnoreCase);
 					return await GetAttributeCompletionsAsync (session, triggerLocation, nodePath, attributedOb, attributes, token);

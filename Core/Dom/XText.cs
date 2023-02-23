@@ -13,7 +13,7 @@ namespace MonoDevelop.Xml.Dom
 		protected XText () { }
 		protected override XObject NewInstance () { return new XText (); }
 
-		public string? Text { get; private set; }
+		public string Text { get; private set; } = "";
 
 		public override string FriendlyPathRepresentation {
 			get { return Ellipsize (Text ?? "", 20); }

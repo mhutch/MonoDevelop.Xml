@@ -46,9 +46,9 @@ namespace MonoDevelop.Xml.Formatting
 
 		static readonly Encoding unmarked_utf8encoding = new UTF8Encoding (false, false);
 
-		static char[] escaped_attr_chars = new [] { '"', '&', '<', '>', '\r', '\n' };
-		static char[] escaped_text_chars_with_newlines = new[] { '&', '<', '>', '\r', '\n' };
-		static char[] escaped_text_chars_without_newlines = new[] { '&', '<', '>' };
+		static readonly char[] escaped_attr_chars = new [] { '"', '&', '<', '>', '\r', '\n' };
+		static readonly char[] escaped_text_chars_with_newlines = new[] { '&', '<', '>', '\r', '\n' };
+		static readonly char[] escaped_text_chars_without_newlines = new[] { '&', '<', '>' };
 
 		// Internal classes
 
@@ -84,39 +84,39 @@ namespace MonoDevelop.Xml.Formatting
 
 		// Instance fields
 
-		TextWriter source; // the input TextWriter to .ctor().
+		readonly TextWriter source; // the input TextWriter to .ctor().
 		TextWriterWrapper writer;
 
 		// It is used for storing xml:space, xml:lang and xmlns values.
 		StringWriter? preserver;
-		string? preserved_name;
+		string preserved_name = "";
 		bool is_preserved_xmlns;
 
-		bool allow_doc_fragment = true;
-		bool close_output_stream = true;
-		bool ignore_encoding;
+		readonly bool allow_doc_fragment = true;
+		readonly bool close_output_stream = true;
+		readonly bool ignore_encoding;
+
 		bool namespaces = true;
 		XmlDeclState xmldecl_state = XmlDeclState.Allow;
-
-		bool check_character_validity = false;
-		NewLineHandling newline_handling = NewLineHandling.None;
+		readonly bool check_character_validity = false;
+		readonly NewLineHandling newline_handling = NewLineHandling.None;
 
 		bool is_document_entity;
 		WriteState state = WriteState.Start;
 		XmlNodeType node_state = XmlNodeType.None;
-		XmlNamespaceManager nsmanager = new (new NameTable ());
+		readonly XmlNamespaceManager nsmanager = new (new NameTable ());
 		int open_count;
 		XmlNodeInfo [] elements = new XmlNodeInfo [10];
 		readonly Stack<string> new_local_namespaces = new ();
 		readonly List<string> explicit_nsdecls = new ();
 
 		string? newline;
-		bool v2;
+		readonly bool v2;
 		int lastEmptyLineCount;
 		
-		XmlFormattingSettings formatSettings = new XmlFormattingSettings ();
-		XmlFormattingSettings defaultFormatSettings = new XmlFormattingSettings ();
-		internal TextStylePolicy? TextPolicy;
+		XmlFormattingSettings formatSettings = new ();
+		XmlFormattingSettings defaultFormatSettings = new ();
+		TextStylePolicy textPolicy = new ();
 
 		// Constructors
 
@@ -148,12 +148,13 @@ namespace MonoDevelop.Xml.Formatting
 			v2 = true;
 		}
 		
-		Dictionary<XmlNode,XmlFormattingSettings> formatMap = new Dictionary<XmlNode, XmlFormattingSettings> ();
-		
+		readonly Dictionary<XmlNode,XmlFormattingSettings> formatMap = new Dictionary<XmlNode, XmlFormattingSettings> ();
+
+
 		public void WriteNode (XmlNode node, XmlFormattingPolicy formattingPolicy, TextStylePolicy textPolicy)
 		{
-			TextPolicy = textPolicy;
-			newline = TextPolicy.GetEolMarker ();
+			this.textPolicy = textPolicy;
+			newline = this.textPolicy.GetEolMarker ();
 			formatMap.Clear ();
 			defaultFormatSettings = formattingPolicy.DefaultFormat;
 			foreach (XmlFormattingSettings format in formattingPolicy.Formats) {
@@ -219,14 +220,14 @@ namespace MonoDevelop.Xml.Formatting
 						int maxLen = 0;
 						if (formatSettings.AlignAttributeValues) {
 							foreach (XmlAttribute at in elem.Attributes) {
-								string name = GetAttributeName (at);
+								string name = XmlFormatterWriter.GetAttributeName (at);
 								if (name.Length > maxLen)
 									maxLen = name.Length;
 							}
 						}
 						foreach (XmlAttribute at in elem.Attributes) {
 							if (formatSettings.AlignAttributeValues) {
-								string name = GetAttributeName (at);
+								string name = XmlFormatterWriter.GetAttributeName (at);
 								formatSettings.SpacesBeforeAssignment = (maxLen - name.Length) + oldBeforeSp;
 							}
 							WriteNode (at);
@@ -280,7 +281,8 @@ namespace MonoDevelop.Xml.Formatting
 			}
 			formatSettings = oldFormat;
 		}
-		string GetAttributeName (XmlAttribute at)
+
+		static string GetAttributeName (XmlAttribute at)
 		{
 			if (at.NamespaceURI.Length > 0)
 				return at.Prefix + ":" + at.LocalName;
@@ -527,7 +529,7 @@ namespace MonoDevelop.Xml.Formatting
 			// If namespace URI is empty, then either prefix
 			// must be empty as well, or there is an
 			// existing namespace mapping for the prefix.
-			if (prefix.Length > 0 && namespaceUri == null) {
+			if (!string.IsNullOrEmpty (prefix) && namespaceUri == null) {
 				namespaceUri = nsmanager.LookupNamespace (prefix, false);
 				if (namespaceUri == null || namespaceUri.Length == 0)
 					throw ArgumentError ("Namespace URI must not be null when prefix is not an empty string.");
@@ -594,7 +596,7 @@ namespace MonoDevelop.Xml.Formatting
 
 			if (namespaces && namespaceUri != null) {
 				string? oldns = nsmanager.LookupNamespace (prefix, false);
-				if (oldns != namespaceUri) {
+				if (oldns != namespaceUri && prefix is not null) {
 					nsmanager.AddNamespace (prefix, namespaceUri);
 					new_local_namespaces.Push (prefix);
 				}
@@ -732,7 +734,7 @@ namespace MonoDevelop.Xml.Formatting
 
 			if (full || state == WriteState.Content) {
 				writer.Write ("</");
-				if (info.Prefix.Length > 0) {
+				if (!string.IsNullOrEmpty (info.Prefix)) {
 					writer.Write (info.Prefix);
 					writer.Write (':');
 				}
@@ -900,7 +902,8 @@ namespace MonoDevelop.Xml.Formatting
 				prefix = StringUtil.Format ("d{0}p{1}", open_count, p);
 				if (new_local_namespaces.Contains (prefix))
 					continue;
-				if (null != nsmanager.LookupNamespace (nsmanager.NameTable.Get (prefix)))
+				var existingNS = nsmanager.NameTable.Get (prefix);
+				if (existingNS is not null && nsmanager.LookupNamespace (existingNS) is not null)
 					continue;
 				nsmanager.AddNamespace (prefix, ns);
 				new_local_namespaces.Push (prefix);
@@ -920,7 +923,7 @@ namespace MonoDevelop.Xml.Formatting
 					if (preserved_name.Length > 0 &&
 					    value.Length == 0)
 						throw ArgumentError ("Non-empty prefix must be mapped to non-empty namespace URI.");
-					string existing = nsmanager.LookupNamespace (preserved_name, false);
+					string? existing = nsmanager.LookupNamespace (preserved_name, false);
 					explicit_nsdecls.Add (preserved_name);
 					if (open_count > 0) {
 
@@ -964,7 +967,7 @@ namespace MonoDevelop.Xml.Formatting
 			
 			if (writer.InBlock) {
 				writer.MarkBlockEnd ();
-				if (writer.Column > TextPolicy.FileWidth) {
+				if (writer.Column > textPolicy.FileWidth) {
 					WriteIndentAttribute ();
 					writer.WriteBlock (true);
 					writer.AttributesPerLine++;
@@ -1161,15 +1164,15 @@ namespace MonoDevelop.Xml.Formatting
 
 			ShiftStateContent ("QName", true);
 
-			string prefix = ns.Length > 0 ? LookupPrefix (ns) : string.Empty;
-			if (prefix == null) {
+			string? prefix = string.IsNullOrEmpty (ns)? "" : LookupPrefix (ns);
+			if (prefix is null) {
 				if (state == WriteState.Attribute)
 					prefix = MockupPrefix (ns, false);
 				else
 					throw ArgumentError ($"Namespace '{ns}' is not declared.");
 			}
 
-			if (prefix != string.Empty) {
+			if (prefix != "") {
 				writer.Write (prefix);
 				writer.Write (":");
 			}
@@ -1274,10 +1277,10 @@ namespace MonoDevelop.Xml.Formatting
 			if (formatSettings.AlignAttributes && writer.AttributesIndent != -1) {
 				if (state != WriteState.Start)
 					writer.Write (newline);
-				if (TextPolicy.TabsToSpaces)
+				if (textPolicy.TabsToSpaces)
 					writer.Write (new string (' ', writer.AttributesIndent));
 				else
-					writer.Write (new string ('\t', writer.AttributesIndent / TextPolicy.TabWidth) + new string (' ', writer.AttributesIndent % TextPolicy.TabWidth));
+					writer.Write (new string ('\t', writer.AttributesIndent / textPolicy.TabWidth) + new string (' ', writer.AttributesIndent % textPolicy.TabWidth));
 			} else {
 				if (!WriteIndentCore (0, true))
 					writer.Write (' '); // space is required instead.
@@ -1294,7 +1297,7 @@ namespace MonoDevelop.Xml.Formatting
 
 			if (state != WriteState.Start)
 				writer.Write (newline);
-			writer.Write (TextPolicy.TabsToSpaces ? new string (' ', (open_count + nestFix) * TextPolicy.TabWidth) : new string ('\t', open_count + nestFix));
+			writer.Write (textPolicy.TabsToSpaces ? new string (' ', (open_count + nestFix) * textPolicy.TabWidth) : new string ('\t', open_count + nestFix));
 			return true;
 		}
 

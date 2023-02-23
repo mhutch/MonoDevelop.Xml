@@ -27,7 +27,7 @@
 //
 
 using System;
-
+using System.Diagnostics.CodeAnalysis;
 using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
@@ -60,7 +60,7 @@ namespace MonoDevelop.Xml.Parser
 			return child;
 		}
 
-		public XmlRootState RootState => this as XmlRootState ?? Parent?.RootState ?? throw new BrokenXmlParserStateGraph ("Root node must be instance of XmlRootState or a derived class.");
+		public XmlRootState RootState => this as XmlRootState ?? Parent?.RootState ?? throw new InvalidParserGraphException ("Root node must be instance of XmlRootState or a derived class.");
 
 		public abstract XmlParserContext? TryRecreateState (XObject xobject, int position);
 
@@ -85,12 +85,32 @@ namespace MonoDevelop.Xml.Parser
 	/// Thrown when the XmlParserState node graph was not created correctly
 	/// </summary>
 	[Serializable]
-	class BrokenXmlParserStateGraph : Exception
+	class InvalidParserGraphException : Exception
 	{
-		public BrokenXmlParserStateGraph (string message) : base (message) { }
-		public BrokenXmlParserStateGraph (string message, Exception inner) : base (message, inner) { }
-		protected BrokenXmlParserStateGraph (
+		public InvalidParserGraphException (string message) : base (message) { }
+		public InvalidParserGraphException (string message, Exception inner) : base (message, inner) { }
+		protected InvalidParserGraphException (
 		  System.Runtime.Serialization.SerializationInfo info,
 		  System.Runtime.Serialization.StreamingContext context) : base (info, context) { }
+	}
+
+	/// <summary>
+	/// Thrown when the XmlParser is in an invalid state
+	/// </summary>
+	[Serializable]
+	class InvalidParserStateException : Exception
+	{
+		public InvalidParserStateException (string message) : base (message) { }
+		public InvalidParserStateException (string message, Exception inner) : base (message, inner) { }
+		protected InvalidParserStateException (
+		  System.Runtime.Serialization.SerializationInfo info,
+		  System.Runtime.Serialization.StreamingContext context) : base (info, context) { }
+
+		[DoesNotReturn]
+		internal static void ThrowExpected<T> (XmlParserContext context) where T : XObject
+		{
+			XObject actual = context.Nodes.Peek ();
+			throw new InvalidParserStateException ($"Expected {typeof(T)} on stack, got {actual.GetType ()}");
+		}
 	}
 }

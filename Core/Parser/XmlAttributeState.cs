@@ -61,6 +61,9 @@ namespace MonoDevelop.Xml.Parser
 			//state has just been entered
 			if (context.CurrentStateLength == 0)  {
 				if (context.PreviousState is XmlNameState) {
+					if (att is null) {
+						InvalidParserStateException.ThrowExpected<XAttribute> (context);
+					}
 					//error parsing name
 					if (!att.IsNamed) {
 						context.Nodes.Pop ();
@@ -70,6 +73,9 @@ namespace MonoDevelop.Xml.Parser
 					context.StateTag = GETTINGEQ;
 				}
 				else if (context.PreviousState is XmlAttributeValueState) {
+					if (att is null) {
+						InvalidParserStateException.ThrowExpected<XAttribute> (context);
+					}
 					//Got value, so end attribute
 					context.Nodes.Pop ();
 					att.End (context.Position);

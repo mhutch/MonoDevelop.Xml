@@ -62,15 +62,17 @@ namespace MonoDevelop.Xml.Parser
 		
 		public override XmlParserState? PushChar (char c, XmlParserContext context, ref string? rollback)
 		{
-			var element = context.Nodes.Peek () as XElement;
-			
-			if (element == null || element.IsEnded) {
-				var parent = element;
+			var peekedNode = (XContainer) context.Nodes.Peek ();
+			var element = peekedNode as XElement;
+
+			// if the current node on the stack is ended or not an element, then it's the parent
+			// and we need to create the new element
+			if (element is null || element.IsEnded) {
+				var parent = peekedNode;
 				element = new XElement (context.Position - STARTOFFSET) { Parent = parent };
 				context.Nodes.Push (element);
 				if (context.BuildTree) {
-					var parentContainer = (XContainer)context.Nodes.Peek (element.IsClosed ? 0 : 1);
-					parentContainer.AddChildNode (element);
+					parent.AddChildNode (element);
 				}
 			}
 			

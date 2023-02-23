@@ -93,7 +93,7 @@ partial class XmlFormatterWriter
 			}
 			else {
 				if (c == '\t')
-					Column += formatter.TextPolicy.TabWidth;
+					Column += formatter.textPolicy.TabWidth;
 				else
 					Column++;
 			}

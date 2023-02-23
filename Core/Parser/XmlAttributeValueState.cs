@@ -88,7 +88,10 @@ namespace MonoDevelop.Xml.Parser
 			}
 
 			if (context.KeywordBuilder.Length == 0) {
-				context.Diagnostics?.LogError ($"The value of attribute '{(string)((XAttribute)context.Nodes.Peek ()).Name.FullName}' ended unexpectedly.", context.Position);
+				if (context.Diagnostics is not null) {
+					var badAtt = (XAttribute)context.Nodes.Peek ();
+					context.Diagnostics.LogError ($"The value of attribute '{badAtt.Name.FullName}' ended unexpectedly.", context.Position);
+				}
 				rollback = string.Empty;
 				return Parent;
 			}

@@ -86,5 +86,34 @@ namespace MonoDevelop.Xml.Parser
 
 			return newStack;
 		}
+
+		/// <summary>
+		/// Search down the stack for a node of type <typeparamref name="TNode"/>.
+		/// </summary>
+		/// <typeparam name="TNode">Type of the node</typeparam>
+		/// <param name="maxDepth">Zero-indexed limit for the search depth.
+		/// If negative, the search has no depth limit.</param>
+		/// <returns>A node of type <typeparamref name="TNode"/>, or <c>null</c> if none was found</returns>
+
+		/// Search down the stack for a node of type {TNode}.
+		/// TNode: Type of the node
+		/// maxDepth: Zero-indexed limit for the search depth. If negative, the search has no depth limit.
+		/// returns: A node of type {TNode} or `null` if none was found
+		public TNode? TryFind<TNode> (int maxDepth = -1) where TNode : class
+		{
+			if (maxDepth < 0) {
+				maxDepth = int.MaxValue;
+			}
+
+			foreach (XObject o in this) {
+				if (o is TNode val) {
+					return val;
+				}
+				if (maxDepth-- < 0) {
+					break;
+				}
+			}
+			return null;
+		}
 	}
 }
