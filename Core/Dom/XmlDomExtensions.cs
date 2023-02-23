@@ -227,11 +227,11 @@ namespace MonoDevelop.Xml.Dom
 			}
 		}
 
-		public static XNode? GetNodeContainingRange (this XNode node, TextSpan span)
+		public static XNode? GetNodeContaining (this XNode node, TextSpan span)
 		{
 			if (node is XContainer container) {
 				foreach (var child in container.Nodes) {
-					var found = child.GetNodeContainingRange (span);
+					var found = child.GetNodeContaining (span);
 					if (found != null) {
 						return found;
 					}
@@ -239,6 +239,24 @@ namespace MonoDevelop.Xml.Dom
 			}
 
 			if (node.Span.Contains (span)) {
+				return node;
+			}
+
+			return null;
+		}
+
+		public static XNode? GetNodeContainingOuter (this XNode node, TextSpan span)
+		{
+			if (node is XContainer container) {
+				foreach (var child in container.Nodes) {
+					var found = child.GetNodeContainingOuter (span);
+					if (found != null) {
+						return found;
+					}
+				}
+			}
+
+			if (node.Span.ContainsOuter (span)) {
 				return node;
 			}
 
