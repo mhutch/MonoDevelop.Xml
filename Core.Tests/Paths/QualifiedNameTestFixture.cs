@@ -51,7 +51,7 @@ namespace MonoDevelop.Xml.Tests.Paths
 		public void NotEqualsTest2()
 		{
 			QualifiedName name1 = new QualifiedName("foo", "http://foo.com", "f");
-			QualifiedName name2 = null; 
+			QualifiedName? name2 = null;
 			
 			Assert.IsFalse(name1 == name2, "Should not be the same.");
 		}

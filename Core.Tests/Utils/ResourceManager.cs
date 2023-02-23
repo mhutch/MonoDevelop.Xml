@@ -1,4 +1,5 @@
 using System.IO;
+using System.Resources;
 
 namespace MonoDevelop.Xml.Tests.Utils
 {
@@ -17,6 +18,6 @@ namespace MonoDevelop.Xml.Tests.Utils
 		/// </summary>
 		public static Stream GetXsdSchema () => GetResource("XMLSchema.xsd");
 
-		static Stream GetResource (string name) => typeof (ResourceManager).Assembly.GetManifestResourceStream (name);
+		static Stream GetResource (string name) => typeof (ResourceManager).Assembly.GetManifestResourceStream (name) ?? throw new MissingManifestResourceException($"Missing assembly resource {name}");
 	}
 }

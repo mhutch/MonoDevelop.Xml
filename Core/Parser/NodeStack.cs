@@ -26,7 +26,10 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+
 using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
@@ -38,7 +41,7 @@ namespace MonoDevelop.Xml.Parser
 
 		public NodeStack (int capacity) : base (capacity) { }
 
-		public XObject? Peek (int down)
+		public XObject Peek (int down)
 		{
 			int i = 0;
 			foreach (XObject o in this) {
@@ -46,8 +49,48 @@ namespace MonoDevelop.Xml.Parser
 					return o;
 				i++;
 			}
-			return null;
+			throw new InvalidOperationException ($"Cannot peek {down} deep in stack with depth {Count}");
 		}
+
+		public bool TryPeek (int down, [NotNullWhen (true)] out XObject? value)
+		{
+			int i = 0;
+			foreach (XObject o in this) {
+				if (i == down) {
+					value = o;
+					return true;
+				}
+				i++;
+			}
+			value = null;
+			return false;
+		}
+
+		public XObject? TryPeek (int down) => TryPeek (down, out XObject? val) ? val : null;
+
+		public bool TryPeek<T> ([NotNullWhen (true)] out T? value) where T : class
+		{
+			if (Count > 0 && Peek () is T instance) {
+				value = instance;
+				return true;
+			}
+			value = null;
+			return false;
+		}
+
+		public T? TryPeek<T> () where T : class => TryPeek (out T? val) ? val : null;
+
+		public bool TryPeek<T> (int down, [NotNullWhen (true)] out T? value) where T : class
+		{
+			if (TryPeek (down, out XObject? actual) && actual is T instance) {
+				value = instance;
+				return true;
+			}
+			value = null;
+			return false;
+		}
+
+		public T? TryPeek<T> (int down) where T : class => TryPeek (down, out T? val) ? val : null;
 
 		public XDocument? GetRoot ()
 		{

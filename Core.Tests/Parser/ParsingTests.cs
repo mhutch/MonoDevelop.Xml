@@ -68,7 +68,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 				}
 			);
 			parser.AssertEmpty ();
-			parser.AssertErrorCount (0);
+			parser.AssertNoDiagnostics ();
 		}
 
 		[Test]
@@ -86,7 +86,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 				}
 			);
 			parser.AssertEmpty ();
-			parser.AssertErrorCount (0);
+			parser.AssertNoDiagnostics ();
 		}
 
 		[Test]
@@ -104,11 +104,11 @@ namespace MonoDevelop.Xml.Tests.Parser
 				delegate {
 					parser.AssertStateIs<XmlTagState> ();
 					parser.AssertAttributes ("arg", "fff", "sdd", "sdsds", "ff", "5");
-					parser.AssertErrorCount (3);
+					parser.AssertDiagnosticCount (3);
 				}
 			);
 			parser.AssertEmpty ();
-			parser.AssertErrorCount (4);
+			parser.AssertDiagnosticCount (4);
 		}
 
 		[Test]
@@ -132,22 +132,22 @@ namespace MonoDevelop.Xml.Tests.Parser
 ",
 				delegate {
 					parser.AssertStateIs<XmlTagState> ();
-					Assert.IsFalse (parser.PeekSpine (1).IsComplete);
+					parser.AssertNodeIs<XObject> (1).AssertIncomplete ();
 					parser.AssertNodeDepth (6);
 					parser.AssertPath ("//doc/tag.a/tag.b/tag.c/tag.d");
 				},
 				delegate {
 					parser.AssertStateIs<XmlAttributeValueState> ();
 					parser.AssertNodeDepth (9);
-					Assert.IsTrue (parser.PeekSpine (3) is XElement eld && eld.Name.Name == "tag.d" && eld.IsComplete);
-					Assert.IsTrue (parser.PeekSpine (2) is XElement ele && ele.Name.Name == "tag.e" && !ele.IsComplete);
-					Assert.IsTrue (parser.PeekSpine (1) is XElement elf && elf.Name.Name == "tag.f" && !elf.IsComplete);
-					Assert.IsTrue (parser.PeekSpine () is XAttribute att && !att.IsComplete);
+					parser.AssertNodeIs<XElement> (3).AssertName ("tag.d").AssertComplete ();
+					parser.AssertNodeIs<XElement> (2).AssertName ("tag.e").AssertIncomplete ();
+					parser.AssertNodeIs<XElement> (1).AssertName ("tag.f").AssertIncomplete ();
+					parser.AssertNodeIs<XAttribute> ().AssertIncomplete ();
 					parser.AssertPath ("//doc/tag.a/tag.b/tag.c/tag.d/tag.e/tag.f/@id");
 				}
 			);
 			parser.AssertEmpty ();
-			parser.AssertErrorCount (5, x => x.Severity == DiagnosticSeverity.Error);
+			parser.AssertDiagnosticCount (5, x => x.Severity == DiagnosticSeverity.Error);
 		}
 
 		[Test]
@@ -173,7 +173,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 				}
 			);
 			parser.AssertEmpty ();
-			parser.AssertErrorCount (2);
+			parser.AssertDiagnosticCount (2);
 		}
 
 
@@ -184,7 +184,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (@"<doc><a></ a></doc >");
 			parser.AssertEmpty ();
-			parser.AssertErrorCount (0);
+			parser.AssertNoDiagnostics ();
 		}
 
 
@@ -194,7 +194,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (@"<doc><x><abc></ab c><cd></cd></x></doc>");
 			parser.AssertEmpty ();
-			parser.AssertErrorCount (2);
+			parser.AssertDiagnosticCount (2);
 		}
 
 		[Test]
@@ -204,7 +204,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (docTxt);
 			parser.AssertEmpty ();
-			parser.AssertErrorCount (5);
+			parser.AssertDiagnosticCount (5);
 		}
 
 		[Test]
@@ -214,7 +214,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (docTxt);
 			parser.AssertEmpty ();
-			parser.AssertErrorCount (6);
+			parser.AssertDiagnosticCount (6);
 		}
 
 		[Test]
@@ -245,7 +245,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 				}
 			);
 			parser.AssertEmpty ();
-			parser.AssertErrorCount (0);
+			parser.AssertNoDiagnostics ();
 		}
 
 		[Test]
@@ -262,9 +262,9 @@ namespace MonoDevelop.Xml.Tests.Parser
 			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (docText);
 			parser.AssertEmpty ();
-			XDocument doc = (XDocument)parser.PeekSpine ();
-			Assert.IsTrue (doc.FirstChild is XDocType);
-			XDocType dt = (XDocType)doc.FirstChild;
+			var doc = parser.AssertNodeIs<XDocument> ();
+			Assert.IsInstanceOf<XDocType> (doc.FirstChild);
+			XDocType dt = doc.FirstChild.AssertCast<XDocType> ();
 			Assert.AreEqual ("html", dt.RootElement.FullName);
 			Assert.AreEqual ("-//W3C//DTD XHTML 1.0 Strict//EN", dt.PublicFpi);
 			Assert.AreEqual ("DTD/xhtml1-strict.dtd", dt.Uri);
@@ -274,7 +274,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 ".Replace ("\r\n", "\n");
 			var actualInternalDecl = docText.Substring (dt.InternalDeclarationRegion.Start, dt.InternalDeclarationRegion.Length);
 			Assert.AreEqual (expectedInternalDecl, actualInternalDecl);
-			parser.AssertNoErrors ();
+			parser.AssertNoDiagnostics ();
 		}
 
 		[Test]
@@ -283,18 +283,14 @@ namespace MonoDevelop.Xml.Tests.Parser
 			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (@"<tag foo:bar='1' foo:bar:baz='2' foo='3' />");
 			parser.AssertEmpty ();
-			var doc = (XDocument)parser.PeekSpine ();
-			var el = (XElement)doc.FirstChild;
-			Assert.AreEqual (3, el.Attributes.Count ());
-			Assert.AreEqual ("foo", el.Attributes.ElementAt (0).Name.Prefix);
-			Assert.AreEqual ("bar", el.Attributes.ElementAt (0).Name.Name);
-			Assert.AreEqual ("foo", el.Attributes.ElementAt (1).Name.Prefix);
-			Assert.AreEqual ("bar:baz", el.Attributes.ElementAt (1).Name.Name);
-			Assert.IsNull (el.Attributes.ElementAt (2).Name.Prefix);
-			Assert.AreEqual ("foo", el.Attributes.ElementAt (2).Name.Name);
-			Assert.AreEqual (3, el.Attributes.Count ());
-			parser.AssertErrorCount (1);
-			Assert.AreEqual (26, parser.GetContext().Diagnostics[0].Span.Start, 26);
+			var doc = parser.AssertNodeIs<XDocument> ();
+			var el = doc.FirstChild.AssertCast<XElement> ();
+			Assert.AreEqual (3, el.Attributes.Count);
+			el.Attributes.ElementAt (0).AssertName ("foo", "bar");
+			el.Attributes.ElementAt (1).AssertName ("foo", "bar:baz");
+			el.Attributes.ElementAt (2).AssertName ("foo");
+			var diags = parser.AssertDiagnostics (1);
+			Assert.AreEqual (26, diags[0].Span.Start, 26);
 		}
 
 		[Test]
@@ -315,56 +311,44 @@ namespace MonoDevelop.Xml.Tests.Parser
 		</b>
 	</a>
 </doc>");
-			parser.AssertErrorCount (0);
+			parser.AssertNoDiagnostics ();
 
-			var doc = ((XDocument)parser.PeekSpine ()).RootElement;
-			Assert.NotNull (doc);
-			Assert.AreEqual ("doc", doc.Name.Name);
+			var doc = parser.AssertNodeIs<XDocument> ().RootElement
+				.AssertNotNull ()
+				.AssertName ("doc");
 			Assert.True (doc.IsEnded);
 
-			var a = (XElement)doc.FirstChild;
-			Assert.NotNull (a);
-			Assert.AreEqual ("a", a.Name.Name);
+			var a = doc.FirstChild.AssertCast<XElement> ().AssertName ("a");
 			Assert.True (a.IsEnded);
 			Assert.False (a.IsSelfClosing);
 			Assert.IsNull (a.NextSibling);
 
-			var b = (XElement)a.FirstChild;
-			Assert.NotNull (b);
-			Assert.AreEqual ("b", b.Name.Name);
+			var b = a.FirstChild.AssertCast<XElement> ().AssertName ("b");
 			Assert.True (b.IsEnded);
 			Assert.False (b.IsSelfClosing);
 			Assert.IsNull (b.NextSibling);
 
-			var c = (XElement)b.FirstChild;
-			Assert.NotNull (c);
+			var c = b.FirstChild.AssertCast<XElement> ().AssertName ("c");
 			Assert.AreEqual ("c", c.Name.Name);
 			Assert.True (c.IsEnded);
 			Assert.True (c.IsSelfClosing);
-			Assert.IsNull (c.FirstChild);
 
-			var d = (XElement)c.NextSibling;
+			var d = c.NextSibling.AssertCast<XElement> ().AssertName ("d");
 			Assert.True (d.IsEnded);
 			Assert.False (d.IsSelfClosing);
-			Assert.AreEqual ("d", d.Name.Name);
 
-			var e = (XElement)d.FirstChild;
-			Assert.NotNull (e);
+			var e = d.FirstChild.AssertCast<XElement> ().AssertName ("e");
 			Assert.True (e.IsEnded);
 			Assert.True (e.IsSelfClosing);
-			Assert.AreEqual ("e", e.Name.Name);
 
-			var f = (XElement)d.NextSibling;
+			var f = d.NextSibling.AssertCast<XElement> ().AssertName ("f");
 			Assert.AreEqual (f, b.LastChild);
 			Assert.True (f.IsEnded);
 			Assert.False (f.IsSelfClosing);
-			Assert.AreEqual ("f", f.Name.Name);
 
-			var g = (XElement)f.FirstChild;
-			Assert.NotNull (g);
+			var g = f.FirstChild.AssertCast<XElement> ().AssertName ("g");
 			Assert.True (g.IsEnded);
 			Assert.True (g.IsSelfClosing);
-			Assert.AreEqual ("g", g.Name.Name);
 		}
 
 		[Test]
@@ -392,10 +376,11 @@ namespace MonoDevelop.Xml.Tests.Parser
 
 			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (docTxt, preserveWindowsNewlines: true);
-			parser.AssertErrorCount (0);
+			parser.AssertNoDiagnostics ();
 
-			var el = (((XDocument)parser.PeekSpine ()).RootElement)?.FirstChild as XElement;
-			Assert.NotNull (el);
+			var el = parser.AssertNodeIs<XDocument> ()
+				.RootElement.AssertNotNull()
+				.FirstChild.AssertCast<XElement>();
 			Assert.AreEqual (2, el.Nodes.Count ());
 			var b = el.FirstChild as XElement;
 			Assert.NotNull (b);
@@ -408,7 +393,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		[Test]
 		public void Positions ()
 		{
-			var docTxt = @"<foo someAtt=""SomeVal"">
+			const string docTxt = @"<foo someAtt=""SomeVal"">
 <!-- blah -->
   some text
 <![CDATA[ dfdfdf ]]>
@@ -417,15 +402,16 @@ namespace MonoDevelop.Xml.Tests.Parser
 			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (docTxt, preserveWindowsNewlines: true);
 			parser.AssertEmpty ();
-			var doc = (XDocument)parser.PeekSpine ();
+			var doc = parser.AssertNodeIs<XDocument> ()
+				.RootElement.AssertNotNull ();
 
-			string Substring (XObject obj) => docTxt.Substring (obj.Span.Start, obj.Span.Length);
+			static void AssertSubstring (string expected, XObject obj) => Assert.AreEqual (expected, docTxt.Substring (obj.Span.Start, obj.Span.Length));
 
-			Assert.AreEqual (@"<foo someAtt=""SomeVal"">", Substring (doc.RootElement));
-			Assert.AreEqual (@"someAtt=""SomeVal""", Substring (doc.RootElement.Attributes.First));
-			Assert.AreEqual (@"<!-- blah -->", Substring (doc.RootElement.Nodes.OfType<XComment> ().First ()));
-			Assert.AreEqual (@"<![CDATA[ dfdfdf ]]>", Substring (doc.RootElement.Nodes.OfType<XCData> ().First ()));
-			Assert.AreEqual (@"</foo>", Substring (doc.RootElement.ClosingTag));
+			AssertSubstring (@"<foo someAtt=""SomeVal"">", doc);
+			AssertSubstring (@"someAtt=""SomeVal""", doc.Attributes.First.AssertNotNull ());
+			AssertSubstring (@"<!-- blah -->", doc.Nodes.OfType<XComment>().First ());
+			AssertSubstring (@"<![CDATA[ dfdfdf ]]>", doc.Nodes.OfType<XCData>().First ());
+			AssertSubstring (@"</foo>", doc.ClosingTag.AssertNotNull ());
 		}
 
 		[Test]
@@ -436,8 +422,8 @@ namespace MonoDevelop.Xml.Tests.Parser
 			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (docTxt, preserveWindowsNewlines: true);
 			parser.AssertEmpty ();
-			var doc = (XDocument)parser.PeekSpine ();
-			var processingInstruction = doc.FirstChild;
+			var doc = parser.AssertNodeIs<XDocument>();
+			var processingInstruction = doc.FirstChild.AssertNotNull ();
 
 			Assert.AreEqual (0, processingInstruction.Span.Start);
 			Assert.AreEqual (5, processingInstruction.Span.Length);
@@ -458,7 +444,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (docTxt);
 			parser.AssertEmpty ();
-			parser.AssertErrorCount (4);
+			parser.AssertDiagnosticCount (4);
 		}
 
 		[Test]
@@ -467,7 +453,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 			var docTxt = "<a:<x";
 			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (docTxt);
-			parser.AssertErrorCount (2);
+			parser.AssertDiagnosticCount (2);
 		}
 
 		[Test]
@@ -476,7 +462,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 			var docTxt = "<<";
 			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (docTxt);
-			var diagnostic = parser.GetContext ().Diagnostics.Single ();
+			var diagnostic = parser.AssertDiagnostics (1)[0];
 			Assert.AreEqual (1, diagnostic.Span.Start);
 			Assert.AreEqual (1, diagnostic.Span.Length);
 		}
@@ -509,7 +495,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 				char c = docTxt[i];
 				spineParser.Push (c);
 
-				var recoveredParser = XmlSpineParser.FromDocumentPosition (rootState, doc, i);
+				var recoveredParser = XmlSpineParser.FromDocumentPosition (rootState, doc, i).AssertNotNull ();
 				var delta = i - recoveredParser.Position;
 				totalNotRecovered += delta;
 

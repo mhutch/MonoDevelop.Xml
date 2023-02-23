@@ -56,7 +56,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			Prefix = prefix;
 		}
 		
-		public static bool operator ==(QualifiedName lhs, QualifiedName rhs)
+		public static bool operator ==(QualifiedName? lhs, QualifiedName? rhs)
 		{
 			if (lhs is not null && rhs is not null) {
 				return lhs.Equals(rhs);
@@ -67,7 +67,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			return false;
 		}
 		
-		public static bool operator !=(QualifiedName lhs, QualifiedName rhs) => !(lhs == rhs);
+		public static bool operator !=(QualifiedName? lhs, QualifiedName? rhs) => !(lhs == rhs);
 
 		/// <summary>
 		/// A qualified name is considered equal if the namespace and 

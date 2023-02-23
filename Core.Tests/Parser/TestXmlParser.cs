@@ -46,7 +46,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 			p.Parse (doc, Array.ConvertAll (asserts, a => (Action)(() => a (p))));
 		}
 
-		public static void Parse (string txt, params Action<XNode>[] asserts)
+		public static void Parse (string txt, params Action<XNode?>[] asserts)
 		{
 			var p = new XmlTreeParser (new XmlRootState ());
 			var context = p.GetContext ();
@@ -99,9 +99,37 @@ namespace MonoDevelop.Xml.Tests.Parser
 			}
 		}
 
-		public static XObject PeekSpine (this XmlParser parser) => parser.GetContext ().Nodes.Peek ();
+		public static T AssertCast<T> (this object? o) where T : class
+		{
+			Assert.IsInstanceOf<T> (o);
+			return (T)o!;
+		}
 
-		public static XObject PeekSpine (this XmlParser parser, int down) => parser.GetContext ().Nodes.Peek (down);
+		public static T AssertNotNull<T> (this T? o) where T : notnull
+		{
+			Assert.NotNull (o);
+			return (T)o;
+		}
+
+		public static T AssertName<T> (this T o, string? expectedName) where T : XObject, INamedXObject => AssertName (o, null, expectedName);
+
+		public static T AssertName<T> (this T o, string? expectedPrefix, string? expectedName) where T : XObject, INamedXObject
+		{
+			Assert.AreEqual (expectedPrefix, o.Name.Prefix);
+			Assert.AreEqual (expectedName, o.Name.Name);
+			return o;
+		}
+		public static T AssertComplete<T> (this T o) where T : XObject
+		{
+			Assert.IsTrue (o.IsComplete);
+			return o;
+		}
+
+		public static T AssertIncomplete<T> (this T o) where T : XObject
+		{
+			Assert.IsFalse (o.IsComplete);
+			return o;
+		}
 
 		public static string GetPath (this XmlParser parser)
 		{
@@ -146,39 +174,59 @@ namespace MonoDevelop.Xml.Tests.Parser
 			var nodes = parser.GetContext ().Nodes;
 			Assert.AreEqual (depth, nodes.Count, "Node depth is {0} not {1}", nodes.Count, depth);
 		}
-		
-		public static void AssertNodeIs<T> (this XmlParser parser, int down)
+
+		static void AssertDepthAtLeast (this NodeStack nodes, int depth)
 		{
-			XObject n = parser.GetContext ().Nodes.Peek (down);
-			AssertNodeDepth (parser, down);
-			Assert.IsTrue (n is T, "Node down {0} is {1}, not {2}", down, n.GetType ().Name, typeof (T).Name);
+			Assert.GreaterOrEqual (nodes.Count, depth, "Node depth was {0}, expected at least {1}", nodes.Count, depth);
 		}
-		
-		public static void AssertNodeIs<T> (this XmlParser parser)
+
+		public static XObject AssertPeek (this XmlParser parser, int down = 0)
 		{
-			var context = parser.GetContext ();
-			XObject n = context.Nodes.Peek ();
-			Assert.IsTrue (n is T, "Node is {0}, not {1}", n.GetType ().Name, typeof (T).Name);
+			var nodes = parser.GetContext ().Nodes;
+			nodes.AssertDepthAtLeast (down);
+			return nodes.Peek (down);
 		}
-		
-		public static void AssertErrorCount (this XmlParser parser, int count)
+
+		public static T AssertNodeIs<T> (this XmlParser parser, int down = 0) where T : class
+			=> parser.AssertPeek(down).AssertCast<T> ();
+
+		public static void AssertNoDiagnostics (this XmlParser parser, Func<XmlDiagnosticInfo, bool>? filter = null) => AssertDiagnosticCount (parser, 0, filter);
+
+		public static void AssertDiagnosticCount (this XmlParser parser, int count, Func<XmlDiagnosticInfo, bool>? filter = null)
+			=> AssertDiagnosticCount (parser.GetContext ().Diagnostics, count, filter);
+
+		static void AssertDiagnosticCount (List<XmlDiagnosticInfo>? diagnostics, int count, Func<XmlDiagnosticInfo, bool>? filter = null)
 		{
-			AssertErrorCount (parser, count, x => true);
-		}
-		
-		public static void AssertErrorCount (this XmlParser parser, int count, Func<XmlDiagnosticInfo,bool> filter)
-		{
-			string msg = null;
-			var diagnostics = parser.GetContext ().Diagnostics;
-			var actualCount = diagnostics.Count (filter);
+			if (diagnostics is null) {
+				#pragma warning disable NUnit2007 // The actual value should not be a constant
+				Assert.AreEqual (count, 0);
+				#pragma warning restore NUnit2007
+				return;
+			}
+
+			int actualCount = filter is not null? diagnostics.Count(filter) : diagnostics.Count;
+
 			if (actualCount != count) {
 				var sb = new System.Text.StringBuilder ();
-				foreach (var err in diagnostics)
-					if (filter (err))
-						sb.AppendFormat ("{0}@{1}: {2}\n", err.Severity, err.Span, err.Message);
-				msg = sb.ToString ();
+				sb.AppendLine ($"Expected {count} diagnostics, got {actualCount}:");
+				foreach (var err in filter is null? diagnostics : diagnostics.Where (filter)) {
+					sb.AppendLine ($"{err.Severity}@{err.Span}: {err.Message}");
+				}
+				Assert.AreEqual (count, actualCount, sb.ToString ());
 			}
-			Assert.AreEqual (count, actualCount, msg);
+		}
+
+		public static List<XmlDiagnosticInfo> AssertDiagnostics (this XmlParser parser, int count, Func<XmlDiagnosticInfo, bool>? filter = null)
+		{
+			var diagnostics = parser.GetContext ().Diagnostics ?? new List<XmlDiagnosticInfo> ();
+
+			if (filter is not null) {
+				diagnostics = diagnostics.Where (filter).ToList ();
+			}
+
+			AssertDiagnosticCount (diagnostics, count);
+
+			return diagnostics;
 		}
 
 		public static void AssertAttributes (this XmlParser parser, params string[] nameValuePairs)
@@ -203,30 +251,33 @@ namespace MonoDevelop.Xml.Tests.Parser
 			Assert.AreEqual (nameValuePairs.Length, i);
 		}
 		
-		public static void AssertNoErrors (this XmlParser parser)
-		{
-			parser.AssertErrorCount (0);
-		}
-		
 		public static void AssertEmpty (this XmlParser parser)
 		{
 			parser.AssertNodeDepth (1);
 			parser.AssertNodeIs<XDocument> (); 
 		}
-		
-		public static void AssertName (this XmlParser parser, string name)
+
+		public static void AssertNodeName (this XmlParser parser, string name) => parser.AssertNodeName (null, name);
+
+		public static void AssertNodeName (this XmlParser parser, string? prefix, string name)
 		{
-			parser.AssertName (0, name);
-		}
-		
-		public static void AssertName (this XmlParser parser, int down, string name)
-		{
-			XObject node = parser.GetContext ().Nodes.Peek (down);
-			Assert.IsTrue (node is INamedXObject);
-			Assert.AreEqual (name, ((INamedXObject)node).Name.FullName);
+			var actual = parser.GetNodeName ();
+			Assert.AreEqual (actual.Prefix, prefix);
+			Assert.AreEqual (actual.Name, name);
 		}
 
-		public static void AssertPath (this XNode node, params QualifiedName[] qualifiedNames)
+		static XName GetNodeName (this XmlParser parser)
+		{
+			var namedObject = parser.AssertNodeIs<INamedXObject> ();
+			if (namedObject.IsNamed)
+				return namedObject.Name;
+
+			var context = parser.GetContext ();
+			parser.AssertStateIs<XmlNameState> ();
+			return context.KeywordBuilder.ToString ();
+		}
+
+		public static void AssertPath (this XNode? node, params QualifiedName[] qualifiedNames)
 		{
 			var path = new List<XNode> ();
 			while (node != null) {

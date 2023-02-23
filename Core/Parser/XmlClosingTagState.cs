@@ -96,14 +96,11 @@ namespace MonoDevelop.Xml.Parser
 								ct.Span
 							);
 							// add it into the tree anyway so it's accessible
-							var parent = context.Nodes.Peek () as XContainer;
-							if (parent != null) {
+							if (context.Nodes.TryPeek (out XContainer? parent)) {
 								if (!parent.IsEnded) {
-									parent = context.Nodes.Count > 1? context.Nodes.Peek (1) as XContainer : null;
+									parent = context.Nodes.TryPeek<XContainer> (1);
 								}
-								if (parent != null) {
-									parent.AddChildNode (ct);
-								}
+								parent?.AddChildNode (ct);
 							}
 						}
 					}

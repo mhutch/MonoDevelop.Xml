@@ -89,7 +89,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 					return await GetAttributeCompletionsAsync (session, triggerLocation, nodePath, attributedOb, attributes, token);
 
 				case XmlCompletionTrigger.AttributeValue:
-					if (parser.Spine.Peek () is XAttribute att && parser.Spine.Peek (1) is IAttributedXObject attributedObject) {
+					if (parser.Spine.TryPeek (out XAttribute? att) && parser.Spine.TryPeek (1, out IAttributedXObject? attributedObject)) {
 						return await GetAttributeValueCompletionsAsync (session, triggerLocation, nodePath, attributedObject, att, token);
 					}
 					break;

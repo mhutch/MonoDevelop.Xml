@@ -7,7 +7,9 @@
     but the root namespace is still MonoDevelop.Xml
     -->
     <RootNamespace>MonoDevelop.Xml</RootNamespace>
-    
+  </PropertyGroup>
+
+  <PropertyGroup>
     <Nullable>enable</Nullable>
     <Nullable Condition="$(TargetFramework)=='net48'">annotations</Nullable>
   </PropertyGroup>

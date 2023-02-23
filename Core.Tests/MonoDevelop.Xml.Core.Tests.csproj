@@ -6,6 +6,11 @@
     <RootNamespace>MonoDevelop.Xml.Tests</RootNamespace>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <Nullable Condition="$(TargetFramework)=='net48'">annotations</Nullable>
+  </PropertyGroup>
+
   <ItemGroup>
     <None Remove="Resources\xhtml1-strict.xsd" />
     <None Remove="Resources\XMLSchema.xsd" />
