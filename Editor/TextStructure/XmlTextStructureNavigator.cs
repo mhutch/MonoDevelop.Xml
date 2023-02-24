@@ -1,11 +1,19 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+#nullable enable
+
+#if NETFRAMEWORK
+#nullable disable warnings
+#endif
+
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Utilities;
+
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Editor.Completion;
 using MonoDevelop.Xml.Parser;
@@ -16,11 +24,17 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 	{
 		readonly ITextBuffer textBuffer;
 		readonly ITextStructureNavigator codeNavigator;
+		readonly XmlParserProvider parserProvider;
 
-		public XmlTextStructureNavigator (ITextBuffer textBuffer, ITextStructureNavigator codeNavigator)
+		public XmlTextStructureNavigator (ITextBuffer textBuffer, XmlTextStructureNavigatorProvider provider)
 		{
 			this.textBuffer = textBuffer;
-			this.codeNavigator = codeNavigator;
+			parserProvider = provider.ParserProvider;
+
+			codeNavigator = provider.NavigatorService.CreateTextStructureNavigator (
+				textBuffer,
+				provider.ContentTypeRegistry.GetContentType (StandardContentTypeNames.Code)
+			);
 		}
 
 		public IContentType ContentType => textBuffer.ContentType;
@@ -45,7 +59,7 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 
 		public SnapshotSpan GetSpanOfEnclosing (SnapshotSpan activeSpan)
 		{
-			if (!XmlBackgroundParser.TryGetParser (activeSpan.Snapshot.TextBuffer, out var parser)) {
+			if (!parserProvider.TryGetParser (activeSpan.Snapshot.TextBuffer, out var parser)) {
 				return codeNavigator.GetSpanOfEnclosing (activeSpan);
 			}
 
@@ -53,7 +67,7 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 			// else use a spine from the end of the selection and update as needed
 			var lastParse = parser.LastOutput;
 			List<XObject> nodePath;
-			XmlSpineParser spine = null;
+			XmlSpineParser? spine = null;
 			if (lastParse != null && lastParse.TextSnapshot.Version.VersionNumber == activeSpan.Snapshot.Version.VersionNumber) {
 				var n = lastParse.XDocument.FindAtOrBeforeOffset (activeSpan.Start.Position);
 				nodePath = n.GetPath ();
@@ -122,7 +136,7 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 			throw new InvalidOperationException ();
 		}
 
-		bool ExpandSelection (List<XObject> nodePath, XmlSpineParser spine, SnapshotSpan activeSpan, ref int index, ref SelectionLevel level)
+		static bool ExpandSelection (List<XObject> nodePath, XmlSpineParser? spine, SnapshotSpan activeSpan, ref int index, ref SelectionLevel level)
 		{
 			if (index - 1 < 0) {
 				return false;
@@ -134,7 +148,7 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 				if (current is XElement element) {
 					switch (level) {
 					case SelectionLevel.Self:
-						if (spine != null && !spine.AdvanceUntilClosed (element, activeSpan.Snapshot, 5000)) {
+						if (spine is not null && !spine.AdvanceUntilClosed (element, activeSpan.Snapshot, 5000)) {
 							return false;
 						}
 						if (!element.IsSelfClosing) {
@@ -218,7 +232,7 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 					level = SelectionLevel.Self;
 					return true;
 				}
-				if (ContainsSelection ((TextSpan)el.InnerSpan)) {
+				if (el.InnerSpan is TextSpan innerSpan && ContainsSelection (innerSpan)) {
 					level = SelectionLevel.Content;
 					return true;
 				}

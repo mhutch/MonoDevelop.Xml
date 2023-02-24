@@ -14,7 +14,7 @@ namespace MonoDevelop.Xml.Parser
 			this.content = content;
 		}
 
-		public string FileName { get; set; }
+		public string? FileName { get; set; }
 		public int Length => content.Length;
 		public TextReader CreateReader () => new StringReader (content);
 		public char this[int offset] => content[offset];

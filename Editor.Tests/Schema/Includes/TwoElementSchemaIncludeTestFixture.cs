@@ -17,10 +17,8 @@ namespace MonoDevelop.Xml.Tests.Schema.Includes
 			SchemaIncludeTestFixtureHelper.FixtureTearDown();
 		}
 		
-		internal override XmlSchemaCompletionProvider CreateSchemaCompletionDataObject()
-		{	
-			return SchemaIncludeTestFixtureHelper.CreateSchemaCompletionDataObject(GetMainSchema(), GetSchema());
-		}
+		internal override IXmlSchemaCompletionProvider CreateSchemaCompletionDataObject ()
+			=> SchemaIncludeTestFixtureHelper.CreateSchemaCompletionDataObject(GetMainSchema(), GetSchema());
 		
 		string GetMainSchema()
 		{

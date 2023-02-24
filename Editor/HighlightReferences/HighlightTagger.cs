@@ -7,12 +7,13 @@ using System.Collections.Immutable;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.Logging;
+
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Threading;
 
-using MonoDevelop.Xml.Editor.Completion;
 
 namespace MonoDevelop.Xml.Editor.HighlightReferences
 {
@@ -29,11 +30,13 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 		protected ITextView TextView { get;  }
 		protected JoinableTaskContext JoinableTaskContext { get; }
 		readonly Timer timer;
+		protected ILogger Logger { get; }
 
-		protected HighlightTagger (ITextView textView, JoinableTaskContext joinableTaskContext)
+		protected HighlightTagger (ITextView textView, JoinableTaskContext joinableTaskContext, ILogger logger)
 		{
 			TextView = textView;
-			this.JoinableTaskContext = joinableTaskContext;
+			JoinableTaskContext = joinableTaskContext;
+			Logger = logger;
 			textView.Caret.PositionChanged += CaretPositionChanged;
 			textView.TextBuffer.ChangedLowPriority += BufferChanged;
 			timer = new Timer (TimerFired);
@@ -63,39 +66,31 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 			var token = cancelSource.Token;
 
 			Task.Run (async () => {
-				try {
-					var position = TextView.Caret.Position.BufferPosition;
-					var newHighlights = await GetHighlightsAsync (position, token);
-					sourceSpan = newHighlights.highlights.Length == 0? (SnapshotSpan?)null : newHighlights.sourceSpan;
+				var position = TextView.Caret.Position.BufferPosition;
+				var newHighlights = await GetHighlightsAsync (position, token);
+				sourceSpan = newHighlights.highlights.Length == 0 ? (SnapshotSpan?)null : newHighlights.sourceSpan;
 
-					ImmutableArray<(TKind kind, SnapshotSpan location)> oldHighlights;
-					lock (highlightsLocker) {
-						if (token.IsCancellationRequested) {
-							return;
-						}
-						oldHighlights = highlights;
-						highlights = newHighlights.highlights;
-						highlightedSnapshot = position.Snapshot;
-					}
-
-					var oldSpan = GetHighlightedRange (highlights);
-					var newSpan = GetHighlightedRange (newHighlights.highlights);
-					var updateSpan = UnionNonEmpty (MapToCurrentIfNonEmpty (position.Snapshot, oldSpan), newSpan);
-					if (updateSpan.IsEmpty) {
+				ImmutableArray<(TKind kind, SnapshotSpan location)> oldHighlights;
+				lock (highlightsLocker) {
+					if (token.IsCancellationRequested) {
 						return;
 					}
-
-					await JoinableTaskContext.Factory.SwitchToMainThreadAsync (token);
-					TagsChanged?.Invoke (this, new SnapshotSpanEventArgs (updateSpan));
-				} catch (Exception ex) when (!(ex is OperationCanceledException && token.IsCancellationRequested)) {
-					LogInternalError (ex);
+					oldHighlights = highlights;
+					highlights = newHighlights.highlights;
+					highlightedSnapshot = position.Snapshot;
 				}
-			}, token);
-		}
 
-		void LogInternalError (Exception ex)
-		{
-			LoggingService.LogWarning ($"Internal error in highlight tagger: {ex}", ex);
+				var oldSpan = GetHighlightedRange (highlights);
+				var newSpan = GetHighlightedRange (newHighlights.highlights);
+				var updateSpan = UnionNonEmpty (MapToCurrentIfNonEmpty (position.Snapshot, oldSpan), newSpan);
+				if (updateSpan.IsEmpty) {
+					return;
+				}
+
+				await JoinableTaskContext.Factory.SwitchToMainThreadAsync (token);
+				TagsChanged?.Invoke (this, new SnapshotSpanEventArgs (updateSpan));
+			}, token)
+				.CatchAndLogWarning (Logger, "XML HighlightTagger");
 		}
 
 		readonly object highlightsLocker = new object ();

@@ -24,13 +24,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#nullable enable
+
 using System;
 
 namespace MonoDevelop.Xml.Dom
 {
 	public class XDocument : XContainer
 	{
-		public XElement RootElement { get; private set; }
+		public XElement? RootElement { get; private set; }
 
 		public XDocument () : base (0) {}
 		protected override XObject NewInstance () { return new XDocument (); }

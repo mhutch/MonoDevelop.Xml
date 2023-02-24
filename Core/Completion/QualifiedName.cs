@@ -21,6 +21,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#nullable enable
+
+#if NETFRAMEWORK
+#nullable disable warnings
+#endif
+
 using System;
 using System.Xml;
 
@@ -38,101 +44,63 @@ namespace MonoDevelop.Xml.Editor.Completion
 	public class QualifiedName
 	{
 		XmlQualifiedName xmlQualifiedName = XmlQualifiedName.Empty;
-		string prefix = String.Empty;
 		
-		public QualifiedName()
+		public QualifiedName(string? name, string? namespaceUri)
+			: this(name, namespaceUri, string.Empty)
 		{
 		}
 		
-		public QualifiedName(string name, string namespaceUri)
-			: this(name, namespaceUri, String.Empty)
-		{
-		}
-		
-		public QualifiedName(string name, string namespaceUri, string prefix)
+		public QualifiedName(string? name, string? namespaceUri, string prefix)
 		{
 			xmlQualifiedName = new XmlQualifiedName(name, namespaceUri);
-			this.prefix = prefix;
+			Prefix = prefix;
 		}
 		
-		public static bool operator ==(QualifiedName lhs, QualifiedName rhs)
+		public static bool operator ==(QualifiedName? lhs, QualifiedName? rhs)
 		{
-			bool equals = false;
-			
-			if (((object)lhs != null) && ((object)rhs != null)) {
-				equals = lhs.Equals(rhs);
-			} else if (((object)lhs == null) && ((object)rhs == null)) {
-				equals = true;
+			if (lhs is not null && rhs is not null) {
+				return lhs.Equals(rhs);
 			}
-			
-			return equals;
+			if (lhs is null && rhs is null) {
+				return true;
+			}
+			return false;
 		}
 		
-		public static bool operator !=(QualifiedName lhs, QualifiedName rhs)
-		{
-			return !(lhs == rhs);
-		}		
-		
+		public static bool operator !=(QualifiedName? lhs, QualifiedName? rhs) => !(lhs == rhs);
+
 		/// <summary>
 		/// A qualified name is considered equal if the namespace and 
 		/// name are the same.  The prefix is ignored.
 		/// </summary>
-		public override bool Equals(object obj) 
-		{
-			bool equals = false;
-			
-			QualifiedName qualifiedName = obj as QualifiedName;
-			if (qualifiedName != null) {
-				equals = xmlQualifiedName.Equals(qualifiedName.xmlQualifiedName);
-			} else {
-				XmlQualifiedName name = obj as XmlQualifiedName;
-				if (name != null) {
-					equals = xmlQualifiedName.Equals(name);
-				}
-			}
-			
-			return equals;
-		}
+		public override bool Equals (object? obj)
+			=> obj switch {
+				QualifiedName qualifiedName => xmlQualifiedName.Equals (qualifiedName.xmlQualifiedName),
+				XmlQualifiedName name => xmlQualifiedName.Equals (name),
+				_ => false
+			};
 		
-		public override int GetHashCode() 
-		{
-			return xmlQualifiedName.GetHashCode();
-		}
+		public override int GetHashCode() => xmlQualifiedName.GetHashCode();
 		
 		/// <summary>
 		/// Gets the namespace of the qualified name.
 		/// </summary>
 		public string Namespace {
-			get {
-				return xmlQualifiedName.Namespace;
-			}
-			set {
-				xmlQualifiedName = new XmlQualifiedName(xmlQualifiedName.Name, value);
-			}
+			get => xmlQualifiedName.Namespace;
+			set => xmlQualifiedName = new XmlQualifiedName(xmlQualifiedName.Name, value);
 		}
 		
 		/// <summary>
 		/// Gets the name of the element.
 		/// </summary>
 		public string Name {
-			get {
-				return xmlQualifiedName.Name;
-			}
-			set {
-				xmlQualifiedName = new XmlQualifiedName(value, xmlQualifiedName.Namespace);
-			}
+			get => xmlQualifiedName.Name;
+			set => xmlQualifiedName = new XmlQualifiedName(value, xmlQualifiedName.Namespace);
 		}
-		
+
 		/// <summary>
 		/// Gets the namespace prefix used.
 		/// </summary>
-		public string Prefix {
-			get {
-				return prefix;
-			}
-			set {
-				prefix = value;
-			}
-		}
+		public string Prefix { get; set; } = string.Empty;
 	}
 }

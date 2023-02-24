@@ -46,6 +46,14 @@ namespace MonoDevelop.Xml.Editor.BraceCompletion
 	{
 		const string Name = nameof (XmlBraceCompletionCommandHandler);
 
+		[ImportingConstructor]
+		public XmlBraceCompletionCommandHandler (XmlParserProvider parserProvider)
+		{
+			this.parserProvider = parserProvider;
+		}
+
+		readonly XmlParserProvider parserProvider;
+
 		public string DisplayName => Name;
 
 		public CommandState GetCommandState (TypeCharCommandArgs args, Func<CommandState> nextCommandHandler) => nextCommandHandler ();
@@ -59,7 +67,7 @@ namespace MonoDevelop.Xml.Editor.BraceCompletion
 			if (!IsQuoteChar (args.TypedChar)
 				|| !IsBraceCompletionEnabled (args.TextView)
 				|| !args.TextView.Selection.IsEmpty
-				|| !XmlBackgroundParser.TryGetParser (snapshot.TextBuffer, out var parser)) {
+				|| !parserProvider.TryGetParser (snapshot.TextBuffer, out var parser)) {
 				nextCommandHandler ();
 				return;
 			}

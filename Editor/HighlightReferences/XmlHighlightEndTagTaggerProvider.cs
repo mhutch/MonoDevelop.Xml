@@ -1,13 +1,19 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#nullable enable
+
 using System.ComponentModel.Composition;
+
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Threading;
 using Microsoft.VisualStudio.Utilities;
+
 using MonoDevelop.Xml.Editor;
+using MonoDevelop.Xml.Editor.Completion;
 using MonoDevelop.Xml.Editor.Tagging;
 
 namespace MonoDevelop.MSBuild.Editor.HighlightReferences
@@ -18,8 +24,17 @@ namespace MonoDevelop.MSBuild.Editor.HighlightReferences
 	[TextViewRole (PredefinedTextViewRoles.Interactive)]
 	class XmlHighlightEndTagTaggerProvider : IViewTaggerProvider
 	{
-		[Import]
-		public JoinableTaskContext JoinableTaskContext { get; set; }
+		public JoinableTaskContext JoinableTaskContext { get; }
+		public ILogger Logger { get; }
+		public XmlParserProvider ParserProvider { get; }
+
+		[ImportingConstructor]
+		public XmlHighlightEndTagTaggerProvider (JoinableTaskContext joinableTaskContext, XmlParserProvider parserProvider, ILogger<XmlHighlightEndTagTagger> logger)
+		{
+			JoinableTaskContext = joinableTaskContext;
+			Logger = logger;
+			ParserProvider = parserProvider;
+		}
 
 		public ITagger<T> CreateTagger<T> (ITextView textView, ITextBuffer buffer) where T : ITag
 			=>  (ITagger<T>) buffer.Properties.GetOrCreateSingletonProperty (

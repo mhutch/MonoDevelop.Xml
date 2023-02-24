@@ -5,8 +5,12 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
+
 using MonoDevelop.Xml.Editor.Completion;
 using MonoDevelop.Xml.Tests.Utils;
+using MonoDevelop.Xml.Editor.Tests;
+
+using Microsoft.Extensions.Logging;
 
 namespace MonoDevelop.Xml.Tests.Schema
 {
@@ -16,10 +20,10 @@ namespace MonoDevelop.Xml.Tests.Schema
 	[TestFixture]
 	public class XhtmlStrictSchemaTestFixture
 	{
-		XmlSchemaCompletionProvider schemaCompletionData;
+		IXmlSchemaCompletionProvider schemaCompletionData;
 		XmlElementPath h1Path;
 		CompletionContext h1Attributes;
-		string namespaceURI = "http://www.w3.org/1999/xhtml";
+		const string namespaceURI = "http://www.w3.org/1999/xhtml";
 		
 		async Task Init ()
 		{
@@ -27,7 +31,8 @@ namespace MonoDevelop.Xml.Tests.Schema
 				return;
 
 			using (var reader = new StreamReader (ResourceManager.GetXhtmlStrictSchema (), true)) {
-				schemaCompletionData = new XmlSchemaCompletionProvider (reader);
+				ILogger logger = TestLoggers.CreateLogger<XhtmlStrictSchemaTestFixture> ();
+				schemaCompletionData = XmlSchemaCompletionProvider.Create (reader, logger);
 			}
 
 			// Set up h1 element's path.

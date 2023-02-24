@@ -6,9 +6,13 @@ using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 
 using MonoDevelop.Xml.Editor.Completion;
+using MonoDevelop.Xml.Editor.Tests;
+
 using MonoDevelop.Xml.Tests.Utils;
 
 using NUnit.Framework;
+
+using Microsoft.Extensions.Logging;
 
 namespace MonoDevelop.Xml.Tests.Schema
 {
@@ -18,7 +22,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 	[TestFixture]
 	public class XsdSchemaTestFixture
 	{
-		XmlSchemaCompletionProvider schemaCompletionData;
+		IXmlSchemaCompletionProvider schemaCompletionData;
 		XmlElementPath choicePath;
 		XmlElementPath elementPath;
 		XmlElementPath simpleEnumPath;
@@ -46,7 +50,8 @@ namespace MonoDevelop.Xml.Tests.Schema
 				return;
 			
 			using (var reader = new StreamReader (ResourceManager.GetXsdSchema(), true)) {
-				schemaCompletionData = new XmlSchemaCompletionProvider(reader);
+				ILogger logger = TestLoggers.CreateLogger<XsdSchemaTestFixture> ();
+				schemaCompletionData = XmlSchemaCompletionProvider.Create(reader, logger);
 			}
 			
 			// Set up choice element's path.

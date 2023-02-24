@@ -50,20 +50,20 @@ namespace MonoDevelop.Xml.Parser
 			XmlNameState nameState,
 			XmlAttributeValueState attributeValueState)
 		{
-			this.XmlNameState = nameState;
-			this.AttributeValueState = attributeValueState;
-			
-			Adopt (this.XmlNameState);
-			Adopt (this.AttributeValueState);
+			XmlNameState = Adopt (nameState);
+			AttributeValueState = Adopt (attributeValueState);
 		}
 
-		public override XmlParserState PushChar (char c, XmlParserContext context, ref string rollback)
+		public override XmlParserState? PushChar (char c, XmlParserContext context, ref string? rollback)
 		{
 			var att = context.Nodes.Peek () as XAttribute;
 
 			//state has just been entered
 			if (context.CurrentStateLength == 0)  {
 				if (context.PreviousState is XmlNameState) {
+					if (att is null) {
+						InvalidParserStateException.ThrowExpected<XAttribute> (context);
+					}
 					//error parsing name
 					if (!att.IsNamed) {
 						context.Nodes.Pop ();
@@ -73,6 +73,9 @@ namespace MonoDevelop.Xml.Parser
 					context.StateTag = GETTINGEQ;
 				}
 				else if (context.PreviousState is XmlAttributeValueState) {
+					if (att is null) {
+						InvalidParserStateException.ThrowExpected<XAttribute> (context);
+					}
 					//Got value, so end attribute
 					context.Nodes.Pop ();
 					att.End (context.Position);
@@ -122,7 +125,7 @@ namespace MonoDevelop.Xml.Parser
 			return Parent;
 		}
 
-		public override XmlParserContext TryRecreateState (XObject xobject, int position)
+		public override XmlParserContext? TryRecreateState (XObject xobject, int position)
 		{
 			// recreating name builder and value builder state is a pain to get right
 			// for now, let parent recreate state at start of attribute

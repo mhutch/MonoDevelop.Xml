@@ -1,11 +1,18 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+
+using Microsoft.Extensions.Logging;
+
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Adornments;
 using Microsoft.VisualStudio.Text.Tagging;
+
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Editor.Completion;
 
@@ -13,19 +20,19 @@ namespace MonoDevelop.Xml.Editor.Tagging
 {
 	class StructureTagger : ITagger<IStructureTag>
 	{
-		private ITextBuffer buffer;
-		private StructureTaggerProvider provider;
-		private readonly XmlBackgroundParser parser;
-		private static readonly IEnumerable<ITagSpan<IStructureTag>> emptyTagList = Array.Empty<ITagSpan<IStructureTag>> ();
+		readonly ITextBuffer buffer;
+		readonly ILogger logger;
+		readonly XmlBackgroundParser parser;
+		static readonly IEnumerable<ITagSpan<IStructureTag>> emptyTagList = Array.Empty<ITagSpan<IStructureTag>> ();
 
 		public StructureTagger (ITextBuffer buffer, StructureTaggerProvider provider)
 		{
 			this.buffer = buffer;
-			this.provider = provider;
-			parser = XmlBackgroundParser.GetParser (buffer);
+			this.logger = provider.Logger;
+			parser = provider.ParserProvider.GetParser (buffer);
 		}
 
-		public event EventHandler<SnapshotSpanEventArgs> TagsChanged;
+		public event EventHandler<SnapshotSpanEventArgs>? TagsChanged;
 
 		public IEnumerable<ITagSpan<IStructureTag>> GetTags (NormalizedSnapshotSpanCollection spans)
 		{
@@ -38,11 +45,13 @@ namespace MonoDevelop.Xml.Editor.Tagging
 			var parseTask = parser.GetOrProcessAsync (snapshot, default);
 
 			if (parseTask.IsCompleted) {
+				#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
 				return GetTags (parseTask.Result, spans, snapshot);
+				#pragma warning restore VSTHRD002
 			} else {
 				parseTask.ContinueWith (t => {
 					RaiseTagsChanged ();
-				});
+				}, TaskScheduler.Default).CatchAndLogWarning (logger, nameof(StructureTagger));
 			}
 
 			return emptyTagList;

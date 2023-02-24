@@ -34,21 +34,20 @@ namespace MonoDevelop.Xml.Editor.Completion
 	class XmlElementPath
 	{
 		readonly List<QualifiedName> elements;
-		XmlNamespacePrefixMap nsMap = new XmlNamespacePrefixMap ();
-		
-		public XmlNamespacePrefixMap Namespaces { get { return nsMap; } }
+
+		public XmlNamespacePrefixMap Namespaces { get; } = new XmlNamespacePrefixMap ();
 
 		public XmlElementPath (params QualifiedName[] elements)
 		{
 			this.elements = new List<QualifiedName> (elements);
 		}
 
-		public static XmlElementPath Resolve (IList<XObject> path, string defaultNamespace = null, string defaultPrefix = null)
+		public static XmlElementPath Resolve (IList<XObject> path, string? defaultNamespace = null, string? defaultPrefix = null)
 		{
 			var elementPath = new XmlElementPath ();
 
 			if (!string.IsNullOrEmpty (defaultNamespace))
-				elementPath.Namespaces.AddPrefix (defaultNamespace, defaultPrefix);
+				elementPath.Namespaces.AddPrefix (defaultNamespace, defaultPrefix ?? "");
 
 			foreach (var obj in path) {
 				var el = obj as XElement;
@@ -57,15 +56,16 @@ namespace MonoDevelop.Xml.Editor.Completion
 				foreach (var att in el.Attributes) {
 					if (!string.IsNullOrEmpty (att.Value)) {
 						if (att.Name.HasPrefix) {
-							if (att.Name.Prefix == "xmlns")
+							if (att.Name.Prefix == "xmlns" && att.Name.IsValid)
 								elementPath.Namespaces.AddPrefix (att.Value, att.Name.Name);
 						} else if (att.Name.Name == "xmlns") {
 							elementPath.Namespaces.AddPrefix (att.Value, "");
 						}
 					}
 				}
-				string ns = elementPath.Namespaces.GetNamespace (el.Name.HasPrefix? el.Name.Prefix : "");
-				var qn = new QualifiedName (el.Name.Name, ns, el.Name.Prefix ?? "");
+				string prefix = el.Name.HasPrefix ? el.Name.Prefix : "";
+				elementPath.Namespaces.TryGetNamespace (prefix, out string? ns);
+				var qn = new QualifiedName (el.Name.Name, ns, prefix);
 				elementPath.Elements.Add (qn);
 			}
 			return elementPath;
@@ -92,11 +92,9 @@ namespace MonoDevelop.Xml.Editor.Completion
 		{
 			if (elements.Count > 0) {
 				QualifiedName lastName = Elements[Elements.Count - 1];
-				if (lastName != null) {
-					int index = FindNonMatchingParentElement(lastName.Namespace);
-					if (index != -1) {
-						RemoveParentElements(index);
-					}
+				int index = FindNonMatchingParentElement(lastName.Namespace);
+				if (index != -1) {
+					RemoveParentElements(index);
 				}
 			}
 		}
@@ -105,18 +103,20 @@ namespace MonoDevelop.Xml.Editor.Completion
 		/// An xml element path is considered to be equal if 
 		/// each path item has the same name and namespace.
 		/// </summary>
-		public override bool Equals(object obj) {
-			
-			var rhs = obj as XmlElementPath;
-			if (rhs == null)
-				return false;
-			if (this == obj)
+		public override bool Equals(object? obj)
+		{
+			if (this == obj) {
 				return true;
+			}
 
-			if (elements.Count == rhs.elements.Count) {
+			if (obj is not XmlElementPath other) {
+				return false;
+			}
+
+			if (elements.Count == other.elements.Count) {
 				
 				for (int i = 0; i < elements.Count; ++i) {
-					if (!elements[i].Equals(rhs.elements[i])) {
+					if (!elements[i].Equals(other.elements[i])) {
 						return false;
 					}
 				}
@@ -125,11 +125,9 @@ namespace MonoDevelop.Xml.Editor.Completion
 			
 			return false;
 		}
-		
-		public override int GetHashCode() {
-			return elements.GetHashCode();
-		}
-		
+
+		public override int GetHashCode () => elements.GetHashCode ();
+
 		/// <summary>
 		/// Removes elements up to and including the specified index.
 		/// </summary>

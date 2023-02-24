@@ -20,18 +20,21 @@ namespace MonoDevelop.MSBuild.Editor.HighlightReferences
 {
 	class XmlHighlightEndTagTagger : HighlightTagger<ITextMarkerTag, ITextMarkerTag>
 	{
+		XmlParserProvider parserProvider;
+
 		public XmlHighlightEndTagTagger (
 			ITextView textView, XmlHighlightEndTagTaggerProvider provider
 			)
-			: base (textView, provider.JoinableTaskContext)
+			: base (textView, provider.JoinableTaskContext, provider.Logger)
 		{
+			parserProvider = provider.ParserProvider;
 		}
 
 		protected async override
 			Task<(SnapshotSpan sourceSpan, ImmutableArray<(ITextMarkerTag kind, SnapshotSpan location)> highlights)>
 			GetHighlightsAsync (SnapshotPoint caretLocation, CancellationToken token)
 		{
-			if (!XmlBackgroundParser.TryGetParser (TextView.TextBuffer, out var parser)) {
+			if (!parserProvider.TryGetParser (TextView.TextBuffer, out var parser)) {
 				return Empty;
 			}
 

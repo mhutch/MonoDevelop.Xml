@@ -3,6 +3,8 @@
 
 using System;
 
+#nullable enable
+
 namespace MonoDevelop.Xml.Dom
 {
 	public struct TextSpan : IEquatable<TextSpan>
@@ -24,13 +26,13 @@ namespace MonoDevelop.Xml.Dom
 		public bool ContainsOuter (TextSpan other) => Start <= other.Start && End >= other.End;
 		public bool Intersects (TextSpan other) => other.Start <= End && other.End >= Start;
 
-		public static TextSpan FromBounds (int start, int end) => new TextSpan (start, end - start);
+		public static TextSpan FromBounds (int start, int end) => new (start, end - start);
 
 		public override string ToString () => $"({Start}-{End})";
 
 		public bool Equals (TextSpan other) => other.Start == Start && other.Length == Length;
 
-		public override bool Equals (object obj) => obj is TextSpan t && t.Equals (this);
+		public override bool Equals (object? obj) => obj is TextSpan t && t.Equals (this);
 
 		public override int GetHashCode () => (Start << 16) ^ (Start >> 16) ^ Length; //try to distribute bits over the range a bit better
 	}

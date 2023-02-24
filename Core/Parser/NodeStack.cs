@@ -26,7 +26,10 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+
 using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
@@ -46,12 +49,52 @@ namespace MonoDevelop.Xml.Parser
 					return o;
 				i++;
 			}
-			return null;
+			throw new InvalidOperationException ($"Cannot peek {down} deep in stack with depth {Count}");
 		}
 
-		public XDocument GetRoot ()
+		public bool TryPeek (int down, [NotNullWhen (true)] out XObject? value)
 		{
-			XObject last = null;
+			int i = 0;
+			foreach (XObject o in this) {
+				if (i == down) {
+					value = o;
+					return true;
+				}
+				i++;
+			}
+			value = null;
+			return false;
+		}
+
+		public XObject? TryPeek (int down) => TryPeek (down, out XObject? val) ? val : null;
+
+		public bool TryPeek<T> ([NotNullWhen (true)] out T? value) where T : class
+		{
+			if (Count > 0 && Peek () is T instance) {
+				value = instance;
+				return true;
+			}
+			value = null;
+			return false;
+		}
+
+		public T? TryPeek<T> () where T : class => TryPeek (out T? val) ? val : null;
+
+		public bool TryPeek<T> (int down, [NotNullWhen (true)] out T? value) where T : class
+		{
+			if (TryPeek (down, out XObject? actual) && actual is T instance) {
+				value = instance;
+				return true;
+			}
+			value = null;
+			return false;
+		}
+
+		public T? TryPeek<T> (int down) where T : class => TryPeek (down, out T? val) ? val : null;
+
+		public XDocument? GetRoot ()
+		{
+			XObject? last = null;
 			foreach (XObject o in this)
 				last = o;
 			return last as XDocument;
@@ -85,6 +128,35 @@ namespace MonoDevelop.Xml.Parser
 			}
 
 			return newStack;
+		}
+
+		/// <summary>
+		/// Search down the stack for a node of type <typeparamref name="TNode"/>.
+		/// </summary>
+		/// <typeparam name="TNode">Type of the node</typeparam>
+		/// <param name="maxDepth">Zero-indexed limit for the search depth.
+		/// If negative, the search has no depth limit.</param>
+		/// <returns>A node of type <typeparamref name="TNode"/>, or <c>null</c> if none was found</returns>
+
+		/// Search down the stack for a node of type {TNode}.
+		/// TNode: Type of the node
+		/// maxDepth: Zero-indexed limit for the search depth. If negative, the search has no depth limit.
+		/// returns: A node of type {TNode} or `null` if none was found
+		public TNode? TryFind<TNode> (int maxDepth = -1) where TNode : class
+		{
+			if (maxDepth < 0) {
+				maxDepth = int.MaxValue;
+			}
+
+			foreach (XObject o in this) {
+				if (o is TNode val) {
+					return val;
+				}
+				if (maxDepth-- < 0) {
+					break;
+				}
+			}
+			return null;
 		}
 	}
 }

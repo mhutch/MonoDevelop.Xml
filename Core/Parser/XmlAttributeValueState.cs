@@ -41,7 +41,7 @@ namespace MonoDevelop.Xml.Parser
 		protected const int TagMask = 3;
 		protected const int TagShift = 2;
 
-		public override XmlParserState PushChar (char c, XmlParserContext context, ref string rollback)
+		public override XmlParserState? PushChar (char c, XmlParserContext context, ref string? rollback)
 		{
 			System.Diagnostics.Debug.Assert (((XAttribute) context.Nodes.Peek ()).Value == null);
 
@@ -80,7 +80,7 @@ namespace MonoDevelop.Xml.Parser
 			return null;
 		}
 
-		XmlParserState BuildUnquotedValue (char c, XmlParserContext context, ref string rollback)
+		XmlParserState? BuildUnquotedValue (char c, XmlParserContext context, ref string? rollback)
 		{
 			if (char.IsLetterOrDigit (c) || c == '_' || c == '.') {
 				context.KeywordBuilder.Append (c);
@@ -88,7 +88,10 @@ namespace MonoDevelop.Xml.Parser
 			}
 
 			if (context.KeywordBuilder.Length == 0) {
-				context.Diagnostics?.LogError ($"The value of attribute '{(string)((XAttribute)context.Nodes.Peek ()).Name.FullName}' ended unexpectedly.", context.Position);
+				if (context.Diagnostics is not null) {
+					var badAtt = (XAttribute)context.Nodes.Peek ();
+					context.Diagnostics.LogError ($"The value of attribute '{badAtt.Name.FullName}' ended unexpectedly.", context.Position);
+				}
 				rollback = string.Empty;
 				return Parent;
 			}

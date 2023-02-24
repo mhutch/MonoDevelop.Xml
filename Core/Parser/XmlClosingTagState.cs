@@ -44,11 +44,10 @@ namespace MonoDevelop.Xml.Parser
 		
 		public XmlClosingTagState (XmlNameState nameState)
 		{
-			NameState = nameState;
-			Adopt (NameState);
+			NameState = Adopt (nameState);
 		}
 
-		public override XmlParserState PushChar (char c, XmlParserContext context, ref string rollback)
+		public override XmlParserState? PushChar (char c, XmlParserContext context, ref string? rollback)
 		{
 			var ct = context.Nodes.Peek () as XClosingTag;
 			
@@ -97,14 +96,11 @@ namespace MonoDevelop.Xml.Parser
 								ct.Span
 							);
 							// add it into the tree anyway so it's accessible
-							var parent = context.Nodes.Peek () as XContainer;
-							if (parent != null) {
+							if (context.Nodes.TryPeek (out XContainer? parent)) {
 								if (!parent.IsEnded) {
-									parent = context.Nodes.Count > 1? context.Nodes.Peek (1) as XContainer : null;
+									parent = context.Nodes.TryPeek<XContainer> (1);
 								}
-								if (parent != null) {
-									parent.AddChildNode (ct);
-								}
+								parent?.AddChildNode (ct);
 							}
 						}
 					}
@@ -136,7 +132,7 @@ namespace MonoDevelop.Xml.Parser
 			return Parent;
 		}
 
-		public override XmlParserContext TryRecreateState (XObject xobject, int position)
+		public override XmlParserContext? TryRecreateState (XObject xobject, int position)
 		{
 			// recreating name builder state is a pain
 			// for now, let parent recreate state at start of tag

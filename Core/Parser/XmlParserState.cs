@@ -26,7 +26,8 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System.Diagnostics;
+using System;
+using System.Diagnostics.CodeAnalysis;
 using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
@@ -46,27 +47,26 @@ namespace MonoDevelop.Xml.Parser
 		/// The next state. A new or parent <see cref="XmlParserState"/> will change the parser state; 
 		/// the current state or null will not.
 		/// </returns>
-		public abstract XmlParserState PushChar (char c, XmlParserContext context, ref string rollback);
+		public abstract XmlParserState? PushChar (char c, XmlParserContext context, ref string? rollback);
 
-		public XmlParserState Parent { get; private set; }
+		public XmlParserState? Parent { get; private set;  }
 
-		protected void Adopt (XmlParserState child)
+		protected TChild Adopt<TChild> (TChild child) where TChild : XmlParserState
 		{
-			Debug.Assert (child.Parent == null);
-			child.Parent = this;
-		}
-
-		public XmlRootState RootState {
-			get {
-				return (this as XmlRootState) ?? Parent.RootState;
+			if (child.Parent != null) {
+				throw new ArgumentException ("Child already has a Parent", nameof(child));
 			}
+			child.Parent = this;
+			return child;
 		}
 
-		public abstract XmlParserContext TryRecreateState (XObject xobject, int position);
+		public XmlRootState RootState => this as XmlRootState ?? Parent?.RootState ?? throw new InvalidParserGraphException ("Root node must be instance of XmlRootState or a derived class.");
+
+		public abstract XmlParserContext? TryRecreateState (XObject xobject, int position);
 
 		public override string ToString ()
 		{
-			string result = null;
+			string? result = null;
 
 			if (Parent is XmlParserState parent) {
 				result = parent.ToString() + ".";
@@ -77,6 +77,40 @@ namespace MonoDevelop.Xml.Parser
 				.Replace ("State", "");
 
 			return result;
+		}
+	}
+
+
+	/// <summary>
+	/// Thrown when the XmlParserState node graph was not created correctly
+	/// </summary>
+	[Serializable]
+	class InvalidParserGraphException : Exception
+	{
+		public InvalidParserGraphException (string message) : base (message) { }
+		public InvalidParserGraphException (string message, Exception inner) : base (message, inner) { }
+		protected InvalidParserGraphException (
+		  System.Runtime.Serialization.SerializationInfo info,
+		  System.Runtime.Serialization.StreamingContext context) : base (info, context) { }
+	}
+
+	/// <summary>
+	/// Thrown when the XmlParser is in an invalid state
+	/// </summary>
+	[Serializable]
+	class InvalidParserStateException : Exception
+	{
+		public InvalidParserStateException (string message) : base (message) { }
+		public InvalidParserStateException (string message, Exception inner) : base (message, inner) { }
+		protected InvalidParserStateException (
+		  System.Runtime.Serialization.SerializationInfo info,
+		  System.Runtime.Serialization.StreamingContext context) : base (info, context) { }
+
+		[DoesNotReturn]
+		internal static void ThrowExpected<T> (XmlParserContext context) where T : XObject
+		{
+			XObject actual = context.Nodes.Peek ();
+			throw new InvalidParserStateException ($"Expected {typeof(T)} on stack, got {actual.GetType ()}");
 		}
 	}
 }

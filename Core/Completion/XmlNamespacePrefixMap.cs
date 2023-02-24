@@ -24,31 +24,26 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+using System;
+
+#nullable enable
+
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace MonoDevelop.Xml.Editor.Completion
 {
 	class XmlNamespacePrefixMap
 	{
-		readonly Dictionary<string, string> pfNsMap = new Dictionary<string, string> ();
-		readonly Dictionary<string, string> nsPfMap = new Dictionary<string, string> ();
+		readonly Dictionary<string, string> pfNsMap = new ();
+		readonly Dictionary<string, string> nsPfMap = new ();
 
 		/// <summary>Gets the prefix registered for the namespace, empty if it's 
 		/// the default namespace, or null if it's not registered.</summary>
-		public string GetPrefix (string ns)
-		{
-			if (nsPfMap.TryGetValue (ns, out string prefix))
-				return prefix;
-			return null;
-		}
+		public bool TryGetPrefix (string ns, [NotNullWhen(true)] out string? prefix) => nsPfMap.TryGetValue (ns, out prefix);
 		
 		/// <summary>Gets the namespace registered for prefix, or default namespace if prefix is empty.</summary>
-		public string GetNamespace (string prefix)
-		{
-			if (pfNsMap.TryGetValue (prefix, out string ns))
-				return ns;
-			return null;
-		}
+		public bool TryGetNamespace (string prefix, [NotNullWhen (true)] out string? ns) => pfNsMap.TryGetValue (prefix, out ns);
 		
 		/// <summary>Registers a namespace for a prefix, or the default namespace if the prefix is empty.</summary>
 		public void AddPrefix (string ns, string prefix)

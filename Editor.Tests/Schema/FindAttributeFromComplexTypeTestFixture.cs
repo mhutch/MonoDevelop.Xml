@@ -15,12 +15,15 @@ namespace MonoDevelop.Xml.Tests.Schema
 		
 		public override void FixtureInit()
 		{
-			XmlElementPath path = new XmlElementPath();
+			var path = new XmlElementPath();
 			path.Elements.Add(new QualifiedName("note", "http://www.w3schools.com"));
-			
-			XmlSchemaElement element = SchemaCompletionData.FindElement(path);
-			attribute = SchemaCompletionData.FindAttribute(element, "name");
-			missingAttribute = SchemaCompletionData.FindAttribute(element, "missing");
+
+			var schema = ((XmlSchemaCompletionProvider)SchemaCompletionData).Schema;
+			XmlSchemaElement element = schema.FindElement(path);
+			if (element is not null) {
+				attribute = schema.FindAttribute (element, "name");
+				missingAttribute = schema.FindAttribute(element, "missing");
+			}
 		}
 		
 		[Test]

@@ -27,6 +27,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+// unported code from MD
+#if false
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -106,7 +109,7 @@ namespace MonoDevelop.Xml.Editor
 				TaskService.Errors.RemoveRange (tasks);
 		}
 
-		#region Code completion
+#region Code completion
 
 		XmlElementPath GetElementPath ()
 		{
@@ -176,9 +179,9 @@ namespace MonoDevelop.Xml.Editor
 			return Task.FromResult (new CompletionList ());
 		}
 		
-		#endregion
+#endregion
 		
-		#region From XmlCompletionDataProvider.cs
+#region From XmlCompletionDataProvider.cs
 		
 		public XmlSchemaCompletionProvider FindSchemaFromFileName (string fileName)
 		{
@@ -245,9 +248,9 @@ namespace MonoDevelop.Xml.Editor
 
 		}
 		
-		#endregion
+#endregion
 		
-		#region Schema resolution
+#region Schema resolution
 		
 		/// <summary>
 
@@ -516,9 +519,9 @@ namespace MonoDevelop.Xml.Editor
 
 		}
 		
-		#endregion
+#endregion
 		
-		#region Settings handling
+#region Settings handling
 		
 		void SetDefaultSchema ()
 
@@ -560,9 +563,9 @@ namespace MonoDevelop.Xml.Editor
 
 		}
 		
-		#endregion
+#endregion
 		
-		#region Stylesheet handling
+#region Stylesheet handling
 		
 		/// <summary>
 
@@ -578,9 +581,9 @@ namespace MonoDevelop.Xml.Editor
 
 		}
 						
-		#endregion
+#endregion
 		
-		#region Filetype/schema detection		
+#region Filetype/schema detection		
 		
 		public bool IsSchema {
 			get {
@@ -616,9 +619,9 @@ namespace MonoDevelop.Xml.Editor
 			return false;
 		}
 			
-		#endregion
+#endregion
 		
-		#region Smart indent
+#region Smart indent
 		
 		public override bool KeyPress (KeyDescriptor descriptor)
 		{
@@ -672,9 +675,9 @@ namespace MonoDevelop.Xml.Editor
 			return null;
 		}
 		
-		#endregion
+#endregion
 		
-		#region Command handlers
+#region Command handlers
 
 		[CommandHandler (XmlCommands.CreateSchema)]
 		public void CreateSchemaCommand ()
@@ -825,7 +828,7 @@ namespace MonoDevelop.Xml.Editor
 
 		}
 		
-		#endregion
+#endregion
 
 		void QueueInference ()
 		{
@@ -859,3 +862,5 @@ namespace MonoDevelop.Xml.Editor
 		}
 	}
 }
+
+#endif

@@ -1,12 +1,21 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#nullable enable
+
+#if NETFRAMEWORK
+#nullable disable warnings
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Microsoft.Extensions.Logging;
 
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
@@ -15,19 +24,23 @@ using Microsoft.VisualStudio.Text.Adornments;
 using Microsoft.VisualStudio.Text.Editor;
 
 using MonoDevelop.Xml.Dom;
+using MonoDevelop.Xml.Parser;
 
 namespace MonoDevelop.Xml.Editor.Completion
 {
-	public abstract class XmlCompletionSource : IAsyncCompletionSource
+	public abstract partial class XmlCompletionSource : IAsyncCompletionSource
 	{
 		protected XmlBackgroundParser XmlParser { get; }
 
 		protected ITextView TextView { get; }
 
-		protected XmlCompletionSource (ITextView textView)
+		readonly ILogger logger;
+
+		protected XmlCompletionSource (ITextView textView, ILogger logger, XmlParserProvider parserProvider)
 		{
-			XmlParser = XmlBackgroundParser.GetParser (textView.TextBuffer);
+			XmlParser = parserProvider.GetParser (textView.TextBuffer);
 			TextView = textView;
+			this.logger = logger;
 			InitializeBuiltinItems ();
 		}
 
@@ -68,13 +81,15 @@ namespace MonoDevelop.Xml.Editor.Completion
 					return await GetElementCompletionsAsync (session, triggerLocation, nodePath, kind == XmlCompletionTrigger.ElementWithBracket, token);
 
 				case XmlCompletionTrigger.Attribute:
-					IAttributedXObject attributedOb = (parser.Spine.Peek () as IAttributedXObject) ?? parser.Spine.Peek (1) as IAttributedXObject;
+					if (parser.Spine.TryFind<IAttributedXObject> (maxDepth: 1) is not IAttributedXObject attributedOb) {
+						throw new InvalidOperationException ("Did not find IAttributedXObject in stack for XmlCompletionTrigger.Attribute");
+					}
 					parser.Clone ().AdvanceUntilEnded ((XObject)attributedOb, triggerLocation.Snapshot, 1000);
 					var attributes = attributedOb.Attributes.ToDictionary (StringComparer.OrdinalIgnoreCase);
 					return await GetAttributeCompletionsAsync (session, triggerLocation, nodePath, attributedOb, attributes, token);
 
 				case XmlCompletionTrigger.AttributeValue:
-					if (parser.Spine.Peek () is XAttribute att && parser.Spine.Peek (1) is IAttributedXObject attributedObject) {
+					if (parser.Spine.TryPeek (out XAttribute? att) && parser.Spine.TryPeek (1, out IAttributedXObject? attributedObject)) {
 						return await GetAttributeValueCompletionsAsync (session, triggerLocation, nodePath, attributedObject, att, token);
 					}
 					break;
@@ -124,10 +139,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 			var spine = XmlParser.GetSpineParser (triggerLocation);
 
-			LoggingService.LogDebug (
-				"Attempting completion for state '{0}'x{1}, character='{2}', trigger='{3}'",
-				spine.CurrentState, spine.CurrentStateLength, trigger.Character, trigger
-			);
+			LogAttemptingCompletion (logger, spine.CurrentState, spine.CurrentStateLength, trigger.Character, trigger.Reason);
 
 			var (kind, length) = XmlCompletionTriggering.GetTrigger (spine, reason.Value, trigger.Character);
 			if (kind != XmlCompletionTrigger.None) {
@@ -138,6 +150,10 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 			return CompletionStartData.DoesNotParticipateInCompletion;
 		}
+
+		[LoggerMessage (EventId = 2, Level = LogLevel.Trace, Message = "Attempting completion for state '{state}'x{currentSpineLength}, character='{triggerChar}', trigger='{triggerReason}'")]
+		static partial void LogAttemptingCompletion (ILogger logger, XmlParserState state, int currentSpineLength, char triggerChar, CompletionTriggerReason triggerReason);
+
 
 		protected virtual Task<CompletionContext> GetElementCompletionsAsync (
 			IAsyncCompletionSession session,
@@ -190,13 +206,17 @@ namespace MonoDevelop.Xml.Editor.Completion
 					)
 				);
 
-		CompletionContext CreateCompletionContext (IEnumerable<CompletionItem> items)
-			=> new CompletionContext (ImmutableArray<CompletionItem>.Empty.AddRange (items), null, InitialSelectionHint.SoftSelection);
+		static CompletionContext CreateCompletionContext (IEnumerable<CompletionItem> items)
+			=> new (ImmutableArray<CompletionItem>.Empty.AddRange (items), null, InitialSelectionHint.SoftSelection);
 
 		CompletionItem cdataItem, commentItem, prologItem;
 		CompletionItem cdataItemWithBracket, commentItemWithBracket, prologItemWithBracket;
 		CompletionItem[] entityItems;
 
+		[MemberNotNull(
+			nameof(cdataItem), nameof (commentItem), nameof (prologItem),
+			nameof(cdataItemWithBracket), nameof (commentItemWithBracket), nameof (prologItemWithBracket),
+			nameof(entityItems))]
 		void InitializeBuiltinItems ()
 		{
 			cdataItem = new CompletionItem ("![CDATA[", this, XmlImages.CData)
@@ -276,7 +296,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				if (!el.IsNamed || el.IsClosed)
 					yield break;
 
-				string name = el.Name.FullName;
+				string name = el.Name.FullName!;
 				if (!dedup.Add (name)) {
 					continue;
 				}

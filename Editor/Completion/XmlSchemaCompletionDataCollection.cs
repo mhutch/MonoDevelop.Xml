@@ -21,22 +21,22 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-using System;
+#nullable enable
+
 using System.Collections.Generic;
-using System.Windows.Input;
 
 namespace MonoDevelop.Xml.Editor.Completion
 {
-	interface IXmlSchemaCompletionDataCollection: IEnumerable<XmlSchemaCompletionProvider>
+	interface IXmlSchemaCompletionDataCollection: IEnumerable<IXmlCompletionProvider>
 	{
-		XmlSchemaCompletionProvider this [string namespaceUri] { get; }
+		XmlSchemaCompletionProvider? this [string namespaceUri] { get; }
 		void GetNamespaceCompletionData (XmlSchemaCompletionBuilder builder);
-		XmlSchemaCompletionProvider GetSchemaFromFileName (string fileName);
+		XmlSchemaCompletionProvider? GetSchemaFromFileName (string fileName);
 	}
 	
-	class XmlSchemaCompletionDataCollection : List<XmlSchemaCompletionProvider>, IXmlSchemaCompletionDataCollection
+	class XmlSchemaCompletionDataCollection : List<IXmlCompletionProvider>, IXmlSchemaCompletionDataCollection
 	{
-		public XmlSchemaCompletionProvider this [string namespaceUri] {
+		public XmlSchemaCompletionProvider? this [string namespaceUri] {
 			get {
 				foreach (XmlSchemaCompletionProvider item in this)
 					if (item.NamespaceUri == namespaceUri)
@@ -47,11 +47,14 @@ namespace MonoDevelop.Xml.Editor.Completion
 		
 		public void GetNamespaceCompletionData (XmlSchemaCompletionBuilder builder)
 		{
-			foreach (XmlSchemaCompletionProvider schema in this)
-				builder.AddNamespace (schema.NamespaceUri);
+			foreach (XmlSchemaCompletionProvider schema in this) {
+				if (schema.NamespaceUri is not null) {
+					builder.AddNamespace (schema.NamespaceUri);
+				}
+			}
 		}
 		
-		public XmlSchemaCompletionProvider GetSchemaFromFileName (string fileName)
+		public XmlSchemaCompletionProvider? GetSchemaFromFileName (string fileName)
 		{
 			foreach (XmlSchemaCompletionProvider schema in this)
 				if (schema.FileName == fileName)
@@ -62,8 +65,8 @@ namespace MonoDevelop.Xml.Editor.Completion
 	
 	class MergedXmlSchemaCompletionDataCollection : IXmlSchemaCompletionDataCollection
 	{
-		XmlSchemaCompletionDataCollection builtin;
-		XmlSchemaCompletionDataCollection user;
+		readonly XmlSchemaCompletionDataCollection builtin;
+		readonly XmlSchemaCompletionDataCollection user;
 		
 		public MergedXmlSchemaCompletionDataCollection (
 		    XmlSchemaCompletionDataCollection builtin,
@@ -73,43 +76,37 @@ namespace MonoDevelop.Xml.Editor.Completion
 			this.builtin = builtin;
 		}
 		
-		public XmlSchemaCompletionProvider this [string namespaceUri] {
-			get {
-				XmlSchemaCompletionProvider val = user[namespaceUri];
-				if (val == null)
-					val = builtin[namespaceUri];
-				return val;
-			}
-		}
+		public XmlSchemaCompletionProvider? this [string namespaceUri] => user[namespaceUri] ?? builtin[namespaceUri];
 
 		public void GetNamespaceCompletionData (XmlSchemaCompletionBuilder builder)
 		{
-			foreach (XmlSchemaCompletionProvider schema in builtin)
-				builder.AddNamespace (schema.NamespaceUri);
-			foreach (XmlSchemaCompletionProvider schema in user)
-				builder.AddNamespace (schema.NamespaceUri);
+			foreach (XmlSchemaCompletionProvider schema in builtin) {
+				if (schema.NamespaceUri is string ns) {
+					builder.AddNamespace (ns);
+				}
+			}
+			foreach (XmlSchemaCompletionProvider schema in user) {
+				if (schema.NamespaceUri is string ns) {
+					builder.AddNamespace (ns);
+				}
+			}
 		}
 
-		public XmlSchemaCompletionProvider GetSchemaFromFileName (string fileName)
-		{
-			XmlSchemaCompletionProvider data = user.GetSchemaFromFileName (fileName);
-			if (data == null)
-				data = builtin.GetSchemaFromFileName (fileName);
-			return data;
-		}
+		public XmlSchemaCompletionProvider? GetSchemaFromFileName (string fileName)
+			=> user.GetSchemaFromFileName (fileName) ?? builtin.GetSchemaFromFileName (fileName);
 		
-		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator ()
-		{
-			return GetEnumerator ();
-		}
+		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator () => GetEnumerator ();
 
-		public IEnumerator<XmlSchemaCompletionProvider> GetEnumerator ()
+		public IEnumerator<IXmlCompletionProvider> GetEnumerator ()
 		{
-			foreach (XmlSchemaCompletionProvider x in builtin)
-				if (user[x.NamespaceUri] == null)
+			foreach (XmlSchemaCompletionProvider x in builtin) {
+				if (x.NamespaceUri is string ns && user[ns] == null) {
 					yield return x;
-			foreach (XmlSchemaCompletionProvider x in user)
+				}
+			}
+			foreach (XmlSchemaCompletionProvider x in user) {
 				yield return x;
+			}
 		}
 	}
 }

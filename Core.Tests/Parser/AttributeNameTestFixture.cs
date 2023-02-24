@@ -85,23 +85,14 @@ namespace MonoDevelop.Xml.Tests.Parser
 			NotAttribute ("$");
 		}
 
-		static void AssertAttributeName (string doc, string name)
+		static void AssertAttributeName (string doc, string? name)
 		{
-			TestXmlParser.Parse (doc, p => {
-				var att = p.PeekSpine () as XAttribute;
-				Assert.NotNull (att);
-				Assert.NotNull (att.Name);
-				Assert.IsNull (att.Name.Prefix);
-				Assert.AreEqual (att.Name.Name, name);
-			});
+			TestXmlParser.Parse (doc, p => p.AssertNodeIs<XAttribute> ().AssertName (name));
 		}
 
 		static void NotAttribute (string doc)
 		{
-			TestXmlParser.Parse (doc, p => {
-				var att = p.PeekSpine () as XAttribute;
-				Assert.IsNull (att);
-			});
+			TestXmlParser.Parse (doc, p => Assert.IsNotInstanceOf<XAttribute> (p.AssertPeek ()));
 		}
 	}
 }

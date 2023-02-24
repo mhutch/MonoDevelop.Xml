@@ -1,10 +1,13 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
+
 using Microsoft.VisualStudio.Commanding;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -12,9 +15,12 @@ using Microsoft.VisualStudio.Text.Editor.Commanding;
 using Microsoft.VisualStudio.Text.Editor.Commanding.Commands;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Utilities;
+
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Editor.Completion;
 using MonoDevelop.Xml.Parser;
+
+using JoinableTaskContext = Microsoft.VisualStudio.Threading.JoinableTaskContext;
 
 namespace MonoDevelop.Xml.Editor.Commands
 {
@@ -32,11 +38,23 @@ namespace MonoDevelop.Xml.Editor.Commands
 		const string OpenComment = "<!--";
 		const string CloseComment = "-->";
 
-		[Import]
-		ITextUndoHistoryRegistry undoHistoryRegistry { get; set; }
+		[ImportingConstructor]
+		public CommentUncommentCommandHandler (
+			XmlParserProvider parserProvider,
+			ITextUndoHistoryRegistry undoHistoryRegistry,
+			IEditorOperationsFactoryService editorOperationsFactoryService,
+			JoinableTaskContext joinableTaskContext)
+		{
+			this.parserProvider = parserProvider;
+			this.undoHistoryRegistry = undoHistoryRegistry;
+			this.editorOperationsFactoryService = editorOperationsFactoryService;
+			this.joinableTaskContext = joinableTaskContext;
+		}
 
-		[Import]
-		IEditorOperationsFactoryService editorOperationsFactoryService { get; set; }
+		readonly XmlParserProvider parserProvider;
+		readonly ITextUndoHistoryRegistry undoHistoryRegistry;
+		readonly IEditorOperationsFactoryService editorOperationsFactoryService;
+		readonly JoinableTaskContext joinableTaskContext;
 
 		public string DisplayName => Name;
 
@@ -72,13 +90,18 @@ namespace MonoDevelop.Xml.Editor.Commands
 			ITextView textView = args.TextView;
 			ITextBuffer textBuffer = args.SubjectBuffer;
 
-			if (!XmlBackgroundParser.TryGetParser (textBuffer, out var parser)) {
+			if (!parserProvider.TryGetParser (textBuffer, out var parser)) {
 				return false;
 			}
 
-			var xmlParseResult = parser.GetOrProcessAsync (textBuffer.CurrentSnapshot, default).Result;
-			var xmlDocumentSyntax = xmlParseResult.XDocument;
-			if (xmlDocumentSyntax == null) {
+			// the rest of this method needs to run on the the main thread anyways
+			#pragma warning disable VSTHRD102 // Implement internal logic asynchronously
+
+			var xmlParseResult = joinableTaskContext.Factory.Run (() => parser.GetOrProcessAsync (textBuffer.CurrentSnapshot, context.OperationContext.UserCancellationToken));
+
+			#pragma warning restore VSTHRD102
+
+			if (xmlParseResult?.XDocument is not XDocument xmlDocumentSyntax || context.OperationContext.UserCancellationToken.IsCancellationRequested) {
 				return false;
 			}
 
@@ -115,8 +138,8 @@ namespace MonoDevelop.Xml.Editor.Commands
 			ITextBuffer textBuffer,
 			IEnumerable<VirtualSnapshotSpan> selectedSpans,
 			XDocument xmlDocumentSyntax,
-			IEditorOperations editorOperations = null,
-			IMultiSelectionBroker multiSelectionBroker = null)
+			IEditorOperations? editorOperations = null,
+			IMultiSelectionBroker? multiSelectionBroker = null)
 		{
 			var snapshot = textBuffer.CurrentSnapshot;
 
@@ -195,8 +218,8 @@ namespace MonoDevelop.Xml.Editor.Commands
 			ITextBuffer textBuffer,
 			IEnumerable<VirtualSnapshotSpan> selectedSpans,
 			XDocument xmlDocumentSyntax,
-			IEditorOperations editorOperations = null,
-			IMultiSelectionBroker multiSelectionBroker = null)
+			IEditorOperations? editorOperations = null,
+			IMultiSelectionBroker? multiSelectionBroker = null)
 		{
 			var commentedSpans = GetCommentedSpansInSelection (xmlDocumentSyntax, selectedSpans);
 			if (!commentedSpans.Any ()) {
@@ -226,12 +249,12 @@ namespace MonoDevelop.Xml.Editor.Commands
 		/// <summary>
 		/// Inserts a new comment at each virtual point, materializing the virtual space if necessary
 		/// </summary>
-		static void CommentEmptySpans (ITextEdit edit, IEnumerable<VirtualSnapshotPoint> virtualPoints, IEditorOperations editorOperations)
+		static void CommentEmptySpans (ITextEdit edit, IEnumerable<VirtualSnapshotPoint> virtualPoints, IEditorOperations? editorOperations)
 		{
 			foreach (var virtualPoint in virtualPoints) {
 				if (virtualPoint.IsInVirtualSpace) {
 					string leadingWhitespace;
-					if (editorOperations != null) {
+					if (editorOperations is not null) {
 						leadingWhitespace = editorOperations.GetWhitespaceForVirtualSpace (virtualPoint);
 					} else {
 						leadingWhitespace = new string (' ', virtualPoint.VirtualSpaces);
@@ -400,8 +423,7 @@ namespace MonoDevelop.Xml.Editor.Commands
 			foreach (var currentRegion in normalizedRegions) {
 				int currentStart = currentRegion.Start;
 
-				// Creates comments such that current comments are excluded
-				var parentNode = node.GetNodeContainingRange (currentRegion.ToTextSpan ());
+				var parentNode = node.GetNodeContainingOuter (currentRegion.ToTextSpan ()) ?? throw new ArgumentException ("Span is outside node", nameof (selectedSpans));
 
 				parentNode.VisitSelfAndDescendents (child => {
 					if (child is XComment comment) {
@@ -409,7 +431,6 @@ namespace MonoDevelop.Xml.Editor.Commands
 						if (!currentRegion.IntersectsWith (comment.Span.ToSpan ())) {
 							return;
 						}
-
 						var commentNodeSpan = comment.Span;
 						if (returnComments)
 							commentSpans.Add (commentNodeSpan);
@@ -469,7 +490,7 @@ namespace MonoDevelop.Xml.Editor.Commands
 
 			// if the selection starts or ends in text, we want to preserve the 
 			// exact span the user has selected and split the text at that boundary
-			if (nodeAtPosition is XText) {
+			if (nodeAtPosition is XText || nodeAtPosition is null) {
 				return span;
 			}
 

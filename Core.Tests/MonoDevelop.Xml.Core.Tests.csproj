@@ -1,9 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net472;net6.0</TargetFrameworks>
+    <TargetFrameworks>net48;net6.0</TargetFrameworks>
     <NUnitDisableSupportAssemblies>true</NUnitDisableSupportAssemblies>
     <RootNamespace>MonoDevelop.Xml.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <Nullable Condition="$(TargetFramework)=='net48'">annotations</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

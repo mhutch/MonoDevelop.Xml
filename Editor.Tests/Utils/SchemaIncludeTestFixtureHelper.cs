@@ -1,4 +1,6 @@
+using Microsoft.Extensions.Logging;
 using MonoDevelop.Xml.Editor.Completion;
+using MonoDevelop.Xml.Tests.Schema;
 using System;
 using System.IO;
 using System.Text;
@@ -44,7 +46,7 @@ namespace MonoDevelop.Xml.Editor.Tests.Utils
 		/// </summary>
 		/// <param name="mainSchema">The main schema's xml.</param>
 		/// <param name="includedSchema">The included schema's xml.</param>
-		internal static XmlSchemaCompletionProvider CreateSchemaCompletionDataObject(string mainSchema, string includedSchema)
+		internal static IXmlSchemaCompletionProvider CreateSchemaCompletionDataObject (string mainSchema, string includedSchema)
 		{	
 			if (!Directory.Exists(schemaPath)) {
 				Directory.CreateDirectory(schemaPath);
@@ -56,7 +58,8 @@ namespace MonoDevelop.Xml.Editor.Tests.Utils
 			// Parse schema.
 			string schemaFileName = Path.Combine(schemaPath, mainSchemaFileName);
 			string baseUri = XmlSchemaCompletionProvider.GetUri(schemaFileName);
-			return new XmlSchemaCompletionProvider(baseUri, schemaFileName);
+			ILogger logger = TestLoggers.CreateLogger<SchemaIncludeTestFixtureHelper> ();
+			return XmlSchemaCompletionProvider.Create (schemaFileName, logger, baseUri);
 		}
 		
 		/// <summary>
