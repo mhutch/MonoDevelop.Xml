@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Microsoft.VisualStudio.Text;
 
 using MonoDevelop.Xml.Editor;
-using MonoDevelop.Xml.Editor.Completion;
 using MonoDevelop.Xml.Editor.Tests;
 
 using NUnit.Framework;

@@ -5,13 +5,12 @@
 
 using System.ComponentModel.Composition;
 
-using Microsoft.Extensions.Logging;
-
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Editor.Commanding;
 using Microsoft.VisualStudio.Threading;
 using Microsoft.VisualStudio.Utilities;
+using MonoDevelop.Xml.Editor.Logging;
 
 namespace MonoDevelop.Xml.Editor.Completion
 {
@@ -21,22 +20,25 @@ namespace MonoDevelop.Xml.Editor.Completion
 	class XmlCompletionCommitManagerProvider : IAsyncCompletionCommitManagerProvider
 	{
 		[ImportingConstructor]
-		public XmlCompletionCommitManagerProvider (JoinableTaskContext joinableTaskContext, ISmartIndentationService smartIndentationService, IEditorCommandHandlerServiceFactory commandServiceFactory, ILogger<XmlCompletionCommitManager> logger)
+		public XmlCompletionCommitManagerProvider (JoinableTaskContext joinableTaskContext, ISmartIndentationService smartIndentationService, IEditorCommandHandlerServiceFactory commandServiceFactory, IEditorLoggerService loggerService)
 		{
 			JoinableTaskContext = joinableTaskContext;
 			SmartIndentationService = smartIndentationService;
 			CommandServiceFactory = commandServiceFactory;
-			Logger = logger;
+			LoggerService = loggerService;
 		}
 
 		public JoinableTaskContext JoinableTaskContext { get; }
 		public ISmartIndentationService SmartIndentationService { get; }
 		public IEditorCommandHandlerServiceFactory CommandServiceFactory { get; }
-		public ILogger Logger { get; }
+		public IEditorLoggerService LoggerService { get; }
 
-		public IAsyncCompletionCommitManager GetOrCreate (ITextView textView) =>
-			textView.Properties.GetOrCreateSingletonProperty (
-				typeof (XmlCompletionCommitManager), () => new XmlCompletionCommitManager (this)
-			);
+		public IAsyncCompletionCommitManager GetOrCreate (ITextView textView)
+		{
+			return textView.Properties.GetOrCreateSingletonProperty (() => {
+				var logger = LoggerService.CreateLogger<XmlCompletionCommitManager> (textView);
+				return new XmlCompletionCommitManager (this, logger);
+			});
+		}
 	}
 }

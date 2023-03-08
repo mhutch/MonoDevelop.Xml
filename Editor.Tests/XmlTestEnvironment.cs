@@ -94,12 +94,6 @@ namespace MonoDevelop.Xml.Editor.Tests
 
 		protected virtual async Task OnInitialize ()
 		{
-			EditorEnvironment.DefaultAssemblies = new string[2]
-			{
-				typeof(EditorEnvironment).Assembly.Location, // Microsoft.VisualStudio.MiniEditor
-				typeof (Microsoft.VisualStudio.Text.VirtualSnapshotPoint).Assembly.Location, //Microsoft.VisualStudio.Text.Logic
-			}.ToImmutableArray ();
-
 			// Create the MEF composition
 			// can be awaited instead if your framework supports it
 			editorEnvironment = await EditorEnvironment.InitializeAsync (GetAssembliesToCompose ().ToArray ());

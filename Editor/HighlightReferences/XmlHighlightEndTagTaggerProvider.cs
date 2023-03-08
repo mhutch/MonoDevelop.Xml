@@ -5,7 +5,6 @@
 
 using System.ComponentModel.Composition;
 
-using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
@@ -14,6 +13,7 @@ using Microsoft.VisualStudio.Utilities;
 
 using MonoDevelop.Xml.Editor;
 using MonoDevelop.Xml.Editor.Completion;
+using MonoDevelop.Xml.Editor.Logging;
 using MonoDevelop.Xml.Editor.Tagging;
 
 namespace MonoDevelop.MSBuild.Editor.HighlightReferences
@@ -25,20 +25,21 @@ namespace MonoDevelop.MSBuild.Editor.HighlightReferences
 	class XmlHighlightEndTagTaggerProvider : IViewTaggerProvider
 	{
 		public JoinableTaskContext JoinableTaskContext { get; }
-		public ILogger Logger { get; }
+		public IEditorLoggerService LoggerService { get; }
 		public XmlParserProvider ParserProvider { get; }
 
 		[ImportingConstructor]
-		public XmlHighlightEndTagTaggerProvider (JoinableTaskContext joinableTaskContext, XmlParserProvider parserProvider, ILogger<XmlHighlightEndTagTagger> logger)
+		public XmlHighlightEndTagTaggerProvider (JoinableTaskContext joinableTaskContext, XmlParserProvider parserProvider, IEditorLoggerService loggerService)
 		{
 			JoinableTaskContext = joinableTaskContext;
-			Logger = logger;
+			LoggerService = loggerService;
 			ParserProvider = parserProvider;
 		}
 
 		public ITagger<T> CreateTagger<T> (ITextView textView, ITextBuffer buffer) where T : ITag
-			=>  (ITagger<T>) buffer.Properties.GetOrCreateSingletonProperty (
-				() => new XmlHighlightEndTagTagger (textView, this)
-			);
+			=> (ITagger<T>)buffer.Properties.GetOrCreateSingletonProperty (() => {
+				var logger = LoggerService.CreateLogger<XmlHighlightEndTagTagger> (textView);
+				return new XmlHighlightEndTagTagger (textView, this, logger);
+			});
 	}
 }

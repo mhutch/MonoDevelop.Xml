@@ -5,22 +5,26 @@
 
 using System.ComponentModel.Composition;
 
-using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Text;
+using MonoDevelop.Xml.Editor.Logging;
 
 namespace MonoDevelop.Xml.Editor.Completion
 {
 	[Export]
 	public class XmlParserProvider : BufferParserProvider<XmlBackgroundParser, XmlParseResult>
 	{
-		readonly ILogger<XmlBackgroundParser> logger;
+		readonly IEditorLoggerService loggerService;
 
 		[ImportingConstructor]
-		public XmlParserProvider (ILogger<XmlBackgroundParser> logger)
+		public XmlParserProvider (IEditorLoggerService loggerService)
 		{
-			this.logger = logger;
+			this.loggerService = loggerService;
 		}
 
-		protected override XmlBackgroundParser CreateParser (ITextBuffer2 buffer) => new (buffer, logger);
+		protected override XmlBackgroundParser CreateParser (ITextBuffer2 buffer)
+		{
+			var logger = loggerService.CreateLogger<XmlBackgroundParser> (buffer);
+			return new (buffer, logger);
+		}
 	}
 }
