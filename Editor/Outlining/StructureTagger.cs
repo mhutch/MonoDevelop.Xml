@@ -15,6 +15,7 @@ using Microsoft.VisualStudio.Text.Tagging;
 
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Editor.Completion;
+using MonoDevelop.Xml.Editor.Logging;
 
 namespace MonoDevelop.Xml.Editor.Tagging
 {

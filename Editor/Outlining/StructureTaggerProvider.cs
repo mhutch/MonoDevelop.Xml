@@ -9,6 +9,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Utilities;
 using MonoDevelop.Xml.Editor.Completion;
+using MonoDevelop.Xml.Editor.Logging;
 
 namespace MonoDevelop.Xml.Editor.Tagging
 {
@@ -18,19 +19,19 @@ namespace MonoDevelop.Xml.Editor.Tagging
 	[TagType (typeof (IStructureTag))]
 	class StructureTaggerProvider : ITaggerProvider
 	{
-		public IEditorLoggerFactory LoggerFactory { get; }
+		public IEditorLoggerService LoggerService { get; }
 		public XmlParserProvider ParserProvider { get; }
 
 		[ImportingConstructor]
-		public StructureTaggerProvider (XmlParserProvider parserProvider, IEditorLoggerFactory loggerFactory)
+		public StructureTaggerProvider (XmlParserProvider parserProvider, IEditorLoggerService loggerService)
 		{
 			ParserProvider = parserProvider;
-			LoggerFactory = loggerFactory;
+			LoggerService = loggerService;
 		}
 
 		public ITagger<T> CreateTagger<T> (ITextBuffer buffer) where T : ITag =>
 			(ITagger<T>)buffer.Properties.GetOrCreateSingletonProperty (() => {
-				var logger = LoggerFactory.CreateLogger<StructureTagger> (buffer);
+				var logger = LoggerService.CreateLogger<StructureTagger> (buffer);
 				return new StructureTagger (buffer, logger, this);
 			});
 	}

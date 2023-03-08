@@ -20,6 +20,7 @@ using Microsoft.VisualStudio.Utilities;
 
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Editor.Completion;
+using MonoDevelop.Xml.Editor.Logging;
 
 namespace MonoDevelop.Xml.Editor.Tests.Completion
 {
@@ -29,19 +30,19 @@ namespace MonoDevelop.Xml.Editor.Tests.Completion
 	[ContentType (XmlEditorTestContentType.Name)]
 	class XmlCompletionTestSourceProvider : IAsyncCompletionSourceProvider
 	{
-		readonly IEditorLoggerFactory loggerFactory;
+		readonly IEditorLoggerService loggerService;
 		readonly XmlParserProvider parserProvider;
 
 		[ImportingConstructor]
-		public XmlCompletionTestSourceProvider (IEditorLoggerFactory loggerFactory, XmlParserProvider parserProvider)
+		public XmlCompletionTestSourceProvider (IEditorLoggerService loggerService, XmlParserProvider parserProvider)
 		{
-			this.loggerFactory = loggerFactory;
+			this.loggerService = loggerService;
 			this.parserProvider = parserProvider;
 		}
 
 		public IAsyncCompletionSource GetOrCreate (ITextView textView)
 		{
-			var logger = loggerFactory.CreateLogger<XmlCompletionTestSource> (textView);
+			var logger = loggerService.CreateLogger<XmlCompletionTestSource> (textView);
 			return new XmlCompletionTestSource (textView, logger, parserProvider);
 		}
 	}

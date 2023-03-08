@@ -6,23 +6,24 @@
 using System.ComponentModel.Composition;
 
 using Microsoft.VisualStudio.Text;
+using MonoDevelop.Xml.Editor.Logging;
 
 namespace MonoDevelop.Xml.Editor.Completion
 {
 	[Export]
 	public class XmlParserProvider : BufferParserProvider<XmlBackgroundParser, XmlParseResult>
 	{
-		readonly IEditorLoggerFactory loggerFactory;
+		readonly IEditorLoggerService loggerService;
 
 		[ImportingConstructor]
-		public XmlParserProvider (IEditorLoggerFactory loggerFactory)
+		public XmlParserProvider (IEditorLoggerService loggerService)
 		{
-			this.loggerFactory = loggerFactory;
+			this.loggerService = loggerService;
 		}
 
 		protected override XmlBackgroundParser CreateParser (ITextBuffer2 buffer)
 		{
-			var logger = loggerFactory.CreateLogger<XmlBackgroundParser> (buffer);
+			var logger = loggerService.CreateLogger<XmlBackgroundParser> (buffer);
 			return new (buffer, logger);
 		}
 	}

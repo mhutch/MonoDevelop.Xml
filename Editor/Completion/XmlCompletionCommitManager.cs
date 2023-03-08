@@ -15,6 +15,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 
 using MonoDevelop.Xml.Dom;
+using MonoDevelop.Xml.Editor.Logging;
 using MonoDevelop.Xml.Editor.Options;
 
 namespace MonoDevelop.Xml.Editor.Completion

@@ -8,6 +8,8 @@ using System.ComponentModel.Composition;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Utilities;
+using MonoDevelop.Xml.Editor.Logging;
 
 namespace MonoDevelop.Xml.Editor.Tests;
 
@@ -22,6 +24,7 @@ static class TestLoggers
 }
 
 [Export (typeof (IEditorLoggerFactory))]
+[ContentType (XmlContentTypeNames.XmlCore)]
 class TestEditorLoggerFactory : IEditorLoggerFactory
 {
 	public ILogger<T> CreateLogger<T> () => TestLoggers.CreateLogger<T> ();
