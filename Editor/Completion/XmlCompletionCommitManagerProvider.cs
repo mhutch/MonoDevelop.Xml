@@ -5,8 +5,6 @@
 
 using System.ComponentModel.Composition;
 
-using Microsoft.Extensions.Logging;
-
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Editor.Commanding;
@@ -21,22 +19,25 @@ namespace MonoDevelop.Xml.Editor.Completion
 	class XmlCompletionCommitManagerProvider : IAsyncCompletionCommitManagerProvider
 	{
 		[ImportingConstructor]
-		public XmlCompletionCommitManagerProvider (JoinableTaskContext joinableTaskContext, ISmartIndentationService smartIndentationService, IEditorCommandHandlerServiceFactory commandServiceFactory, ILogger<XmlCompletionCommitManager> logger)
+		public XmlCompletionCommitManagerProvider (JoinableTaskContext joinableTaskContext, ISmartIndentationService smartIndentationService, IEditorCommandHandlerServiceFactory commandServiceFactory, IEditorLoggerFactory loggerFactory)
 		{
 			JoinableTaskContext = joinableTaskContext;
 			SmartIndentationService = smartIndentationService;
 			CommandServiceFactory = commandServiceFactory;
-			Logger = logger;
+			LoggerFactory = loggerFactory;
 		}
 
 		public JoinableTaskContext JoinableTaskContext { get; }
 		public ISmartIndentationService SmartIndentationService { get; }
 		public IEditorCommandHandlerServiceFactory CommandServiceFactory { get; }
-		public ILogger Logger { get; }
+		public IEditorLoggerFactory LoggerFactory { get; }
 
-		public IAsyncCompletionCommitManager GetOrCreate (ITextView textView) =>
-			textView.Properties.GetOrCreateSingletonProperty (
-				typeof (XmlCompletionCommitManager), () => new XmlCompletionCommitManager (this)
-			);
+		public IAsyncCompletionCommitManager GetOrCreate (ITextView textView)
+		{
+			return textView.Properties.GetOrCreateSingletonProperty (() => {
+				var logger = LoggerFactory.CreateLogger<XmlCompletionCommitManager> (textView);
+				return new XmlCompletionCommitManager (this, logger);
+			});
+		}
 	}
 }

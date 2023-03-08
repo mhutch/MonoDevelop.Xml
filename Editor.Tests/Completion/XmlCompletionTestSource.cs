@@ -29,17 +29,21 @@ namespace MonoDevelop.Xml.Editor.Tests.Completion
 	[ContentType (XmlEditorTestContentType.Name)]
 	class XmlCompletionTestSourceProvider : IAsyncCompletionSourceProvider
 	{
-		readonly ILogger logger;
+		readonly IEditorLoggerFactory loggerFactory;
 		readonly XmlParserProvider parserProvider;
 
 		[ImportingConstructor]
-		public XmlCompletionTestSourceProvider (ILogger logger, XmlParserProvider parserProvider)
+		public XmlCompletionTestSourceProvider (IEditorLoggerFactory loggerFactory, XmlParserProvider parserProvider)
 		{
-			this.logger = logger;
+			this.loggerFactory = loggerFactory;
 			this.parserProvider = parserProvider;
 		}
 
-		public IAsyncCompletionSource GetOrCreate (ITextView textView) => new XmlCompletionTestSource (textView, logger, parserProvider);
+		public IAsyncCompletionSource GetOrCreate (ITextView textView)
+		{
+			var logger = loggerFactory.CreateLogger<XmlCompletionTestSource> (textView);
+			return new XmlCompletionTestSource (textView, logger, parserProvider);
+		}
 	}
 
 	class XmlCompletionTestSource : XmlCompletionSource

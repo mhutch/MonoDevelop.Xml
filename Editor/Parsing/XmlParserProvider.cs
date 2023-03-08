@@ -5,7 +5,6 @@
 
 using System.ComponentModel.Composition;
 
-using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Text;
 
 namespace MonoDevelop.Xml.Editor.Completion
@@ -13,14 +12,18 @@ namespace MonoDevelop.Xml.Editor.Completion
 	[Export]
 	public class XmlParserProvider : BufferParserProvider<XmlBackgroundParser, XmlParseResult>
 	{
-		readonly ILogger<XmlBackgroundParser> logger;
+		readonly IEditorLoggerFactory loggerFactory;
 
 		[ImportingConstructor]
-		public XmlParserProvider (ILogger<XmlBackgroundParser> logger)
+		public XmlParserProvider (IEditorLoggerFactory loggerFactory)
 		{
-			this.logger = logger;
+			this.loggerFactory = loggerFactory;
 		}
 
-		protected override XmlBackgroundParser CreateParser (ITextBuffer2 buffer) => new (buffer, logger);
+		protected override XmlBackgroundParser CreateParser (ITextBuffer2 buffer)
+		{
+			var logger = loggerFactory.CreateLogger<XmlBackgroundParser> (buffer);
+			return new (buffer, logger);
+		}
 	}
 }

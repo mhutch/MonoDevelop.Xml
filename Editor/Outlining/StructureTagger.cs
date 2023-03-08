@@ -25,10 +25,10 @@ namespace MonoDevelop.Xml.Editor.Tagging
 		readonly XmlBackgroundParser parser;
 		static readonly IEnumerable<ITagSpan<IStructureTag>> emptyTagList = Array.Empty<ITagSpan<IStructureTag>> ();
 
-		public StructureTagger (ITextBuffer buffer, StructureTaggerProvider provider)
+		public StructureTagger (ITextBuffer buffer, ILogger logger, StructureTaggerProvider provider)
 		{
 			this.buffer = buffer;
-			this.logger = provider.Logger;
+			this.logger = logger;
 			parser = provider.ParserProvider.GetParser (buffer);
 		}
 

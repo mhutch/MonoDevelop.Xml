@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Logging;
 using MonoDevelop.Xml.Editor.Completion;
-using MonoDevelop.Xml.Tests.Schema;
 using System;
 using System.IO;
 using System.Text;

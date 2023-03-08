@@ -28,10 +28,12 @@ namespace MonoDevelop.Xml.Editor.Completion
 		static readonly char[] attributeValueCommitChars = { '"', '\'' };
 
 		readonly XmlCompletionCommitManagerProvider provider;
+		readonly ILogger logger;
 
-		public XmlCompletionCommitManager (XmlCompletionCommitManagerProvider provider)
+		public XmlCompletionCommitManager (XmlCompletionCommitManagerProvider provider, ILogger logger)
 		{
 			this.provider = provider;
+			this.logger = logger;
 		}
 
 		public IEnumerable<char> PotentialCommitCharacters => allCommitChars;
@@ -162,7 +164,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				}
 			}
 
-			LogDidNotHandleCompletionKind (provider.Logger, kind);
+			LogDidNotHandleCompletionKind (logger, kind);
 
 			return CommitResult.Unhandled;
 
@@ -180,7 +182,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				await provider.JoinableTaskContext.Factory.SwitchToMainThreadAsync ();
 				provider.CommandServiceFactory.GetService (textView).Execute ((v, b) => new Microsoft.VisualStudio.Text.Editor.Commanding.Commands.InvokeCompletionListCommandArgs (v, b), null);
 			});
-			task.CatchAndLogWarning (provider.Logger,  $"{nameof(XmlCompletionSource)}.{nameof(RetriggerCompletion)}");
+			task.CatchAndLogWarning (logger,  $"{nameof(XmlCompletionSource)}.{nameof(RetriggerCompletion)}");
 		}
 
 		static void ConsumeTrailingChar (ref SnapshotSpan span, char charToConsume)

@@ -6,7 +6,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
@@ -20,12 +20,12 @@ namespace MonoDevelop.MSBuild.Editor.HighlightReferences
 {
 	class XmlHighlightEndTagTagger : HighlightTagger<ITextMarkerTag, ITextMarkerTag>
 	{
-		XmlParserProvider parserProvider;
+		readonly XmlParserProvider parserProvider;
 
 		public XmlHighlightEndTagTagger (
-			ITextView textView, XmlHighlightEndTagTaggerProvider provider
+			ITextView textView, XmlHighlightEndTagTaggerProvider provider, ILogger logger
 			)
-			: base (textView, provider.JoinableTaskContext, provider.Logger)
+			: base (textView, provider.JoinableTaskContext, logger)
 		{
 			parserProvider = provider.ParserProvider;
 		}
