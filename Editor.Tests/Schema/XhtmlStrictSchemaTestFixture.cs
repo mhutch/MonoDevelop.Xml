@@ -31,7 +31,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 				return;
 
 			using (var reader = new StreamReader (ResourceManager.GetXhtmlStrictSchema (), true)) {
-				ILogger logger = TestLoggers.CreateLogger<XhtmlStrictSchemaTestFixture> ();
+				ILogger logger = TestLoggerFactory.CreateLogger<XhtmlStrictSchemaTestFixture> ();
 				schemaCompletionData = XmlSchemaCompletionProvider.Create (reader, logger);
 			}
 

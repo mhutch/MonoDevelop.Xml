@@ -115,7 +115,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		/// </summary>
 		internal virtual IXmlSchemaCompletionProvider CreateSchemaCompletionDataObject ()
 		{
-			ILogger logger = TestLoggers.CreateLogger<SchemaTestFixtureBase> ();
+			ILogger logger = TestLoggerFactory.CreateLogger<SchemaTestFixtureBase> ();
 			var reader = new StringReader(GetSchema());
 			return XmlSchemaCompletionProvider.Create (reader, logger);
 		}

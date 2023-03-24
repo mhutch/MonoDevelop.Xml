@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
 using MonoDevelop.Xml.Editor.Completion;
+using MonoDevelop.Xml.Tests;
+
 using System;
 using System.IO;
 using System.Text;
@@ -57,7 +59,7 @@ namespace MonoDevelop.Xml.Editor.Tests.Utils
 			// Parse schema.
 			string schemaFileName = Path.Combine(schemaPath, mainSchemaFileName);
 			string baseUri = XmlSchemaCompletionProvider.GetUri(schemaFileName);
-			ILogger logger = TestLoggers.CreateLogger<SchemaIncludeTestFixtureHelper> ();
+			ILogger logger = TestLoggerFactory.CreateTestMethodLogger ();
 			return XmlSchemaCompletionProvider.Create (schemaFileName, logger, baseUri);
 		}
 		
