@@ -31,6 +31,8 @@ using System.Xml;
 
 using Microsoft.Extensions.Logging;
 
+using MonoDevelop.Xml.Logging;
+
 namespace MonoDevelop.Xml.Editor.Completion
 {
 	partial class LocalOnlyXsdResolver : XmlUrlResolver
@@ -58,6 +60,6 @@ namespace MonoDevelop.Xml.Editor.Completion
 		}
 
 		[LoggerMessage (Level = LogLevel.Trace, Message = "LocalOnlyXmlResolver discarded non-local URI '{absoluteUri}' in file '{originFile}'")]
-		static partial void LogUrlResolutionBlocked (ILogger logger, Uri absoluteUri, string originFile);
+		static partial void LogUrlResolutionBlocked (ILogger logger, UserIdentifiable<Uri> absoluteUri, UserIdentifiableFileName originFile);
 	}
 }
