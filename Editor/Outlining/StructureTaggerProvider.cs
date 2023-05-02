@@ -19,11 +19,11 @@ namespace MonoDevelop.Xml.Editor.Tagging
 	[TagType (typeof (IStructureTag))]
 	class StructureTaggerProvider : ITaggerProvider
 	{
-		public IEditorLoggerService LoggerService { get; }
+		public IEditorLoggerFactory LoggerService { get; }
 		public XmlParserProvider ParserProvider { get; }
 
 		[ImportingConstructor]
-		public StructureTaggerProvider (XmlParserProvider parserProvider, IEditorLoggerService loggerService)
+		public StructureTaggerProvider (XmlParserProvider parserProvider, IEditorLoggerFactory loggerService)
 		{
 			ParserProvider = parserProvider;
 			LoggerService = loggerService;
