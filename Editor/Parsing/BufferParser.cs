@@ -66,7 +66,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				if (takeKey != null) {
 					Buffer.ChangedOnBackground -= BufferChangedOnBackground;
 					Buffer.ContentTypeChanged -= BufferContentTypeChanged;
-					Buffer.Properties.RemoveProperty (providerKey);
+					Buffer.Properties.RemoveProperty (takeKey);
 				}
 			}
 		}
