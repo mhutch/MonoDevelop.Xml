@@ -15,8 +15,8 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 
 using MonoDevelop.Xml.Dom;
-using MonoDevelop.Xml.Editor.Logging;
 using MonoDevelop.Xml.Editor.Options;
+using MonoDevelop.Xml.Logging;
 
 namespace MonoDevelop.Xml.Editor.Completion
 {
@@ -183,7 +183,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				await provider.JoinableTaskContext.Factory.SwitchToMainThreadAsync ();
 				provider.CommandServiceFactory.GetService (textView).Execute ((v, b) => new Microsoft.VisualStudio.Text.Editor.Commanding.Commands.InvokeCompletionListCommandArgs (v, b), null);
 			});
-			task.CatchAndLogWarning (logger,  $"{nameof(XmlCompletionSource)}.{nameof(RetriggerCompletion)}");
+			task.CatchAndLogWarning (logger);
 		}
 
 		static void ConsumeTrailingChar (ref SnapshotSpan span, char charToConsume)

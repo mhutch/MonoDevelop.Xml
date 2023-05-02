@@ -9,7 +9,7 @@ using System.Xml.Schema;
 
 using Microsoft.Extensions.Logging;
 
-using MonoDevelop.Xml.Editor.Logging;
+using MonoDevelop.Xml.Logging;
 
 namespace MonoDevelop.Xml.Editor.Completion;
 

@@ -15,7 +15,7 @@ using Microsoft.VisualStudio.Text.Tagging;
 
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Editor.Completion;
-using MonoDevelop.Xml.Editor.Logging;
+using MonoDevelop.Xml.Logging;
 
 namespace MonoDevelop.Xml.Editor.Tagging
 {
@@ -52,7 +52,7 @@ namespace MonoDevelop.Xml.Editor.Tagging
 			} else {
 				parseTask.ContinueWith (t => {
 					RaiseTagsChanged ();
-				}, TaskScheduler.Default).CatchAndLogWarning (logger, nameof(StructureTagger));
+				}, TaskScheduler.Default).CatchAndLogWarning (logger);
 			}
 
 			return emptyTagList;

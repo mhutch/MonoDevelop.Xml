@@ -13,7 +13,8 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Threading;
-using MonoDevelop.Xml.Editor.Logging;
+
+using MonoDevelop.Xml.Logging;
 
 namespace MonoDevelop.Xml.Editor.HighlightReferences
 {
@@ -90,7 +91,7 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 				await JoinableTaskContext.Factory.SwitchToMainThreadAsync (token);
 				TagsChanged?.Invoke (this, new SnapshotSpanEventArgs (updateSpan));
 			}, token)
-				.CatchAndLogWarning (Logger, "XML HighlightTagger");
+				.CatchAndLogWarning (Logger, "HighlightTagger.TimerFired");
 		}
 
 		readonly object highlightsLocker = new object ();
