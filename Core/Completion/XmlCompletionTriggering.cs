@@ -86,7 +86,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 				var text = parser.GetContext ().KeywordBuilder;
 
-				if (isBackspace && text[text.Length-1] == '&') {
+				if (isBackspace && text.Length > 0 && text[text.Length - 1] == '&') {
 					return (XmlCompletionTrigger.Entity, 0);
 				}
 
