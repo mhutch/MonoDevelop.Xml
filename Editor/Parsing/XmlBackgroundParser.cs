@@ -57,10 +57,12 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 			int position = Math.Min (newVersion.Length, oldVersion.Length);
 			while (newVersion.VersionNumber != oldVersion.VersionNumber) {
-				foreach (var change in oldVersion.Changes) {
-					if (change.OldPosition > position) {
-						position = change.OldPosition;
-						break;
+				if (oldVersion.Changes != null) {
+					foreach (var change in oldVersion.Changes) {
+						if (change.OldPosition > position) {
+							position = change.OldPosition;
+							break;
+						}
 					}
 				}
 				oldVersion = oldVersion.Next;
