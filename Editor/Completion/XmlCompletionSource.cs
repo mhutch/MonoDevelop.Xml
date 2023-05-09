@@ -34,13 +34,13 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 		protected ITextView TextView { get; }
 
-		readonly ILogger logger;
+		protected ILogger Logger { get; }
 
 		protected XmlCompletionSource (ITextView textView, ILogger logger, XmlParserProvider parserProvider)
 		{
 			XmlParserProvider = parserProvider;
 			TextView = textView;
-			this.logger = logger;
+			Logger = logger;
 			InitializeBuiltinItems ();
 		}
 
@@ -148,7 +148,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 			var spine = GetSpineParser (triggerLocation);
 
-			LogAttemptingCompletion (logger, spine.CurrentState, spine.CurrentStateLength, trigger.Character, trigger.Reason);
+			LogAttemptingCompletion (Logger, spine.CurrentState, spine.CurrentStateLength, trigger.Character, trigger.Reason);
 
 			var (kind, length) = XmlCompletionTriggering.GetTrigger (spine, reason.Value, trigger.Character);
 			if (kind != XmlCompletionTrigger.None) {
