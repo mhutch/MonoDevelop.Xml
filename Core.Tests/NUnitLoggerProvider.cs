@@ -36,7 +36,7 @@ class NUnitLoggerProvider : ILoggerProvider
 			this.categoryName = categoryName;
 		}
 
-		public IDisposable BeginScope<TState> (TState state)
+		public IDisposable? BeginScope<TState> (TState state) where TState : notnull
 		{
 			var scope = new NUnitLogScope (this, state ?? throw new ArgumentNullException (nameof (state)));
 			lock (scopeStack) {
