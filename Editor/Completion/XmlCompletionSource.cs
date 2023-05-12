@@ -30,7 +30,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 {
 	public abstract partial class XmlCompletionSource : IAsyncCompletionSource
 	{
-		protected XmlBackgroundParser XmlParser { get; }
+		protected XmlParserProvider XmlParserProvider { get; }
 
 		protected ITextView TextView { get; }
 
@@ -38,10 +38,19 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 		protected XmlCompletionSource (ITextView textView, ILogger logger, XmlParserProvider parserProvider)
 		{
-			XmlParser = parserProvider.GetParser (textView.TextBuffer);
+			XmlParserProvider = parserProvider;
 			TextView = textView;
 			this.logger = logger;
 			InitializeBuiltinItems ();
+		}
+
+		protected XmlBackgroundParser GetParser (ITextBuffer textBuffer) => XmlParserProvider.GetParser (textBuffer);
+
+		protected XmlSpineParser GetSpineParser (SnapshotPoint snapshotPoint)
+		{
+			var backgroundParser = GetParser (snapshotPoint.Snapshot.TextBuffer);
+			var spineParser = backgroundParser.GetSpineParser (snapshotPoint);
+			return spineParser;
 		}
 
 		public async virtual Task<CompletionContext> GetCompletionContextAsync (
@@ -56,7 +65,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				return CompletionContext.Empty;
 			}
 
-			var parser = XmlParser.GetSpineParser (triggerLocation);
+			var parser = GetSpineParser (triggerLocation);
 
 			// FIXME: cache the value from InitializeCompletion somewhere?
 			var (kind, _) = XmlCompletionTriggering.GetTrigger (parser, reason.Value, trigger.Character);
@@ -137,7 +146,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				return CompletionStartData.DoesNotParticipateInCompletion;
 			}
 
-			var spine = XmlParser.GetSpineParser (triggerLocation);
+			var spine = GetSpineParser (triggerLocation);
 
 			LogAttemptingCompletion (logger, spine.CurrentState, spine.CurrentStateLength, trigger.Character, trigger.Reason);
 
