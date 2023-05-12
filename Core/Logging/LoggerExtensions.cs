@@ -1,20 +1,23 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#nullable enable
-
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Logging;
 
-namespace MonoDevelop.Xml.Editor.Logging;
+namespace MonoDevelop.Xml.Logging;
 
-static partial class EditorLoggerExtensions
+public static partial class LoggerExtensions
 {
-	public static void CatchAndLogWarning (this Task task, ILogger logger, string origin)
+	public static void CatchAndLogWarning (this Task task, ILogger logger, [CallerMemberName] string? originMember = default)
 	{
+		if (originMember is null) {
+			throw new ArgumentNullException (nameof (originMember));
+		}
+
 		_ = task.ContinueWith (
 			t => {
 				List<Exception>? unhandled = null;
@@ -27,7 +30,7 @@ static partial class EditorLoggerExtensions
 					return;
 				}
 				Exception ex = unhandled.Count == 1 ? unhandled[0] : new AggregateException (unhandled);
-				logger.LogInternalErrorAsWarning (ex, origin);
+				logger.LogInternalErrorAsWarning (ex, originMember);
 			},
 			default,
 			TaskContinuationOptions.OnlyOnFaulted,
@@ -35,6 +38,6 @@ static partial class EditorLoggerExtensions
 		);
 	}
 
-	[LoggerMessage (Level = LogLevel.Warning, Message = "Internal error in {origin}")]
-	public static partial void LogInternalErrorAsWarning (this ILogger logger, Exception ex, string origin);
+	[LoggerMessage (Level = LogLevel.Warning, Message = "Internal error in {originMember}")]
+	public static partial void LogInternalErrorAsWarning (this ILogger logger, Exception ex, string originMember);
 }

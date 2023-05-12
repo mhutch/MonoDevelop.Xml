@@ -13,10 +13,10 @@ namespace MonoDevelop.Xml.Editor.Completion
 	[Export]
 	public class XmlParserProvider : BufferParserProvider<XmlBackgroundParser, XmlParseResult>
 	{
-		readonly IEditorLoggerService loggerService;
+		readonly IEditorLoggerFactory loggerService;
 
 		[ImportingConstructor]
-		public XmlParserProvider (IEditorLoggerService loggerService)
+		public XmlParserProvider (IEditorLoggerFactory loggerService)
 		{
 			this.loggerService = loggerService;
 		}

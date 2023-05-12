@@ -20,7 +20,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 	class XmlCompletionCommitManagerProvider : IAsyncCompletionCommitManagerProvider
 	{
 		[ImportingConstructor]
-		public XmlCompletionCommitManagerProvider (JoinableTaskContext joinableTaskContext, ISmartIndentationService smartIndentationService, IEditorCommandHandlerServiceFactory commandServiceFactory, IEditorLoggerService loggerService)
+		public XmlCompletionCommitManagerProvider (JoinableTaskContext joinableTaskContext, ISmartIndentationService smartIndentationService, IEditorCommandHandlerServiceFactory commandServiceFactory, IEditorLoggerFactory loggerService)
 		{
 			JoinableTaskContext = joinableTaskContext;
 			SmartIndentationService = smartIndentationService;
@@ -31,7 +31,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 		public JoinableTaskContext JoinableTaskContext { get; }
 		public ISmartIndentationService SmartIndentationService { get; }
 		public IEditorCommandHandlerServiceFactory CommandServiceFactory { get; }
-		public IEditorLoggerService LoggerService { get; }
+		public IEditorLoggerFactory LoggerService { get; }
 
 		public IAsyncCompletionCommitManager GetOrCreate (ITextView textView)
 		{

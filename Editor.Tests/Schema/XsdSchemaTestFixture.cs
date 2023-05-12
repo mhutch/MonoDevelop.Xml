@@ -50,7 +50,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 				return;
 			
 			using (var reader = new StreamReader (ResourceManager.GetXsdSchema(), true)) {
-				ILogger logger = TestLoggers.CreateLogger<XsdSchemaTestFixture> ();
+				ILogger logger = TestLoggerFactory.CreateLogger<XsdSchemaTestFixture> ();
 				schemaCompletionData = XmlSchemaCompletionProvider.Create(reader, logger);
 			}
 			

@@ -9,6 +9,8 @@ using System.Xml.Schema;
 
 using Microsoft.Extensions.Logging;
 
+using MonoDevelop.Xml.Logging;
+
 namespace MonoDevelop.Xml.Editor.Completion;
 
 /// <summary>
@@ -113,10 +115,10 @@ partial class XmlSchemaLoader
 	}
 
 	[LoggerMessage (EventId = 1, Level = LogLevel.Warning, Message = "Validation error in schema '{schemaFile}': {validationMessage}")]
-	static partial void LogSchemaValidationError (ILogger logger, string schemaFile, string validationMessage);
+	static partial void LogSchemaValidationError (ILogger logger, UserIdentifiableFileName schemaFile, UserIdentifiableString validationMessage);
 
 	[LoggerMessage (EventId = 2, Level = LogLevel.Error, Message = "Failed to load schema '{schemaFile}'")]
-	static partial void LogSchemaLoadFailed (ILogger logger, string schemaFile);
+	static partial void LogSchemaLoadFailed (ILogger logger, UserIdentifiableFileName schemaFile);
 }
 
 enum XmlSchemaLoaderState

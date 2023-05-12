@@ -27,7 +27,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 			var  items = new XmlSchemaCompletionDataCollection();
 
 			var reader = new StringReader(GetSchema(firstNamespace));
-			ILogger logger = TestLoggers.CreateLogger<NamespaceCompletionTestFixture> ();
+			ILogger logger = TestLoggerFactory.CreateLogger<NamespaceCompletionTestFixture> ();
 			var schema = XmlSchemaCompletionProvider.Create (reader, logger);
 			items.Add(schema);
 			
