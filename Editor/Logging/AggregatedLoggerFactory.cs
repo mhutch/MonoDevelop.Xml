@@ -22,7 +22,7 @@ class AggregatedLoggerFactory : ILoggerFactory
 	public ILogger CreateLogger (string categoryName)
 	{
 		if (providers.Count == 1) {
-			return providers[1].CreateLogger (categoryName);
+			return providers[0].CreateLogger (categoryName);
 		}
 
 		var loggers = new ILogger[providers.Count];

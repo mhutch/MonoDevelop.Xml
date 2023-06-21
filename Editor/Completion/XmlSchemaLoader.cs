@@ -115,7 +115,7 @@ partial class XmlSchemaLoader
 	}
 
 	[LoggerMessage (EventId = 1, Level = LogLevel.Warning, Message = "Validation error in schema '{schemaFile}': {validationMessage}")]
-	static partial void LogSchemaValidationError (ILogger logger, UserIdentifiableFileName schemaFile, UserIdentifiableString validationMessage);
+	static partial void LogSchemaValidationError (ILogger logger, UserIdentifiableFileName schemaFile, UserIdentifiable<string> validationMessage);
 
 	[LoggerMessage (EventId = 2, Level = LogLevel.Error, Message = "Failed to load schema '{schemaFile}'")]
 	static partial void LogSchemaLoadFailed (ILogger logger, UserIdentifiableFileName schemaFile);
