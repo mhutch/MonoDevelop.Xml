@@ -238,7 +238,7 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 		}
 
 		/// <summary>
-		/// Considers items to be indentical if they intersect
+		/// Considers items to be identical if they intersect
 		/// </summary>
 		class IntersectionComparer : IComparer<(TKind kind, SnapshotSpan location)>
 		{
