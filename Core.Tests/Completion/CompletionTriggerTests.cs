@@ -20,7 +20,7 @@ namespace MonoDevelop.Xml.Tests.Completion
 		//    trigger reason defaults to insertion if typedChar is non-null, else invocation
 		//    length defaults to 0
 		//    if typedChar is provided, it's added to the document text
-		[TestCase ("", XmlCompletionTrigger.ElementWithBracket)]
+		[TestCase ("", XmlCompletionTrigger.ElementValue)]
 		[TestCase("<", XmlCompletionTrigger.Element)]
 		[TestCase("", XmlTriggerReason.Backspace, XmlCompletionTrigger.None)]
 		[TestCase("<", 'a', XmlCompletionTrigger.Element, 1)]

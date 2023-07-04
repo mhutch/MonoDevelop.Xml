@@ -23,7 +23,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 			// explicit invocation in element name
 			if (isExplicit && context.CurrentState is XmlNameState && context.CurrentState.Parent is XmlTagState) {
-				int length = context.CurrentStateLength;
+				int length = context.CurrentStateLength + 1; // include the < character
 				return (XmlCompletionTrigger.Element, length);
 			}
 
@@ -108,7 +108,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				context.CurrentState is XmlTextState
 				|| XmlRootState.IsFree (context)
 			)) {
-				return (XmlCompletionTrigger.ElementWithBracket, 0);
+				return (XmlCompletionTrigger.ElementValue, 0);
 			}
 
 			return (XmlCompletionTrigger.None, 0);
@@ -119,7 +119,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 	{
 		None,
 		Element,
-		ElementWithBracket,
+		ElementValue,
 		Attribute,
 		AttributeValue,
 		Entity,

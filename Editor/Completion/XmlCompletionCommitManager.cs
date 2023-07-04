@@ -54,7 +54,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 			switch (kind) {
 			case XmlCompletionTrigger.Element:
-			case XmlCompletionTrigger.ElementWithBracket:
+			case XmlCompletionTrigger.ElementValue:
 				// allow using / as a commit char for elements as self-closing elements, but special case disallowing it
 				// in the cases where that could conflict with typing the / at the start of a closing tag
 				if (typedChar == '/') {
