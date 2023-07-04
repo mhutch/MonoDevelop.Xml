@@ -342,7 +342,12 @@ namespace MonoDevelop.Xml.Editor.Completion
 					continue;
 				}
 
-				var item = new CompletionItem (prefix + name, this, XmlImages.ClosingTag)
+				string insertText = prefix + name;
+
+				// force these to sort last, they're not very interesting values to browse as these tags are most likely already closed
+				string sortText = "ZZZZZZ" + insertText;
+
+				var item = new CompletionItem (insertText, this, XmlImages.ClosingTag, ImmutableArray<CompletionFilter>.Empty, "", insertText, sortText, insertText, ImmutableArray<ImageElement>.Empty)
 					.AddClosingElementDocumentation (el, dedup.Count > 1)
 					.AddKind (dedup.Count == 1? XmlCompletionItemKind.ClosingTag : XmlCompletionItemKind.MultipleClosingTags);
 				item.Properties.AddProperty (typeof (List<XObject>), nodePath);
