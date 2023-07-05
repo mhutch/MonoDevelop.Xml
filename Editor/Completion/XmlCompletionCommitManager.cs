@@ -92,6 +92,13 @@ namespace MonoDevelop.Xml.Editor.Completion
 				return CommitResult.Unhandled;
 			}
 
+			// per-item CommitCharacters overrides the default commit chars
+			if (!item.CommitCharacters.IsDefaultOrEmpty) {
+				if (item.CommitCharacters.Contains (typedChar)) {
+					return CommitCancel;
+				}
+			}
+
 			var span = session.ApplicableToSpan.GetSpan (buffer.CurrentSnapshot);
 			bool wasTypedInFull = span.Length == item.InsertText.Length;
 
