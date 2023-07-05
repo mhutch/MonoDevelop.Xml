@@ -87,7 +87,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			var parser = GetSpineParser (triggerLocation);
 
 			// FIXME: cache the value from InitializeCompletion somewhere?
-			var (kind, _) = XmlCompletionTriggering.GetTrigger (parser, reason.Value, trigger.Character);
+			var (kind, _, _) = XmlCompletionTriggering.GetTrigger (parser, reason.Value, trigger.Character);
 
 			if (kind == XmlCompletionTrigger.None) {
 				yield break;
@@ -99,9 +99,10 @@ namespace MonoDevelop.Xml.Editor.Completion
 			switch (kind) {
 			case XmlCompletionTrigger.ElementValue:
 				yield return GetElementValueCompletionsAsync (session, triggerLocation, nodePath, token);
-				goto case XmlCompletionTrigger.Element;
+				goto case XmlCompletionTrigger.Tag;
 
-			case XmlCompletionTrigger.Element:
+			case XmlCompletionTrigger.Tag:
+			case XmlCompletionTrigger.ElementName:
 				// if we're completing an existing element, remove it from the path
 				// so we don't get completions for its children instead
 				if (nodePath.Count > 0) {
@@ -111,10 +112,10 @@ namespace MonoDevelop.Xml.Editor.Completion
 				}
 				//TODO: if it's on the first or second line and there's no DTD declaration, add the DTDs, or at least <!DOCTYPE
 				//TODO: add snippets // MonoDevelop.Ide.CodeTemplates.CodeTemplateService.AddCompletionDataForFileName (DocumentContext.Name, list);
-				yield return GetElementCompletionsAsync (session, triggerLocation, nodePath, reason == XmlTriggerReason.Invocation, token);
+				yield return GetElementCompletionsAsync (session, triggerLocation, nodePath, kind != XmlCompletionTrigger.ElementName, token);
 				break;
 
-			case XmlCompletionTrigger.Attribute:
+			case XmlCompletionTrigger.AttributeName:
 				if (parser.Spine.TryFind<IAttributedXObject> (maxDepth: 1) is not IAttributedXObject attributedOb) {
 					throw new InvalidOperationException ("Did not find IAttributedXObject in stack for XmlCompletionTrigger.Attribute");
 				}
@@ -159,9 +160,19 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 			LogAttemptingCompletion (Logger, spine.CurrentState, spine.CurrentStateLength, trigger.Character, trigger.Reason);
 
-			var (kind, length) = XmlCompletionTriggering.GetTrigger (spine, reason.Value, trigger.Character);
+			var (kind, spanStart, spanReadForward) = XmlCompletionTriggering.GetTrigger (spine, reason.Value, trigger.Character);
+
+			int spanLength;
+			if (spanReadForward == XmlReadForward.XmlName) {
+				spanLength = new SnapshotTextSource (triggerLocation.Snapshot).GetXNameLengthAtPosition (spanStart, triggerLocation.Position);
+			} else {
+				spanLength = triggerLocation.Position - spanStart;
+			}
+
+			//TODO: handle spanReadforward
+
 			if (kind != XmlCompletionTrigger.None) {
-				return new CompletionStartData (CompletionParticipation.ProvidesItems, new SnapshotSpan (triggerLocation.Snapshot, triggerLocation.Position - length, length));
+				return new CompletionStartData (CompletionParticipation.ProvidesItems, new SnapshotSpan (triggerLocation.Snapshot, spanStart, spanLength));
 			}
 
 			//TODO: closing tag completion after typing >

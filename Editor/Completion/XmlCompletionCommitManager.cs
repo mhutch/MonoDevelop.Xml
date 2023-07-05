@@ -53,19 +53,20 @@ namespace MonoDevelop.Xml.Editor.Completion
 			};
 
 			switch (kind) {
-			case XmlCompletionTrigger.Element:
+			case XmlCompletionTrigger.Tag:
+			case XmlCompletionTrigger.ElementName:
 			case XmlCompletionTrigger.ElementValue:
 				// allow using / as a commit char for elements as self-closing elements, but special case disallowing it
 				// in the cases where that could conflict with typing the / at the start of a closing tag
 				if (typedChar == '/') {
 					var span = session.ApplicableToSpan.GetSpan (location.Snapshot);
-					if (span.Length == (kind == XmlCompletionTrigger.Element ? 0 : 1)) {
+					if (span.Length == (kind == XmlCompletionTrigger.ElementName ? 0 : 1)) {
 						return false;
 					}
 				}
 				return Array.IndexOf (tagCommitChars, typedChar) > -1;
 
-			case XmlCompletionTrigger.Attribute:
+			case XmlCompletionTrigger.AttributeName:
 				return Array.IndexOf (attributeCommitChars, typedChar) > -1;
 
 			case XmlCompletionTrigger.AttributeValue:
@@ -81,9 +82,9 @@ namespace MonoDevelop.Xml.Editor.Completion
 			return false;
 		}
 
-		static readonly CommitResult CommitSwallowChar = new CommitResult (true, CommitBehavior.SuppressFurtherTypeCharCommandHandlers);
+		static readonly CommitResult CommitSwallowChar = new (true, CommitBehavior.SuppressFurtherTypeCharCommandHandlers);
 
-		static readonly CommitResult CommitCancel = new CommitResult (true, CommitBehavior.CancelCommit);
+		static readonly CommitResult CommitCancel = new (true, CommitBehavior.CancelCommit);
 
 		public CommitResult TryCommit (IAsyncCompletionSession session, ITextBuffer buffer, CompletionItem item, char typedChar, CancellationToken token)
 		{

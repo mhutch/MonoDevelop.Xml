@@ -20,74 +20,76 @@ namespace MonoDevelop.Xml.Tests.Completion
 		//    trigger reason defaults to insertion if typedChar is non-null, else invocation
 		//    length defaults to 0
 		//    if typedChar is provided, it's added to the document text
-		[TestCase ("", XmlCompletionTrigger.ElementValue)]
-		[TestCase("<", XmlCompletionTrigger.Element)]
-		[TestCase("", XmlTriggerReason.Backspace, XmlCompletionTrigger.None)]
-		[TestCase("<", 'a', XmlCompletionTrigger.Element, 1)]
-		[TestCase("<abc", XmlCompletionTrigger.Element, 3)]
+		[TestCase ("", XmlCompletionTrigger.ElementValue, 0)]
+		[TestCase("<", XmlCompletionTrigger.Tag, 0, XmlReadForward.TagStart)]
+		[TestCase("", XmlTriggerReason.Backspace, XmlCompletionTrigger.None, 0)]
+		[TestCase("<", 'a', XmlCompletionTrigger.ElementName, 1)]
+		[TestCase("<abc", XmlCompletionTrigger.ElementName, 1, XmlReadForward.XmlName)]
 		[TestCase("<abc", XmlTriggerReason.Backspace, XmlCompletionTrigger.None)]
-		[TestCase("<", XmlTriggerReason.Backspace, XmlCompletionTrigger.Element)]
-		[TestCase ("", '<', XmlCompletionTrigger.Element)]
-		[TestCase ("sometext", '<', XmlCompletionTrigger.Element)]
+		[TestCase("<", XmlTriggerReason.Backspace, XmlCompletionTrigger.Tag, 0)]
+		[TestCase ("", '<', XmlCompletionTrigger.Tag, 0)]
+		[TestCase ("sometext", '<', XmlCompletionTrigger.Tag, 8)]
 		[TestCase ("sometext", XmlTriggerReason.Backspace, XmlCompletionTrigger.None)]
 		[TestCase ("", 'a', XmlCompletionTrigger.None)]
 		[TestCase("\"", '"', XmlCompletionTrigger.None)]
 		[TestCase("<foo", '"', XmlCompletionTrigger.None)]
-		[TestCase ("<foo", ' ', XmlCompletionTrigger.Attribute)]
-		[TestCase ("<foo bar='1'   ", ' ', XmlCompletionTrigger.Attribute)]
-		[TestCase ("<foo ", XmlCompletionTrigger.Attribute)]
-		[TestCase ("<foo a", XmlCompletionTrigger.Attribute, 1)]
-		[TestCase ("<foo bar", XmlCompletionTrigger.Attribute, 3)]
+		[TestCase ("<foo", ' ', XmlCompletionTrigger.AttributeName, 5)]
+		[TestCase ("<foo bar='1'   ", ' ', XmlCompletionTrigger.AttributeName, 16, XmlReadForward.None)]
+		[TestCase ("<foo ", XmlCompletionTrigger.AttributeName, XmlReadForward.XmlName)]
+		[TestCase ("<foo a", XmlCompletionTrigger.AttributeName, 5, XmlReadForward.XmlName)]
+		[TestCase ("<foo bar", XmlCompletionTrigger.AttributeName, 5, XmlReadForward.XmlName)]
 		[TestCase ("", '&', XmlCompletionTrigger.Entity)]
-		[TestCase ("&", XmlCompletionTrigger.Entity)]
+		[TestCase ("&", XmlCompletionTrigger.Entity, 0, XmlReadForward.Entity)]
 		[TestCase ("&", 'a', XmlCompletionTrigger.None)]
-		[TestCase ("&", XmlTriggerReason.Backspace, XmlCompletionTrigger.Entity)]
-		[TestCase ("&blah", XmlCompletionTrigger.Entity, 4)]
+		[TestCase ("&", XmlTriggerReason.Backspace, XmlCompletionTrigger.Entity, 0)]
+		[TestCase ("&blah", XmlCompletionTrigger.Entity, 0, XmlReadForward.Entity)]
 		[TestCase ("&blah", XmlTriggerReason.Backspace, XmlCompletionTrigger.None)]
 		[TestCase ("<foo ", '&', XmlCompletionTrigger.None)]
 		[TestCase ("<foo bar='", '&', XmlCompletionTrigger.Entity)]
 		[TestCase ("<", '!', XmlCompletionTrigger.DeclarationOrCDataOrComment, 2)]
 		[TestCase ("<!", XmlCompletionTrigger.DeclarationOrCDataOrComment, 2)]
-		[TestCase ("<!DOCTYPE foo", XmlCompletionTrigger.DocType, 13)]
-		[TestCase ("<!DOC", XmlCompletionTrigger.DocType, 5)]
-		[TestCase ("<foo bar=\"", XmlCompletionTrigger.AttributeValue)]
-		[TestCase ("<foo bar='", XmlCompletionTrigger.AttributeValue)]
+		[TestCase ("<!DOCTYPE foo", XmlCompletionTrigger.DocType, 0, XmlReadForward.DocType)]
+		[TestCase ("<!DOC", XmlCompletionTrigger.DocType, 0, XmlReadForward.DocType)]
+		[TestCase ("<foo bar=\"", XmlCompletionTrigger.AttributeValue, XmlReadForward.AttributeValue)]
+		[TestCase ("<foo bar='", XmlCompletionTrigger.AttributeValue, XmlReadForward.AttributeValue)]
 		[TestCase ("<foo bar='", XmlTriggerReason.Backspace, XmlCompletionTrigger.AttributeValue)]
 		[TestCase ("<foo bar='abc", XmlTriggerReason.Backspace, XmlCompletionTrigger.None)]
-		[TestCase ("<foo bar=", '"', XmlCompletionTrigger.AttributeValue)]
-		[TestCase ("<foo bar=", '\'', XmlCompletionTrigger.AttributeValue)]
-		[TestCase ("<foo bar='wxyz", XmlCompletionTrigger.AttributeValue, 4)]
+		[TestCase ("<foo bar=", '"', XmlCompletionTrigger.AttributeValue, 10)]
+		[TestCase ("<foo bar=", '\'', XmlCompletionTrigger.AttributeValue, 10)]
+		[TestCase ("<foo bar='wxyz", XmlCompletionTrigger.AttributeValue, 10, XmlReadForward.AttributeValue)]
 		[TestCase ("<foo bar=wxyz", XmlCompletionTrigger.None)]
 		[TestCase ("<foo bar=wxyz", XmlTriggerReason.Backspace, XmlCompletionTrigger.None)]
-		[TestCase ("<foo bar=wxyz", "'", XmlCompletionTrigger.None)]
+		[TestCase ("<foo bar=wxyz", '\'', XmlCompletionTrigger.None)]
 		public void TriggerTests (object[] args)
 		{
-			//first arg is the doc
-			string doc = (string)args[0];
-
-			XmlTriggerReason reason;
-			char typedChar;
-
-			//next arg can be typed char or a trigger reason
-			//this would make a nice switch expression w/c#8
-			if (args[1] is XmlTriggerReason r) {
-				reason = r;
-				typedChar = '\0';
-			} else if (args[1] is char c) {
-				reason = XmlTriggerReason.TypedChar;
-				typedChar = c;
-			} else {
-				reason = XmlTriggerReason.Invocation;
-				typedChar = '\0';
+			int argIdx = 0;
+			bool TryGetArg<T> (out T result, T defaultVal) where T: notnull
+			{
+				if (argIdx < args.Length && args[argIdx] is T r) {
+					argIdx++;
+					result = r;
+					return true;
+				}
+				result = defaultVal;
+				return false;
 			}
 
-			//expected trigger will be last unless length is provided, then it's penultimate
-			var expectedTrigger = args[args.Length - 1] is XmlCompletionTrigger
-				? args[args.Length - 1]
-				: args[args.Length - 2];
+			//first arg is the doc
+			string doc = (string)args[argIdx++];
 
-			//length is optional, but if provided it's always last
-			int expectedLength = args[args.Length - 1] as int? ?? 0;
+			//next arg can be typed char or a trigger reason
+			XmlTriggerReason reason;
+			if (TryGetArg (out char typedChar, defaultVal: '\0')) {
+				reason = XmlTriggerReason.TypedChar;
+			} else{
+				TryGetArg (out reason, defaultVal: XmlTriggerReason.Invocation);
+			}
+
+			int triggerPos = doc.Length;
+
+			XmlCompletionTrigger expectedTrigger = (XmlCompletionTrigger) args[argIdx++];
+			TryGetArg (out int expectedSpanStart, defaultVal: triggerPos);
+			TryGetArg (out XmlReadForward expectedReadForward, defaultVal: XmlReadForward.None);
 
 			if (typedChar != '\0') {
 				doc += typedChar;
@@ -98,7 +100,10 @@ namespace MonoDevelop.Xml.Tests.Completion
 
 			var result = XmlCompletionTriggering.GetTrigger (spine, reason, typedChar);
 			Assert.AreEqual (expectedTrigger, result.kind);
-			Assert.AreEqual (expectedLength, result.length);
+			if (expectedTrigger != XmlCompletionTrigger.None) {
+				Assert.AreEqual (expectedSpanStart, result.spanStart);
+				Assert.AreEqual (expectedReadForward, result.spanReadForward);
+			}
 		}
 	}
 }
