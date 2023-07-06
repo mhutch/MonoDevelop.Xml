@@ -50,6 +50,34 @@ namespace MonoDevelop.Xml.Parser
 			return currentPosition - nameStartPosition;
 		}
 
+		public static int GetAttributeValueLengthAtPosition (this ITextSource text, char delimiter, int attributeStartPosition, int currentPosition, int maximumReadahead = DEFAULT_READAHEAD_LIMIT)
+		{
+			int limit = Math.Min (text.Length, currentPosition + maximumReadahead);
+
+			//try to find the end of the name, but don't go too far
+			for (; currentPosition < limit; currentPosition++) {
+				char c = text[currentPosition];
+				if (XmlChar.IsInvalid (c) || c == '<') {
+					return currentPosition - attributeStartPosition;
+				}
+				switch (delimiter) {
+				case '\'':
+				case '"':
+					if (c == delimiter) {
+						return currentPosition - attributeStartPosition;
+					}
+					break;
+				default:
+					if (XmlChar.IsWhitespace (c)) {
+						return currentPosition - attributeStartPosition;
+					}
+					break;
+				}
+			}
+
+			return currentPosition - attributeStartPosition;
+		}
+
 		/// <summary>
 		/// Advances the parser until the specified object is closed i.e. has a closing tag.
 		/// </summary>

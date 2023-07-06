@@ -87,7 +87,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			var parser = GetSpineParser (triggerLocation);
 
 			// FIXME: cache the value from InitializeCompletion somewhere?
-			var (kind, _, _) = XmlCompletionTriggering.GetTrigger (parser, reason.Value, trigger.Character);
+			var kind = XmlCompletionTriggering.GetTrigger (parser, reason.Value, trigger.Character);
 
 			if (kind == XmlCompletionTrigger.None) {
 				yield break;
@@ -160,16 +160,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 			LogAttemptingCompletion (Logger, spine.CurrentState, spine.CurrentStateLength, trigger.Character, trigger.Reason);
 
-			var (kind, spanStart, spanReadForward) = XmlCompletionTriggering.GetTrigger (spine, reason.Value, trigger.Character);
-
-			int spanLength;
-			if (spanReadForward == XmlReadForward.XmlName) {
-				spanLength = new SnapshotTextSource (triggerLocation.Snapshot).GetXNameLengthAtPosition (spanStart, triggerLocation.Position);
-			} else {
-				spanLength = triggerLocation.Position - spanStart;
-			}
-
-			//TODO: handle spanReadforward
+			var (kind, spanStart, spanLength) = XmlCompletionTriggering.GetTriggerAndSpan (spine, reason.Value, trigger.Character, new SnapshotTextSource (triggerLocation.Snapshot));
 
 			if (kind != XmlCompletionTrigger.None) {
 				return new CompletionStartData (CompletionParticipation.ProvidesItems, new SnapshotSpan (triggerLocation.Snapshot, spanStart, spanLength));
@@ -265,10 +256,10 @@ namespace MonoDevelop.Xml.Editor.Completion
 		CompletionItem cdataItemWithBracket, commentItemWithBracket, prologItemWithBracket;
 		CompletionItem[] entityItems;
 
-		[MemberNotNull(
-			nameof(cdataItem), nameof (commentItem), nameof (prologItem),
-			nameof(cdataItemWithBracket), nameof (commentItemWithBracket), nameof (prologItemWithBracket),
-			nameof(entityItems))]
+		[MemberNotNull (
+			nameof (cdataItem), nameof (commentItem), nameof (prologItem),
+			nameof (cdataItemWithBracket), nameof (commentItemWithBracket), nameof (prologItemWithBracket),
+			nameof (entityItems))]
 		void InitializeBuiltinItems ()
 		{
 			cdataItem = new CompletionItem ("![CDATA[", this, XmlImages.CData)
@@ -306,10 +297,13 @@ namespace MonoDevelop.Xml.Editor.Completion
 			};
 
 			//TODO: need to tweak semicolon insertion dor XmlCompletionItemKind.Entity
-			CompletionItem EntityItem (string name, string character) =>
-				new CompletionItem (name, this, XmlImages.Entity, ImmutableArray<CompletionFilter>.Empty, string.Empty, name, name, character, ImmutableArray<ImageElement>.Empty)
-				.AddEntityDocumentation (character)
-				.AddKind (XmlCompletionItemKind.Entity);
+			CompletionItem EntityItem (string name, string character)
+			{
+				name = $"&{name};";
+				return new CompletionItem (name, this, XmlImages.Entity, ImmutableArray<CompletionFilter>.Empty, string.Empty, name, name, character, ImmutableArray<ImageElement>.Empty)
+					.AddEntityDocumentation (character)
+					.AddKind (XmlCompletionItemKind.Entity);
+			}
 		}
 
 		/// <summary>
@@ -332,7 +326,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			}
 		}
 
-		protected IEnumerable<CompletionItem> GetBuiltInEntityItems () => entityItems;
+		protected IList<CompletionItem> GetBuiltInEntityItems () => entityItems;
 
 		IEnumerable<CompletionItem> GetClosingTags (List<XObject> nodePath, bool includeBracket)
 		{

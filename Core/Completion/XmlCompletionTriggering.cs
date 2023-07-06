@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Diagnostics;
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Parser;
@@ -9,8 +10,17 @@ namespace MonoDevelop.Xml.Editor.Completion
 {
 	class XmlCompletionTriggering
 	{
+		public static XmlCompletionTrigger GetTrigger (XmlSpineParser parser, XmlTriggerReason reason, char typedCharacter) => GetTriggerAndIncompleteSpan (parser, reason, typedCharacter).kind;
+
+		public static (XmlCompletionTrigger kind, int spanStart, int spanLength) GetTriggerAndSpan (XmlSpineParser parser, XmlTriggerReason reason, char typedCharacter, ITextSource spanReadForwardTextSource)
+		{
+			var result = GetTriggerAndIncompleteSpan (parser, reason, typedCharacter);
+			var spanLength = GetReadForwardLength (spanReadForwardTextSource, parser, result.spanStart, result.spanReadForward);
+			return (result.kind, result.spanStart, spanLength);
+		}
+
 		//FIXME: the length should do a readahead to capture the whole token
-		public static (XmlCompletionTrigger kind, int spanStart, XmlReadForward spanReadForward) GetTrigger (XmlSpineParser parser, XmlTriggerReason reason, char typedCharacter)
+		static (XmlCompletionTrigger kind, int spanStart, XmlReadForward spanReadForward) GetTriggerAndIncompleteSpan (XmlSpineParser parser, XmlTriggerReason reason, char typedCharacter)
 		{
 			int triggerPosition = parser.Position;
 			bool isExplicit = reason == XmlTriggerReason.Invocation;
@@ -51,7 +61,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 			//doctype/cdata completion, explicit trigger after <! or type ! after <
 			if ((isExplicit || typedCharacter == '!') && XmlRootState.MaybeCDataOrCommentOrDocType (context)) {
-				return (XmlCompletionTrigger.DeclarationOrCDataOrComment, triggerPosition, XmlReadForward.None);
+				return (XmlCompletionTrigger.DeclarationOrCDataOrComment, triggerPosition - 2, XmlReadForward.None);
 			}
 
 			//explicit trigger in existing doctype
@@ -89,7 +99,11 @@ namespace MonoDevelop.Xml.Editor.Completion
 				var text = parser.GetContext ().KeywordBuilder;
 
 				if (isBackspace && text.Length > 0 && text[text.Length - 1] == '&') {
-					return (XmlCompletionTrigger.Entity, triggerPosition - 1, isExplicit ? XmlReadForward.Entity : XmlReadForward.None);
+					return (XmlCompletionTrigger.Entity, triggerPosition - 1, XmlReadForward.Entity);
+				}
+
+				if (isTypedChar && XmlChar.IsFirstNameChar (typedCharacter) && text.Length > 1 && text[text.Length - 2] == '&') {
+					return (XmlCompletionTrigger.Entity, triggerPosition - 1, XmlReadForward.None);
 				}
 
 				if (isExplicit) {
@@ -115,19 +129,63 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 			return (XmlCompletionTrigger.None, triggerPosition, XmlReadForward.None);
 		}
-	}
 
-	/// <summary>
-	/// Describes how to read forward from the completion span start to get the completion span
-	/// </summary>
-	enum XmlReadForward
-	{
-		None,
-		XmlName,
-		TagStart,
-		DocType,
-		AttributeValue,
-		Entity
+		/// <summary>
+		/// Describes how to read forward from the completion span start to get the completion span
+		/// </summary>
+		enum XmlReadForward
+		{
+			None,
+			XmlName,
+			TagStart,
+			DocType,
+			AttributeValue,
+			Entity
+		}
+
+		//TODO: support the other readforward types
+		static int GetReadForwardLength (ITextSource textSource, XmlSpineParser spine, int spanStart, XmlReadForward spanReadForward)
+		{
+			int triggerPosition = spine.Position;
+			switch (spanReadForward) {
+			case XmlReadForward.XmlName:
+				return textSource.GetXNameLengthAtPosition (spanStart, triggerPosition);
+
+			case XmlReadForward.AttributeValue:
+				var attributeDelimiter = spine.GetAttributeValueDelimiter () ?? '\0';
+				return textSource.GetAttributeValueLengthAtPosition (attributeDelimiter, spanStart, triggerPosition);
+
+			case XmlReadForward.TagStart:
+				int existingLength = triggerPosition - spanStart;
+				foreach (string specialTag in specialStartTags) {
+					if (specialTag.Length >= existingLength) {
+						int max = Math.Min (spanStart + specialTag.Length, textSource.Length);
+						for (int i = spanStart; i < max; i++) {
+							int specialTagIndex = i - spanStart;
+							if (textSource[i] != specialTag[specialTagIndex]) {
+								break;
+							}
+							if (specialTagIndex + 1 == specialTag.Length) {
+								return specialTag.Length;
+							}
+						}
+					}
+				}
+				return textSource.GetXNameLengthAtPosition (spanStart, triggerPosition);
+
+			case XmlReadForward.DocType:
+			case XmlReadForward.Entity:
+			case XmlReadForward.None:
+				return triggerPosition - spanStart;
+			default:
+				throw new ArgumentException ("Unsupported XmlReadForward value", nameof (spanReadForward));
+			}
+		}
+
+		static string[] specialStartTags = new[] {
+			"<![CDATA[",
+			"<!--"
+		};
 	}
 
 	enum XmlCompletionTrigger
