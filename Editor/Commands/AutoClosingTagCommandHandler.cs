@@ -15,8 +15,8 @@ using Microsoft.VisualStudio.Text.Editor.Commanding.Commands;
 using Microsoft.VisualStudio.Utilities;
 
 using MonoDevelop.Xml.Dom;
-using MonoDevelop.Xml.Editor.Completion;
 using MonoDevelop.Xml.Editor.Options;
+using MonoDevelop.Xml.Editor.Parsing;
 
 namespace MonoDevelop.Xml.Editor.Commands
 {

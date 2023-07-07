@@ -12,7 +12,7 @@ using Microsoft.VisualStudio.Text;
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Parser;
 
-namespace MonoDevelop.Xml.Editor.Completion
+namespace MonoDevelop.Xml.Editor.Parsing
 {
 	public partial class XmlBackgroundParser : BufferParser<XmlParseResult>
 	{

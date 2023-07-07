@@ -7,7 +7,8 @@ using System;
 using System.Threading;
 using Microsoft.VisualStudio.Text;
 
-namespace MonoDevelop.Xml.Editor.Completion
+
+namespace MonoDevelop.Xml.Editor.Parsing
 {
 	/// <summary>
 	/// Base class for parsers that parse a text buffer on every change.

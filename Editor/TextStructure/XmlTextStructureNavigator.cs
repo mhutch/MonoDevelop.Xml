@@ -15,7 +15,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Utilities;
 
 using MonoDevelop.Xml.Dom;
-using MonoDevelop.Xml.Editor.Completion;
+using MonoDevelop.Xml.Editor.Parsing;
 using MonoDevelop.Xml.Parser;
 
 namespace MonoDevelop.Xml.Editor.TextStructure

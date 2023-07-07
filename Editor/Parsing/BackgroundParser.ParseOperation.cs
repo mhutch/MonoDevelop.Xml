@@ -4,7 +4,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MonoDevelop.Xml.Editor.Completion
+namespace MonoDevelop.Xml.Editor.Parsing
 {
 	public abstract partial class BackgroundProcessor<TInput, TOutput>
 	{
