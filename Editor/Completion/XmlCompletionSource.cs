@@ -24,6 +24,7 @@ using Microsoft.VisualStudio.Text.Adornments;
 using Microsoft.VisualStudio.Text.Editor;
 
 using MonoDevelop.Xml.Dom;
+using MonoDevelop.Xml.Editor.Parsing;
 using MonoDevelop.Xml.Parser;
 
 namespace MonoDevelop.Xml.Editor.Completion

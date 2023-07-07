@@ -12,13 +12,13 @@ using Microsoft.VisualStudio.Text;
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Parser;
 
-namespace MonoDevelop.Xml.Editor.Completion
+namespace MonoDevelop.Xml.Editor.Parsing
 {
 	public partial class XmlBackgroundParser : BufferParser<XmlParseResult>
 	{
 		private readonly ILogger logger;
 
-		public XmlBackgroundParser (ITextBuffer2 buffer, ILogger logger) : base (buffer)
+		public XmlBackgroundParser (ITextBuffer2 buffer, ILogger logger, IBackgroundParseService parseService) : base (buffer, parseService)
 		{
 			StateMachine = CreateParserStateMachine ();
 			this.logger = logger;
@@ -32,8 +32,8 @@ namespace MonoDevelop.Xml.Editor.Completion
 		protected XmlRootState StateMachine { get; private set; }
 
 		protected override Task<XmlParseResult> StartOperationAsync (ITextSnapshot input,
-			XmlParseResult previousOutput,
-			ITextSnapshot previousInput,
+			XmlParseResult? previousOutput,
+			ITextSnapshot? previousInput,
 			CancellationToken token)
 		{
 			var parser = new XmlTreeParser (StateMachine);

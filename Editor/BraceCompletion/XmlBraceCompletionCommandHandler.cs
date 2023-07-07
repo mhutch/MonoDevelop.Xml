@@ -13,7 +13,7 @@ using Microsoft.VisualStudio.Text.Editor.Commanding.Commands;
 using Microsoft.VisualStudio.Utilities;
 
 using MonoDevelop.Xml.Dom;
-using MonoDevelop.Xml.Editor.Completion;
+using MonoDevelop.Xml.Editor.Parsing;
 using MonoDevelop.Xml.Parser;
 
 using BF = System.Reflection.BindingFlags;

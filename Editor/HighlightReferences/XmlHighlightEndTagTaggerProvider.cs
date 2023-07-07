@@ -12,7 +12,7 @@ using Microsoft.VisualStudio.Threading;
 using Microsoft.VisualStudio.Utilities;
 
 using MonoDevelop.Xml.Editor;
-using MonoDevelop.Xml.Editor.Completion;
+using MonoDevelop.Xml.Editor.Parsing;
 using MonoDevelop.Xml.Editor.Logging;
 using MonoDevelop.Xml.Editor.Tagging;
 

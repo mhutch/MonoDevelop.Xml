@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 using Microsoft.VisualStudio.Text.Editor;
 
-using MonoDevelop.Xml.Editor.Completion;
+using MonoDevelop.Xml.Editor.Parsing;
 using MonoDevelop.Xml.Editor.SmartIndent;
 
 using NUnit.Framework;

@@ -1,10 +1,10 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using Microsoft.VisualStudio.Text;
 
-namespace MonoDevelop.Xml.Editor.Completion
+namespace MonoDevelop.Xml.Editor.Parsing
 {
 	public class ParseCompletedEventArgs<T> : EventArgs
 	{

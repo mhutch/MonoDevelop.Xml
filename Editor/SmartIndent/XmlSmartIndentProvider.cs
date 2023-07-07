@@ -6,7 +6,7 @@ using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 
-using MonoDevelop.Xml.Editor.Completion;
+using MonoDevelop.Xml.Editor.Parsing;
 
 namespace MonoDevelop.Xml.Editor.SmartIndent
 {

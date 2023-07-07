@@ -4,7 +4,6 @@
 #nullable enable
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading;
@@ -21,6 +20,7 @@ using Microsoft.VisualStudio.Utilities;
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Editor.Completion;
 using MonoDevelop.Xml.Editor.Logging;
+using MonoDevelop.Xml.Editor.Parsing;
 
 namespace MonoDevelop.Xml.Editor.Tests.Completion
 {

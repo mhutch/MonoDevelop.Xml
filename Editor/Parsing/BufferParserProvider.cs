@@ -3,7 +3,7 @@
 
 using Microsoft.VisualStudio.Text;
 
-namespace MonoDevelop.Xml.Editor.Completion
+namespace MonoDevelop.Xml.Editor.Parsing
 {
 	public abstract class BufferParserProvider<TParser, TParseResult> : IParserProvider<TParser, TParseResult>
 		where TParser : BufferParser<TParseResult>

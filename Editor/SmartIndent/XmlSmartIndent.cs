@@ -12,7 +12,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods;
 
 using MonoDevelop.Xml.Dom;
-using MonoDevelop.Xml.Editor.Completion;
+using MonoDevelop.Xml.Editor.Parsing;
 using MonoDevelop.Xml.Parser;
 
 namespace MonoDevelop.Xml.Editor.SmartIndent

@@ -11,8 +11,8 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 
 using MonoDevelop.Xml.Dom;
-using MonoDevelop.Xml.Editor.Completion;
 using MonoDevelop.Xml.Editor.HighlightReferences;
+using MonoDevelop.Xml.Editor.Parsing;
 using MonoDevelop.Xml.Editor.Tagging;
 using MonoDevelop.Xml.Parser;
 

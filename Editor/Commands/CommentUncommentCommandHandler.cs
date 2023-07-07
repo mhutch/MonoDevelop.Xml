@@ -18,6 +18,7 @@ using Microsoft.VisualStudio.Utilities;
 
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Editor.Completion;
+using MonoDevelop.Xml.Editor.Parsing;
 using MonoDevelop.Xml.Parser;
 
 using JoinableTaskContext = Microsoft.VisualStudio.Threading.JoinableTaskContext;
