@@ -53,7 +53,7 @@ namespace MonoDevelop.Xml.Editor.Tests.Completion
 		{
 		}
 
-		protected override Task<CompletionContext> GetElementCompletionsAsync (
+		protected override Task<IList<CompletionItem>?> GetElementCompletionsAsync (
 			IAsyncCompletionSession session,
 			SnapshotPoint triggerLocation,
 			List<XObject> nodePath,
@@ -62,12 +62,12 @@ namespace MonoDevelop.Xml.Editor.Tests.Completion
 		{
 			var item = new CompletionItem (includeBracket? "<Hello" : "Hello", this)
 				.AddKind (XmlCompletionItemKind.Element);
-			var items = ImmutableArray<CompletionItem>.Empty;
-			items = items.Add (item).AddRange (GetMiscellaneousTags (triggerLocation, nodePath, includeBracket));
-			return Task.FromResult (new CompletionContext (items));
+			var items = new List<CompletionItem> () { item };
+			items.AddRange (GetMiscellaneousTags (triggerLocation, nodePath, includeBracket));
+			return Task.FromResult<IList<CompletionItem>?> (items);
 		}
 
-		protected override Task<CompletionContext> GetAttributeCompletionsAsync (
+		protected override Task<IList<CompletionItem>?> GetAttributeCompletionsAsync (
 			IAsyncCompletionSession session,
 			SnapshotPoint triggerLocation,
 			List<XObject> nodePath,
@@ -78,12 +78,11 @@ namespace MonoDevelop.Xml.Editor.Tests.Completion
 			if (nodePath.LastOrDefault () is XElement xel && xel.NameEquals ("Hello", true)) {
 				var item = new CompletionItem ("There", this)
 					.AddKind (XmlCompletionItemKind.Attribute);
-				var items = ImmutableArray<CompletionItem>.Empty;
-				items = items.Add (item);
-				return Task.FromResult (new CompletionContext (items));
+				var items = new List<CompletionItem> () {  item };
+				return Task.FromResult<IList<CompletionItem>?> (items);
 			}
 
-			return Task.FromResult (CompletionContext.Empty);
+			return Task.FromResult<IList<CompletionItem>?> (null);
 		}
 	}
 }

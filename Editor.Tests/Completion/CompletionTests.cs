@@ -15,8 +15,8 @@ namespace MonoDevelop.Xml.Editor.Tests.Completion
 		{
 			var result = await this.GetCompletionContext ("<$");
 			result.AssertNonEmpty ();
-			result.AssertContains ("Hello");
-			result.AssertContains ("!--");
+			result.AssertContains ("<Hello");
+			result.AssertContains ("<!--");
 		}
 
 		[Test]

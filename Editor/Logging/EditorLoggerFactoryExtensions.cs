@@ -14,13 +14,13 @@ public static class EditorLoggerFactoryExtensions
 	/// Get a logger for the <paramref name="buffer"/> if it exists, reusing the existing logger if possible, and creating one if necessary.
 	/// </summary>
 	public static ILogger<T> GetLogger<T> (this IEditorLoggerFactory factory, ITextBuffer buffer)
-		=> buffer.Properties.GetOrCreateSingletonProperty (typeof (T), () => factory.CreateLogger<T> (buffer));
+		=> buffer.Properties.GetOrCreateSingletonProperty (typeof (ILogger<T>), () => factory.CreateLogger<T> (buffer));
 
 	/// <summary>
 	/// Get a logger for the <paramref name="textView"/>, reusing the existing logger if possible, and creating one if necessary.
 	/// </summary>
 	public static ILogger<T> GetLogger<T> (this IEditorLoggerFactory factory, ITextView textView)
-		=> textView.Properties.GetOrCreateSingletonProperty (typeof (T), () => factory.CreateLogger<T> (textView));
+		=> textView.Properties.GetOrCreateSingletonProperty (typeof (ILogger<T>), () => factory.CreateLogger<T> (textView));
 
 	/// <summary>
 	/// Create a logger for the <paramref name="buffer"/>.

@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using MonoDevelop.Xml.Dom;
-using MonoDevelop.Xml.Parser;
 
 namespace MonoDevelop.Xml.Parser
 {
@@ -23,29 +22,60 @@ namespace MonoDevelop.Xml.Parser
 		{
 			Debug.Assert (spine.CurrentState is XmlNameState);
 
-			int end = spine.Position;
-			int start = end - spine.CurrentStateLength;
-			int mid = -1;
+			int start = spine.Position - spine.CurrentStateLength;
+			var length = text.GetXNameLengthAtPosition (start, spine.Position, maximumReadahead);
 
-			int limit = Math.Min (text.Length, end + maximumReadahead);
+			string name = text.GetText (start, length);
+
+			int i = name.IndexOf (':');
+			if (i < 0) {
+				return new XName (name);
+			} else {
+				return new XName (name.Substring (0, i), name.Substring (i + 1));
+			}
+		}
+
+		public static int GetXNameLengthAtPosition (this ITextSource text, int nameStartPosition, int currentPosition, int maximumReadahead = DEFAULT_READAHEAD_LIMIT)
+		{
+			int limit = Math.Min (text.Length, currentPosition + maximumReadahead);
 
 			//try to find the end of the name, but don't go too far
-			for (; end < limit; end++) {
-				char c = text[end];
-
-				if (c == ':') {
-					if (mid == -1)
-						mid = end;
-					else
-						break;
-				} else if (!XmlChar.IsNameChar (c))
+			for (; currentPosition < limit; currentPosition++) {
+				char c = text[currentPosition];
+				if (!XmlChar.IsNameChar (c)) {
 					break;
+				}
 			}
 
-			if (mid > 0 && end > mid + 1) {
-				return new XName (text.GetText (start, mid - start), text.GetText (mid + 1, end - mid - 1));
+			return currentPosition - nameStartPosition;
+		}
+
+		public static int GetAttributeValueLengthAtPosition (this ITextSource text, char delimiter, int attributeStartPosition, int currentPosition, int maximumReadahead = DEFAULT_READAHEAD_LIMIT)
+		{
+			int limit = Math.Min (text.Length, currentPosition + maximumReadahead);
+
+			//try to find the end of the name, but don't go too far
+			for (; currentPosition < limit; currentPosition++) {
+				char c = text[currentPosition];
+				if (XmlChar.IsInvalid (c) || c == '<') {
+					return currentPosition - attributeStartPosition;
+				}
+				switch (delimiter) {
+				case '\'':
+				case '"':
+					if (c == delimiter) {
+						return currentPosition - attributeStartPosition;
+					}
+					break;
+				default:
+					if (XmlChar.IsWhitespace (c)) {
+						return currentPosition - attributeStartPosition;
+					}
+					break;
+				}
 			}
-			return new XName (text.GetText (start, end - start));
+
+			return currentPosition - attributeStartPosition;
 		}
 
 		/// <summary>
