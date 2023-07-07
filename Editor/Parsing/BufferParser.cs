@@ -17,7 +17,7 @@ namespace MonoDevelop.Xml.Editor.Parsing
 	{
 		internal object? providerKey;
 
-		public BufferParser (ITextBuffer2 buffer)
+		public BufferParser (ITextBuffer2 buffer, IBackgroundParseService parseService) : base (parseService)
 		{
 			Buffer = buffer;
 

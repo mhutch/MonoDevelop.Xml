@@ -18,7 +18,7 @@ namespace MonoDevelop.Xml.Editor.Parsing
 	{
 		private readonly ILogger logger;
 
-		public XmlBackgroundParser (ITextBuffer2 buffer, ILogger logger) : base (buffer)
+		public XmlBackgroundParser (ITextBuffer2 buffer, ILogger logger, IBackgroundParseService parseService) : base (buffer, parseService)
 		{
 			StateMachine = CreateParserStateMachine ();
 			this.logger = logger;
@@ -32,8 +32,8 @@ namespace MonoDevelop.Xml.Editor.Parsing
 		protected XmlRootState StateMachine { get; private set; }
 
 		protected override Task<XmlParseResult> StartOperationAsync (ITextSnapshot input,
-			XmlParseResult previousOutput,
-			ITextSnapshot previousInput,
+			XmlParseResult? previousOutput,
+			ITextSnapshot? previousInput,
 			CancellationToken token)
 		{
 			var parser = new XmlTreeParser (StateMachine);
