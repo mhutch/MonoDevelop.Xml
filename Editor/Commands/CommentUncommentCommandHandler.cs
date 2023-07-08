@@ -18,7 +18,9 @@ using Microsoft.VisualStudio.Utilities;
 
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Editor.Completion;
+using MonoDevelop.Xml.Editor.Logging;
 using MonoDevelop.Xml.Editor.Parsing;
+using MonoDevelop.Xml.Logging;
 using MonoDevelop.Xml.Parser;
 
 using JoinableTaskContext = Microsoft.VisualStudio.Threading.JoinableTaskContext;
@@ -42,17 +44,20 @@ namespace MonoDevelop.Xml.Editor.Commands
 		[ImportingConstructor]
 		public CommentUncommentCommandHandler (
 			XmlParserProvider parserProvider,
+			IEditorLoggerFactory loggerFactory,
 			ITextUndoHistoryRegistry undoHistoryRegistry,
 			IEditorOperationsFactoryService editorOperationsFactoryService,
 			JoinableTaskContext joinableTaskContext)
 		{
 			this.parserProvider = parserProvider;
+			this.loggerFactory = loggerFactory;
 			this.undoHistoryRegistry = undoHistoryRegistry;
 			this.editorOperationsFactoryService = editorOperationsFactoryService;
 			this.joinableTaskContext = joinableTaskContext;
 		}
 
 		readonly XmlParserProvider parserProvider;
+		readonly IEditorLoggerFactory loggerFactory;
 		readonly ITextUndoHistoryRegistry undoHistoryRegistry;
 		readonly IEditorOperationsFactoryService editorOperationsFactoryService;
 		readonly JoinableTaskContext joinableTaskContext;
@@ -87,6 +92,16 @@ namespace MonoDevelop.Xml.Editor.Commands
 			=> ExecuteCommandCore (args, executionContext, Operation.Toggle);
 
 		bool ExecuteCommandCore (EditorCommandArgs args, CommandExecutionContext context, Operation operation)
+		{
+			try {
+				return ExecuteCommandCoreInternal (args, context, operation);
+			} catch (Exception ex) {
+				loggerFactory.GetLogger<CommentUncommentCommandHandler> (args.TextView).LogInternalException (ex);
+				throw;
+			}
+		}
+
+		bool ExecuteCommandCoreInternal (EditorCommandArgs args, CommandExecutionContext context, Operation operation)
 		{
 			ITextView textView = args.TextView;
 			ITextBuffer textBuffer = args.SubjectBuffer;

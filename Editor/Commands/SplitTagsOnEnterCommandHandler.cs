@@ -13,6 +13,9 @@ using Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Utilities;
 
+using MonoDevelop.Xml.Editor.Logging;
+using MonoDevelop.Xml.Logging;
+
 namespace MonoDevelop.Xml.Editor.Commands
 {
 	[Name (Name)]
@@ -22,15 +25,21 @@ namespace MonoDevelop.Xml.Editor.Commands
 	[TextViewRole (PredefinedTextViewRoles.Interactive)]
 	class SplitTagsOnEnterCommandHandler : IChainedCommandHandler<ReturnKeyCommandArgs>
 	{
-		[Import]
-		ISmartIndentationService SmartIndentService { get; set; }
+		readonly IEditorLoggerFactory loggerFactory;
+		readonly ISmartIndentationService smartIndentService;
+		readonly ITextBufferUndoManagerProvider undoManagerProvider;
+		readonly IAsyncCompletionBroker completionBroker;
 
-		[Import]
-		ITextBufferUndoManagerProvider UndoManagerProvider { get; set; }
-
-
-		[Import]
-		IAsyncCompletionBroker CompletionBroker{ get; set; }
+		[ImportingConstructor]
+		public SplitTagsOnEnterCommandHandler (
+			IEditorLoggerFactory loggerFactory, ISmartIndentationService smartIndentService,
+			ITextBufferUndoManagerProvider undoManagerProvider, IAsyncCompletionBroker completionBroker)
+		{
+			this.loggerFactory = loggerFactory;
+			this.smartIndentService = smartIndentService;
+			this.undoManagerProvider = undoManagerProvider;
+			this.completionBroker = completionBroker;
+		}
 
 		const string Name = nameof (SplitTagsOnEnterCommandHandler);
 
@@ -38,11 +47,21 @@ namespace MonoDevelop.Xml.Editor.Commands
 
 		public void ExecuteCommand (ReturnKeyCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
 		{
-			if (SmartIndentService == null || CompletionBroker.IsCompletionActive (args.TextView)) {
+			if (smartIndentService == null || completionBroker.IsCompletionActive (args.TextView)) {
 				nextCommandHandler ();
 				return;
 			}
 
+			try {
+				ExecuteCommandInternal (args, nextCommandHandler, executionContext);
+			} catch (Exception ex) {
+				loggerFactory.GetLogger<SplitTagsOnEnterCommandHandler> (args.TextView).LogInternalException (ex);
+				throw;
+			}
+		}
+
+		void ExecuteCommandInternal (ReturnKeyCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
+		{
 			var caretPos = args.TextView.Caret.Position.BufferPosition;
 			int p = caretPos.Position;
 			var s = caretPos.Snapshot;
@@ -56,7 +75,7 @@ namespace MonoDevelop.Xml.Editor.Commands
 				return;
 			}
 
-			var undoManager = UndoManagerProvider.GetTextBufferUndoManager (args.SubjectBuffer);
+			var undoManager = undoManagerProvider.GetTextBufferUndoManager (args.SubjectBuffer);
 			using (var transaction = undoManager.TextBufferUndoHistory.CreateTransaction ("Split Tags")) {
 				string lineBreakText = null;
 				var currentLine = s.GetLineFromPosition (p);
@@ -72,7 +91,7 @@ namespace MonoDevelop.Xml.Editor.Commands
 				s = edit.Apply ();
 
 				var nextLine = s.GetLineFromLineNumber (currentLine.LineNumber + 1);
-				var indent = SmartIndentService.GetDesiredIndentation (args.TextView, nextLine);
+				var indent = smartIndentService.GetDesiredIndentation (args.TextView, nextLine);
 				if (indent != null) {
 					edit = args.SubjectBuffer.CreateEdit ();
 					edit.Insert (nextLine.Start.Position, GetIndentString (indent.Value, args.TextView.Options));

@@ -14,7 +14,9 @@ using Microsoft.VisualStudio.Text.Editor.Commanding.Commands;
 using Microsoft.VisualStudio.Utilities;
 
 using MonoDevelop.Xml.Dom;
+using MonoDevelop.Xml.Editor.Logging;
 using MonoDevelop.Xml.Editor.Parsing;
+using MonoDevelop.Xml.Logging;
 using MonoDevelop.Xml.Parser;
 
 using BF = System.Reflection.BindingFlags;
@@ -48,19 +50,28 @@ namespace MonoDevelop.Xml.Editor.BraceCompletion
 		const string Name = nameof (XmlBraceCompletionCommandHandler);
 
 		[ImportingConstructor]
-		public XmlBraceCompletionCommandHandler (XmlParserProvider parserProvider)
+		public XmlBraceCompletionCommandHandler (XmlParserProvider parserProvider, IEditorLoggerFactory loggerFactory)
 		{
 			this.parserProvider = parserProvider;
+			this.loggerFactory = loggerFactory;
 		}
 
 		readonly XmlParserProvider parserProvider;
+		readonly IEditorLoggerFactory loggerFactory;
 
+		// log
 		public string DisplayName => Name;
 
 		public CommandState GetCommandState (TypeCharCommandArgs args, Func<CommandState> nextCommandHandler) => nextCommandHandler ();
 
 		public void ExecuteCommand (TypeCharCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
-			=> ExecuteCommandInternal (args, nextCommandHandler, executionContext);
+		{
+			try {
+				ExecuteCommandInternal (args, nextCommandHandler, executionContext);
+			} catch (Exception ex) {
+				loggerFactory.GetLogger<XmlBraceCompletionCommandHandler> (args.TextView).LogInternalException (ex);
+			}
+		}
 
 		void ExecuteCommandInternal (TypeCharCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
 		{

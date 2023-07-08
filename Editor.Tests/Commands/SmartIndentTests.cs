@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.Text.Editor;
 
 using MonoDevelop.Xml.Editor.Parsing;
 using MonoDevelop.Xml.Editor.SmartIndent;
+using MonoDevelop.Xml.Tests;
 
 using NUnit.Framework;
 
@@ -41,47 +42,13 @@ namespace MonoDevelop.Xml.Editor.Tests.Commands
 			var line = textView.TextBuffer.CurrentSnapshot.GetLineFromPosition (caretPos);
 			GetParser (textView.TextBuffer);
 
-			var options = new TestEditorOptions ();
-			options.SetOptionValue (DefaultOptions.ConvertTabsToSpacesOptionId, true);
-			options.SetOptionValue (DefaultOptions.IndentSizeOptionId, 4);
-			options.SetOptionValue (DefaultOptions.TabSizeOptionId, 4);
+			textView.Options.SetOptionValue (DefaultOptions.ConvertTabsToSpacesOptionId, true);
+			textView.Options.SetOptionValue (DefaultOptions.IndentSizeOptionId, 4);
+			textView.Options.SetOptionValue (DefaultOptions.TabSizeOptionId, 4);
 
-			var smartIndent = new XmlSmartIndent (textView, Catalog.GetService<XmlParserProvider> (), options);
+			var smartIndent = new XmlSmartIndent (textView, Catalog.GetService<XmlParserProvider> (), TestLoggerFactory.CreateTestMethodLogger ());
 			var indent = smartIndent.GetDesiredIndentation (line);
 			Assert.AreEqual (expectedIndent, indent);
 		}
-	}
-
-	class TestEditorOptions : IEditorOptions
-	{
-		Dictionary<string, object> storage = new Dictionary<string, object> ();
-
-		public IEnumerable<EditorOptionDefinition> SupportedOptions => throw new NotImplementedException ();
-
-		public IEditorOptions GlobalOptions => throw new NotImplementedException ();
-
-		public IEditorOptions Parent { get => throw new NotImplementedException (); set => throw new NotImplementedException (); }
-
-		#pragma warning disable 67
-		public event EventHandler<EditorOptionChangedEventArgs> OptionChanged;
-		#pragma warning restore 67
-
-		public bool ClearOptionValue (string optionId) => throw new NotImplementedException ();
-
-		public bool ClearOptionValue<T> (EditorOptionKey<T> key) => throw new NotImplementedException ();
-
-		public T GetOptionValue<T> (string optionId) => (T)storage[optionId];
-
-		public T GetOptionValue<T> (EditorOptionKey<T> key) => (T)storage[key.Name];
-
-		public object GetOptionValue (string optionId) => storage[optionId];
-
-		public bool IsOptionDefined (string optionId, bool localScopeOnly) => throw new NotImplementedException ();
-
-		public bool IsOptionDefined<T> (EditorOptionKey<T> key, bool localScopeOnly) => throw new NotImplementedException ();
-
-		public void SetOptionValue (string optionId, object value) => storage[optionId] = value;
-
-		public void SetOptionValue<T> (EditorOptionKey<T> key, T value) => storage[key.Name] = value;
 	}
 }
