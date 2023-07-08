@@ -7,12 +7,14 @@ using System;
 using System.Linq;
 
 using Microsoft.CodeAnalysis.Text.Shared.Extensions;
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods;
 
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Editor.Parsing;
+using MonoDevelop.Xml.Logging;
 using MonoDevelop.Xml.Parser;
 
 namespace MonoDevelop.Xml.Editor.SmartIndent
@@ -22,9 +24,11 @@ namespace MonoDevelop.Xml.Editor.SmartIndent
 		readonly ITextView textView;
 		readonly IEditorOptions options;
 		readonly XmlParserProvider parserProvider;
+		readonly ILogger<XmlSmartIndent> logger;
 
-		public XmlSmartIndent (ITextView textView, XmlParserProvider parserProvider) : this (textView, parserProvider, textView.Options)
+		public XmlSmartIndent (ITextView textView, XmlParserProvider parserProvider, ILogger<XmlSmartIndent> logger) : this (textView, parserProvider, textView.Options)
 		{
+			this.logger = logger;
 		}
 
 		public XmlSmartIndent (ITextView textView, XmlParserProvider parserProvider, IEditorOptions options)
@@ -33,12 +37,16 @@ namespace MonoDevelop.Xml.Editor.SmartIndent
 			this.options = options;
 			this.parserProvider = parserProvider;
 		}
-		public virtual void Dispose ()
+
+		public void Dispose ()
 		{
 		}
 
 		//FIXME: make this smarter, it's very simple right now
-		public virtual int? GetDesiredIndentation (ITextSnapshotLine line)
+		public int? GetDesiredIndentation (ITextSnapshotLine line)
+			=> logger.InvokeAndLogErrors (() => GetDesiredIndentationInternal (line));
+
+		int? GetDesiredIndentationInternal (ITextSnapshotLine line)
 		{
 			if (!parserProvider.TryGetParser (textView.TextBuffer, out var parser)) {
 				return null;

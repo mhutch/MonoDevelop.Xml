@@ -142,13 +142,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			}
 		}
 
-		public virtual Task<object> GetDescriptionAsync (
-			IAsyncCompletionSession session,
-			CompletionItem item,
-			CancellationToken token)
-		{
-			return item.GetDocumentationAsync (session, token);
-		}
+		public virtual Task<object> GetDescriptionAsync (IAsyncCompletionSession session, CompletionItem item, CancellationToken token) => item.GetDocumentationAsync (session, token);
 
 		public virtual CompletionStartData InitializeCompletion (CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token)
 		{

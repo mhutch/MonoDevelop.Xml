@@ -40,6 +40,9 @@ namespace MonoDevelop.Xml.Editor.Completion
 		public IEnumerable<char> PotentialCommitCharacters => allCommitChars;
 
 		public bool ShouldCommitCompletion (IAsyncCompletionSession session, SnapshotPoint location, char typedChar, CancellationToken token)
+			=> logger.InvokeAndLogErrors (() => ShouldCommitCompletionInternal (session, location, typedChar, token));
+
+		bool ShouldCommitCompletionInternal (IAsyncCompletionSession session, SnapshotPoint location, char typedChar, CancellationToken token)
 		{
 			if (Array.IndexOf (allCommitChars, typedChar) < 0) {
 				return false;
@@ -87,6 +90,9 @@ namespace MonoDevelop.Xml.Editor.Completion
 		static readonly CommitResult CommitCancel = new (true, CommitBehavior.CancelCommit);
 
 		public CommitResult TryCommit (IAsyncCompletionSession session, ITextBuffer buffer, CompletionItem item, char typedChar, CancellationToken token)
+			=> logger.InvokeAndLogErrors (() => TryCommitInternal (session, buffer, item, typedChar, token));
+
+		public CommitResult TryCommitInternal (IAsyncCompletionSession session, ITextBuffer buffer, CompletionItem item, char typedChar, CancellationToken token)
 		{
 			if (!item.TryGetKind (out var kind)) {
 				return CommitResult.Unhandled;
@@ -191,7 +197,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				await provider.JoinableTaskContext.Factory.SwitchToMainThreadAsync ();
 				provider.CommandServiceFactory.GetService (textView).Execute ((v, b) => new Microsoft.VisualStudio.Text.Editor.Commanding.Commands.InvokeCompletionListCommandArgs (v, b), null);
 			});
-			task.CatchAndLogWarning (logger);
+			task.LogExceptionsAndForget (logger);
 		}
 
 		static void ConsumeTrailingChar (ref SnapshotSpan span, char charToConsume)

@@ -36,6 +36,9 @@ namespace MonoDevelop.Xml.Editor.Tagging
 		public event EventHandler<SnapshotSpanEventArgs>? TagsChanged;
 
 		public IEnumerable<ITagSpan<IStructureTag>> GetTags (NormalizedSnapshotSpanCollection spans)
+			=> logger.InvokeAndLogErrors (() => GetTagsInternal (spans));
+
+		IEnumerable<ITagSpan<IStructureTag>> GetTagsInternal (NormalizedSnapshotSpanCollection spans)
 		{
 			if (spans.Count == 0) {
 				return emptyTagList;
@@ -52,7 +55,7 @@ namespace MonoDevelop.Xml.Editor.Tagging
 			} else {
 				parseTask.ContinueWith (t => {
 					RaiseTagsChanged ();
-				}, TaskScheduler.Default).CatchAndLogWarning (logger);
+				}, TaskScheduler.Default).LogExceptionsAndForget (logger);
 			}
 
 			return emptyTagList;
