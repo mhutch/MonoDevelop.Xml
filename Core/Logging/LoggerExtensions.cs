@@ -20,12 +20,6 @@ public static partial class LoggerExtensions
 		task.CatchAndLogIfFaulted (logger, originMember);
 	}
 
-	public static Task<T> WithExceptionLogger<T> (this Task<T> task, ILogger logger, [CallerMemberName] string? originMember = default)
-	{
-		task.CatchAndLogIfFaulted (logger, originMember);
-		return task;
-	}
-
 	/// <summary>
 	/// Attaches a continution to the task that logs any exception thrown by the task, and returns the task.
 	/// </summary>
@@ -34,6 +28,28 @@ public static partial class LoggerExtensions
 		task.CatchAndLogIfFaulted (logger, originMember);
 		return task;
 	}
+
+	public static Task<T> WithExceptionLogger<T> (this Task<T> task, ILogger logger, [CallerMemberName] string? originMember = default)
+	{
+		task.CatchAndLogIfFaulted (logger, originMember);
+		return task;
+	}
+
+	public static Task<IEnumerable<T>> WithExceptionLogger<T> (this Task<IEnumerable<T>> task, ILogger logger, [CallerMemberName] string? originMember = default)
+	{
+		return task.ContinueWith (t => {
+			try {
+				return t.Result.WithExceptionLogger (logger, originMember);
+			} catch (Exception ex) {
+				LogInternalError (logger, ex, originMember);
+				throw;
+			}
+		},
+		TaskContinuationOptions.ExecuteSynchronously);
+	}
+
+	public static IEnumerable<T> WithExceptionLogger<T> (this IEnumerable<T> enumerable, ILogger logger, [CallerMemberName] string? originMember = default)
+		=> new LoggedEnumerable<T> (enumerable, logger, originMember ?? throw new ArgumentNullException (nameof (originMember)));
 
 	static Task CatchAndLogIfFaulted (this Task task, ILogger logger, string? originMember)
 	{
@@ -44,7 +60,7 @@ public static partial class LoggerExtensions
 		_ = task.ContinueWith (
 			t => LogExceptions (logger, originMember, t),
 			default,
-			TaskContinuationOptions.OnlyOnFaulted,
+			TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
 			TaskScheduler.Default
 		);
 
