@@ -23,7 +23,7 @@ using MonoDevelop.Xml.Logging;
 
 namespace MonoDevelop.Xml.Editor.TextStructure
 {
-	class XmlTextStructureNavigator : ITextStructureNavigator
+	partial class XmlTextStructureNavigator : ITextStructureNavigator
 	{
 		readonly ITextBuffer textBuffer;
 		readonly ITextStructureNavigator codeNavigator;
@@ -67,6 +67,8 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 
 		SnapshotSpan GetSpanOfEnclosingInternal (SnapshotSpan activeSpan)
 		{
+			const int maxReadahead = XmlParserTextSourceExtensions.DEFAULT_READAHEAD_LIMIT;
+
 			if (!parserProvider.TryGetParser (activeSpan.Snapshot.TextBuffer, out var parser)) {
 				return codeNavigator.GetSpanOfEnclosing (activeSpan);
 			}
@@ -81,7 +83,10 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 				nodePath = n.GetPath ();
 			} else {
 				spine = parser.GetSpineParser (activeSpan.Start);
-				nodePath = spine.AdvanceToNodeEndAndGetNodePath (activeSpan.Snapshot);
+				if (!spine.TryAdvanceToNodeEndAndGetNodePath (activeSpan.Snapshot, out nodePath, maximumReadahead: maxReadahead)) {
+					LogFailedToGetNodePath (logger);
+					return codeNavigator.GetSpanOfEnclosing (activeSpan);
+				}
 			}
 
 			// this is a little odd because it was ported from MonoDevelop, where it has to maintain its own stack of state
@@ -91,7 +96,7 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 			SelectionLevel selectionLevel = default;
 
 			// keep on expanding the selection until we find one that contains the current selection but is a little bigger
-			while (ExpandSelection (nodePath, spine, activeSpan, ref selectedNodeIndex, ref selectionLevel)) {
+			while (ExpandSelection (nodePath, spine, activeSpan, ref selectedNodeIndex, ref selectionLevel, maxReadahead)) {
 				
 				var selectionSpan = GetSelectionSpan (activeSpan.Snapshot, nodePath, ref selectedNodeIndex, ref selectionLevel);
 				if (selectionSpan is TextSpan s && s.Start <= activeSpan.Start && s.End >= activeSpan.End && s.Length > activeSpan.Length) {
@@ -110,6 +115,9 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 
 			return codeNavigator.GetSpanOfEnclosing (activeSpan);
 		}
+
+		[LoggerMessage (EventId = 0, Level = LogLevel.Error, Message = "Failed to get node path")]
+		static partial void LogFailedToGetNodePath (ILogger logger);
 
 		TextSpan? GetSelectionSpan (ITextSnapshot snapshot, List<XObject> nodePath, ref int index, ref SelectionLevel level)
 		{
@@ -144,7 +152,7 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 			throw new InvalidOperationException ();
 		}
 
-		static bool ExpandSelection (List<XObject> nodePath, XmlSpineParser? spine, SnapshotSpan activeSpan, ref int index, ref SelectionLevel level)
+		static bool ExpandSelection (List<XObject> nodePath, XmlSpineParser? spine, SnapshotSpan activeSpan, ref int index, ref SelectionLevel level, int maxReadahead)
 		{
 			if (index - 1 < 0) {
 				return false;
@@ -156,7 +164,7 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 				if (current is XElement element) {
 					switch (level) {
 					case SelectionLevel.Self:
-						if (spine is not null && !spine.AdvanceUntilClosed (element, activeSpan.Snapshot, 5000)) {
+						if (spine is not null && !spine.AdvanceUntilClosed (element, activeSpan.Snapshot, maxReadahead)) {
 							return false;
 						}
 						if (!element.IsSelfClosing) {
@@ -199,7 +207,7 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 				return true;
 			}
 
-			if (spine != null && !spine.AdvanceUntilEnded (newNode, activeSpan.Snapshot, 5000)) {
+			if (spine != null && !spine.AdvanceUntilEnded (newNode, activeSpan.Snapshot, maxReadahead)) {
 				return false;
 			}
 
@@ -231,7 +239,7 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 				return true;
 			}
 
-			if (spine != null && !spine.AdvanceUntilClosed (newNode, activeSpan.Snapshot, 5000)) {
+			if (spine != null && !spine.AdvanceUntilClosed (newNode, activeSpan.Snapshot, maxReadahead)) {
 				return false;
 			}
 

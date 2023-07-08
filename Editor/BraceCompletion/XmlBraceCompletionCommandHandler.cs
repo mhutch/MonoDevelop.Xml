@@ -3,6 +3,7 @@
 
 using System;
 using System.ComponentModel.Composition;
+using System.Threading;
 
 using Microsoft.VisualStudio.Commanding;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
@@ -64,6 +65,7 @@ namespace MonoDevelop.Xml.Editor.BraceCompletion
 		void ExecuteCommandInternal (TypeCharCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
 		{
 			var openingPoint = args.TextView.Caret.Position.BufferPosition;
+			var token = executionContext.OperationContext.UserCancellationToken;
 
 			// short circuit on the easy checks
 			ITextSnapshot snapshot = openingPoint.Snapshot;
@@ -77,7 +79,7 @@ namespace MonoDevelop.Xml.Editor.BraceCompletion
 
 			// overtype
 			if (snapshot.Length > openingPoint.Position && snapshot[openingPoint] == args.TypedChar) {
-				var spine = parser.GetSpineParser (openingPoint);
+				var spine = parser.GetSpineParser (openingPoint, token);
 				bool isOverType =
 					// in a quoted value typing its quote char over the end quote
 					spine.GetAttributeValueDelimiter () == args.TypedChar
@@ -95,13 +97,13 @@ namespace MonoDevelop.Xml.Editor.BraceCompletion
 
 			// auto insertion of matching quote
 			if (snapshot.Length == openingPoint.Position || !IsQuoteChar (snapshot[openingPoint])) {
-				var spine = parser.GetSpineParser (openingPoint);
+				var spine = parser.GetSpineParser (openingPoint, token);
 				// if we're in a state where we expect an attribute value quote
 				// and we're able to walk the parser to the end of of the line without completing the attribute
 				// and without ending in an incomplete attribute value, then it's reasonable to auto insert a matching quote
 				if (spine.IsExpectingAttributeQuote ()) {
 					var att = (XAttribute)spine.Spine.Peek ();
-					if (AdvanceParserUntilConditionOrEol (spine, snapshot, p => att.Value != null, 1000) && att.Value == null && !(spine.CurrentState is XmlAttributeValueState)) {
+					if (spine.AdvanceParserUntilConditionOrEol (snapshot, p => att.Value != null, 1000, token) && att.Value == null && !(spine.CurrentState is XmlAttributeValueState)) {
 						using (var edit = args.SubjectBuffer.CreateEdit ()) {
 							//TODO create an undo transition between the two chars
 							edit.Insert (openingPoint.Position, new string (args.TypedChar, 2));
@@ -135,27 +137,5 @@ namespace MonoDevelop.Xml.Editor.BraceCompletion
 		static System.Reflection.PropertyInfo braceManagerEnabledProp;
 
 		static bool IsQuoteChar (char ch) => ch == '"' || ch == '\'';
-
-		static bool AdvanceParserUntilConditionOrEol (XmlSpineParser parser,
-			ITextSnapshot snapshot,
-			Func<XmlParser, bool> condition,
-			int maxChars)
-		{
-			if (parser.Position == snapshot.Length) {
-				return true;
-			}
-			int maxPos = Math.Min (snapshot.Length, Math.Max (parser.Position + maxChars, maxChars));
-			while (parser.Position < maxPos) {
-				char c = snapshot[parser.Position];
-				if (c == '\r' || c == '\n') {
-					return true;
-				}
-				parser.Push (c);
-				if (condition (parser)) {
-					return true;
-				}
-			}
-			return false;
-		}
 	}
 }

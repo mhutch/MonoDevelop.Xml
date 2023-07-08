@@ -11,12 +11,17 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.PatternMatching;
 using Microsoft.VisualStudio.Utilities;
+
+using MonoDevelop.Xml.Editor.Logging;
+using MonoDevelop.Xml.Logging;
 
 namespace MonoDevelop.Xml.Editor.Completion
 {
@@ -27,31 +32,43 @@ namespace MonoDevelop.Xml.Editor.Completion
 	[Order(Before = PredefinedCompletionNames.DefaultCompletionItemManager)]
 	internal sealed class XmlCompletionItemManagerProvider : IAsyncCompletionItemManagerProvider
 	{
-		[Import]
-		public IPatternMatcherFactory PatternMatcherFactory;
+		readonly IPatternMatcherFactory patternMatcherFactory;
+		readonly IEditorLoggerFactory loggerFactory;
 
-		XmlCompletionItemManager _instance;
-
-		IAsyncCompletionItemManager IAsyncCompletionItemManagerProvider.GetOrCreate (ITextView textView)
+		[ImportingConstructor]
+		public XmlCompletionItemManagerProvider (IPatternMatcherFactory patternMatcherFactory, IEditorLoggerFactory loggerFactory)
 		{
-			if (_instance == null)
-				_instance = new XmlCompletionItemManager (PatternMatcherFactory);
-			return _instance;
+			this.patternMatcherFactory = patternMatcherFactory;
+			this.loggerFactory = loggerFactory;
+		}
+
+		public IAsyncCompletionItemManager GetOrCreate (ITextView textView)
+		{
+			var logger = loggerFactory.CreateLogger<XmlCompletionItemManager> (textView);
+			return textView.Properties.GetOrCreateSingletonProperty (
+				typeof (XmlCompletionItemManagerProvider),
+				() => new XmlCompletionItemManager (patternMatcherFactory, loggerFactory.CreateLogger<XmlCompletionItemManager> (textView)));
 		}
 	}
 
 	internal sealed class XmlCompletionItemManager : IAsyncCompletionItemManager
 	{
 		readonly IPatternMatcherFactory _patternMatcherFactory;
+		readonly ILogger<XmlCompletionItemManager> logger;
 
-		internal XmlCompletionItemManager (IPatternMatcherFactory patternMatcherFactory)
+		internal XmlCompletionItemManager (IPatternMatcherFactory patternMatcherFactory, ILogger<XmlCompletionItemManager> logger)
 		{
 			_patternMatcherFactory = patternMatcherFactory;
+			this.logger = logger;
 		}
 
-		Task<FilteredCompletionModel> IAsyncCompletionItemManager.UpdateCompletionListAsync
-			(IAsyncCompletionSession session, AsyncCompletionSessionDataSnapshot data, CancellationToken token)
+		public Task<FilteredCompletionModel> UpdateCompletionListAsync (IAsyncCompletionSession session, AsyncCompletionSessionDataSnapshot data, CancellationToken token)
+			=> Task.Run (() => UpdateCompletionList (session, data, token), token)
+			   .WithExceptionLogger (logger);
+
+		FilteredCompletionModel UpdateCompletionList (IAsyncCompletionSession session, AsyncCompletionSessionDataSnapshot data, CancellationToken token)
 		{
+
 			// Filter by text
 			var filterText = session.ApplicableToSpan.GetText (data.Snapshot);
 			if (string.IsNullOrWhiteSpace (filterText)) {
@@ -62,8 +79,10 @@ namespace MonoDevelop.Xml.Editor.Completion
 				}
 				var listSorted = listFiltered.OrderBy (n => n.SortText);
 				var listHighlighted = listSorted.Select (n => new CompletionItemWithHighlight (n)).ToImmutableArray ();
-				return Task.FromResult (new FilteredCompletionModel (listHighlighted, 0, data.SelectedFilters));
+				return new FilteredCompletionModel (listHighlighted, 0, data.SelectedFilters);
 			}
+
+			token.ThrowIfCancellationRequested ();
 
 			// Pattern matcher not only filters, but also provides a way to order the results by their match quality.
 			// The relevant CompletionItem is match.Item1, its PatternMatch is match.Item2
@@ -80,6 +99,8 @@ namespace MonoDevelop.Xml.Editor.Completion
 			// See which filters might be enabled based on the typed code
 			var textFilteredFilters = matches.SelectMany (n => n.completionItem.Filters).Distinct ();
 
+			token.ThrowIfCancellationRequested ();
+
 			// When no items are available for a given filter, it becomes unavailable. Expanders always appear available.
 			var updatedFilters = ImmutableArray.CreateRange (data.SelectedFilters.Select (n => n.WithAvailability (
 				  n.Filter is CompletionExpander ? true : textFilteredFilters.Contains (n.Filter))));
@@ -93,6 +114,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				filterFilteredList = filterFilteredList.Where (n => ShouldBeInCompletionList (n.completionItem, data.SelectedFilters));
 			}
 
+
 			(CompletionItem completionItem, PatternMatch? patternMatch) bestMatch;
 			if (patternMatcher.HasInvalidPattern) {
 				// In a rare edge case where the pattern is invalid (e.g. it is just punctuation), see if any items contain what user typed.
@@ -101,6 +123,8 @@ namespace MonoDevelop.Xml.Editor.Completion
 				// 99.% cases fall here
 				bestMatch = filterFilteredList.OrderByDescending (n => n.Item2.HasValue).ThenBy (n => n.Item2).FirstOrDefault ();
 			}
+
+			token.ThrowIfCancellationRequested ();
 
 			var listWithHighlights = filterFilteredList.Select (n => {
 				ImmutableArray<Span> safeMatchedSpans = ImmutableArray<Span>.Empty;
@@ -123,6 +147,8 @@ namespace MonoDevelop.Xml.Editor.Completion
 				}
 			}).ToImmutableArray ();
 
+			token.ThrowIfCancellationRequested ();
+
 			int selectedItemIndex = 0;
 			var selectionHint = UpdateSelectionHint.NoChange;
 			if (data.DisplaySuggestionItem) {
@@ -137,20 +163,21 @@ namespace MonoDevelop.Xml.Editor.Completion
 				}
 			}
 
-			return Task.FromResult (new FilteredCompletionModel (listWithHighlights, selectedItemIndex, updatedFilters, selectionHint, centerSelection: true, uniqueItem: null));
+			return new FilteredCompletionModel (listWithHighlights, selectedItemIndex, updatedFilters, selectionHint, centerSelection: true, uniqueItem: null);
 		}
 
-		Task<ImmutableArray<CompletionItem>> IAsyncCompletionItemManager.SortCompletionListAsync
-			(IAsyncCompletionSession session, AsyncCompletionSessionInitialDataSnapshot data, CancellationToken token)
+		public Task<ImmutableArray<CompletionItem>> SortCompletionListAsync (IAsyncCompletionSession session, AsyncCompletionSessionInitialDataSnapshot data, CancellationToken token)
+			=> Task.Run (() => SortCompletionList (session, data, token), token)
+			   .WithExceptionLogger (logger);
+
+		ImmutableArray<CompletionItem> SortCompletionList (IAsyncCompletionSession session, AsyncCompletionSessionInitialDataSnapshot data, CancellationToken token)
 		{
-			return Task.FromResult (data.InitialList.OrderBy (n => n.SortText).ToImmutableArray ());
+			return data.InitialList.Sort ((x, y) => string.Compare (x.SortText, y.SortText, StringComparison.Ordinal));
 		}
 
 		#region Filtering
 
-		private static bool ShouldBeInCompletionList (
-			CompletionItem item,
-			ImmutableArray<CompletionFilterWithState> filtersWithState)
+		static bool ShouldBeInCompletionList (CompletionItem item, ImmutableArray<CompletionFilterWithState> filtersWithState)
 		{
 			// Filter out items which don't have a filter which matches selected Filter Button
 			foreach (var filterWithState in filtersWithState.Where (n => !(n.Filter is CompletionExpander) && n.IsSelected)) {
@@ -161,9 +188,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			return false;
 		}
 
-		private static bool ShouldBeInExpandedCompletionList (
-			CompletionItem item,
-			ImmutableArray<CompletionFilterWithState> filtersWithState)
+		static bool ShouldBeInExpandedCompletionList (CompletionItem item, ImmutableArray<CompletionFilterWithState> filtersWithState)
 		{
 			// Remove items which have a filter which matches deselected Expander Button
 			foreach (var filterWithState in filtersWithState.Where (n => n.Filter is CompletionExpander && !(n.IsSelected))) {

@@ -26,9 +26,10 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+
 using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
@@ -53,13 +54,14 @@ namespace MonoDevelop.Xml.Parser
 		/// Pushes all the chars in the reader and returns the finalized document.
 		/// </summary>
 		/// <param name="c">The character</param>
-		public (XDocument document, List<XmlDiagnosticInfo> diagnostic) Parse (TextReader reader)
+		public (XDocument document, List<XmlDiagnosticInfo> diagnostic) Parse (TextReader reader, CancellationToken cancellationToken = default)
 		{
 			int i = reader.Read ();
 			while (i >= 0) {
 				char c = (char)i;
 				Push (c);
 				i = reader.Read ();
+				cancellationToken.ThrowIfCancellationRequested ();
 			}
 			return FinalizeDocument ();
 		}

@@ -3,6 +3,8 @@
 
 using System;
 using System.Diagnostics;
+using System.Threading;
+
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Parser;
 
@@ -12,10 +14,14 @@ namespace MonoDevelop.Xml.Editor.Completion
 	{
 		public static XmlCompletionTrigger GetTrigger (XmlSpineParser parser, XmlTriggerReason reason, char typedCharacter) => GetTriggerAndIncompleteSpan (parser, reason, typedCharacter).kind;
 
-		public static (XmlCompletionTrigger kind, int spanStart, int spanLength) GetTriggerAndSpan (XmlSpineParser parser, XmlTriggerReason reason, char typedCharacter, ITextSource spanReadForwardTextSource)
+		public static (XmlCompletionTrigger kind, int spanStart, int spanLength) GetTriggerAndSpan (
+			XmlSpineParser parser, XmlTriggerReason reason, char typedCharacter, ITextSource spanReadForwardTextSource,
+			int maximumReadahead = XmlParserTextSourceExtensions.DEFAULT_READAHEAD_LIMIT,  CancellationToken cancellationToken = default)
 		{
 			var result = GetTriggerAndIncompleteSpan (parser, reason, typedCharacter);
-			var spanLength = GetReadForwardLength (spanReadForwardTextSource, parser, result.spanStart, result.spanReadForward);
+			if (!TryGetReadForwardLength (spanReadForwardTextSource, parser, result.spanStart, result.spanReadForward, out int spanLength, maximumReadahead, cancellationToken)) {
+				spanLength = parser.Position - result.spanStart;
+			}
 			return (result.kind, result.spanStart, spanLength);
 		}
 
@@ -144,16 +150,16 @@ namespace MonoDevelop.Xml.Editor.Completion
 		}
 
 		//TODO: support the other readforward types
-		static int GetReadForwardLength (ITextSource textSource, XmlSpineParser spine, int spanStart, XmlReadForward spanReadForward)
+		static bool TryGetReadForwardLength (ITextSource textSource, XmlSpineParser spine, int spanStart, XmlReadForward spanReadForward, out int length, int maximumReadahead, CancellationToken cancellationToken)
 		{
 			int triggerPosition = spine.Position;
 			switch (spanReadForward) {
 			case XmlReadForward.XmlName:
-				return textSource.GetXNameLengthAtPosition (spanStart, triggerPosition);
+				return textSource.TryGetXNameLengthAtPosition (spanStart, triggerPosition, out length, maximumReadahead, cancellationToken);
 
 			case XmlReadForward.AttributeValue:
 				var attributeDelimiter = spine.GetAttributeValueDelimiter () ?? '\0';
-				return textSource.GetAttributeValueLengthAtPosition (attributeDelimiter, spanStart, triggerPosition);
+				return textSource.TryGetAttributeValueLengthAtPosition (attributeDelimiter, spanStart, triggerPosition, out length, maximumReadahead, cancellationToken);
 
 			case XmlReadForward.TagStart:
 				int existingLength = triggerPosition - spanStart;
@@ -166,17 +172,23 @@ namespace MonoDevelop.Xml.Editor.Completion
 								break;
 							}
 							if (specialTagIndex + 1 == specialTag.Length) {
-								return specialTag.Length;
+								length = specialTag.Length;
+								return true;
+							}
+							if (cancellationToken.IsCancellationRequested) {
+								length = 0;
+								return false;
 							}
 						}
 					}
 				}
-				return textSource.GetXNameLengthAtPosition (spanStart, triggerPosition);
+				return textSource.TryGetXNameLengthAtPosition (spanStart, triggerPosition, out length, maximumReadahead, cancellationToken);
 
 			case XmlReadForward.DocType:
 			case XmlReadForward.Entity:
 			case XmlReadForward.None:
-				return triggerPosition - spanStart;
+				length = 0;
+				return false;
 			default:
 				throw new ArgumentException ("Unsupported XmlReadForward value", nameof (spanReadForward));
 			}
