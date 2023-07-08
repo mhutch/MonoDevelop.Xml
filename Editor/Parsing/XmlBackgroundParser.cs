@@ -41,6 +41,7 @@ namespace MonoDevelop.Xml.Editor.Parsing
 				var length = input.Length;
 				for (int i = 0; i < length; i++) {
 					parser.Push (input[i]);
+					token.ThrowIfCancellationRequested ();
 				}
 				var (doc, diagnostics) = parser.FinalizeDocument ();
 				return new XmlParseResult (doc, diagnostics, input);
@@ -71,7 +72,7 @@ namespace MonoDevelop.Xml.Editor.Parsing
 			return position;
 		}
 
-		public XmlSpineParser GetSpineParser (SnapshotPoint point)
+		public XmlSpineParser GetSpineParser (SnapshotPoint point, CancellationToken token = default)
 		{
 			XmlSpineParser? parser = null;
 
@@ -99,6 +100,7 @@ namespace MonoDevelop.Xml.Editor.Parsing
 
 			var end = Math.Min (point.Position, point.Snapshot.Length);
 			for (int i = parser.Position; i < end; i++) {
+				token.ThrowIfCancellationRequested ();
 				parser.Push (point.Snapshot[i]);
 			}
 

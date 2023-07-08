@@ -76,9 +76,9 @@ namespace MonoDevelop.Xml.Editor.Completion
 			return new CompletionContext (allItems, null, InitialSelectionHint.SoftSelection);
 		}
 
-		IEnumerable<Task<IList<CompletionItem>?>> GetCompletionTasks (IAsyncCompletionSession session, CompletionTrigger trigger, SnapshotPoint triggerLocation, SnapshotSpan applicableToSpan, CancellationToken token)
+		IEnumerable<Task<IList<CompletionItem>?>> GetCompletionTasks (IAsyncCompletionSession session, CompletionTrigger trigger, SnapshotPoint triggerLocation, SnapshotSpan applicableToSpan, CancellationToken cancellationToken)
 		{
-			yield return GetAdditionalCompletionsAsync (session, trigger, triggerLocation, applicableToSpan, token);
+			yield return GetAdditionalCompletionsAsync (session, trigger, triggerLocation, applicableToSpan, cancellationToken);
 
 			var reason = ConvertReason (trigger.Reason, trigger.Character);
 			if (reason == null) {
@@ -94,12 +94,15 @@ namespace MonoDevelop.Xml.Editor.Completion
 				yield break;
 			}
 
-			List<XObject> nodePath = parser.GetNodePath (triggerLocation.Snapshot);
+			if (!parser.TryGetNodePath (triggerLocation.Snapshot, out List<XObject>? nodePath, cancellationToken: cancellationToken)) {
+				yield break;
+			}
+
 			session.Properties.AddProperty (typeof (XmlCompletionTrigger), kind);
 
 			switch (kind) {
 			case XmlCompletionTrigger.ElementValue:
-				yield return GetElementValueCompletionsAsync (session, triggerLocation, nodePath, token);
+				yield return GetElementValueCompletionsAsync (session, triggerLocation, nodePath, cancellationToken);
 				goto case XmlCompletionTrigger.Tag;
 
 			case XmlCompletionTrigger.Tag:
@@ -113,7 +116,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				}
 				//TODO: if it's on the first or second line and there's no DTD declaration, add the DTDs, or at least <!DOCTYPE
 				//TODO: add snippets // MonoDevelop.Ide.CodeTemplates.CodeTemplateService.AddCompletionDataForFileName (DocumentContext.Name, list);
-				yield return GetElementCompletionsAsync (session, triggerLocation, nodePath, kind != XmlCompletionTrigger.ElementName, token);
+				yield return GetElementCompletionsAsync (session, triggerLocation, nodePath, kind != XmlCompletionTrigger.ElementName, cancellationToken);
 				break;
 
 			case XmlCompletionTrigger.AttributeName:
@@ -122,22 +125,22 @@ namespace MonoDevelop.Xml.Editor.Completion
 				}
 				parser.Clone ().AdvanceUntilEnded ((XObject)attributedOb, triggerLocation.Snapshot, 1000);
 				var attributes = attributedOb.Attributes.ToDictionary (StringComparer.OrdinalIgnoreCase);
-				yield return GetAttributeCompletionsAsync (session, triggerLocation, nodePath, attributedOb, attributes, token);
+				yield return GetAttributeCompletionsAsync (session, triggerLocation, nodePath, attributedOb, attributes, cancellationToken);
 				break;
 
 			case XmlCompletionTrigger.AttributeValue:
 				if (parser.Spine.TryPeek (out XAttribute? att) && parser.Spine.TryPeek (1, out IAttributedXObject? attributedObject)) {
-					yield return GetAttributeValueCompletionsAsync (session, triggerLocation, nodePath, attributedObject, att, token);
+					yield return GetAttributeValueCompletionsAsync (session, triggerLocation, nodePath, attributedObject, att, cancellationToken);
 				}
 				break;
 
 			case XmlCompletionTrigger.Entity:
-				yield return GetEntityCompletionsAsync (session, triggerLocation, nodePath, token);
+				yield return GetEntityCompletionsAsync (session, triggerLocation, nodePath, cancellationToken);
 				break;
 
 			case XmlCompletionTrigger.DocType:
 			case XmlCompletionTrigger.DeclarationOrCDataOrComment:
-				yield return GetDeclarationCompletionsAsync (session, triggerLocation, nodePath, token);
+				yield return GetDeclarationCompletionsAsync (session, triggerLocation, nodePath, cancellationToken);
 				break;
 			}
 		}
