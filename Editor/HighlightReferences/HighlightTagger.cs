@@ -91,12 +91,12 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 				await JoinableTaskContext.Factory.SwitchToMainThreadAsync (token);
 				TagsChanged?.Invoke (this, new SnapshotSpanEventArgs (updateSpan));
 			}, token)
-				.CatchAndLogWarning (Logger, "HighlightTagger.TimerFired");
+			.LogExceptionsAndForget (Logger, "HighlightTagger.TimerFired");
 		}
 
-		readonly object highlightsLocker = new object ();
-		ImmutableArray<(TKind kind, SnapshotSpan location)> highlights
-			= ImmutableArray<(TKind kind, SnapshotSpan location)>.Empty;
+		readonly object highlightsLocker = new ();
+
+		ImmutableArray<(TKind kind, SnapshotSpan location)> highlights = ImmutableArray<(TKind kind, SnapshotSpan location)>.Empty;
 		ITextSnapshot highlightedSnapshot;
 		SnapshotSpan? sourceSpan;
 

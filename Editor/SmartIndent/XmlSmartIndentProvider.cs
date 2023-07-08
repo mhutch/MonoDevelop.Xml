@@ -6,6 +6,7 @@ using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 
+using MonoDevelop.Xml.Editor.Logging;
 using MonoDevelop.Xml.Editor.Parsing;
 
 namespace MonoDevelop.Xml.Editor.SmartIndent
@@ -15,16 +16,21 @@ namespace MonoDevelop.Xml.Editor.SmartIndent
 	class XmlSmartIndentProvider : ISmartIndentProvider
 	{
 		readonly XmlParserProvider parserProvider;
+		readonly IEditorLoggerFactory loggerFactory;
 
 		[ImportingConstructor]
-		public XmlSmartIndentProvider (XmlParserProvider parserProvider)
+		public XmlSmartIndentProvider (XmlParserProvider parserProvider, IEditorLoggerFactory loggerFactory)
 		{
 			this.parserProvider = parserProvider;
+			this.loggerFactory = loggerFactory;
 		}
 
 		public ISmartIndent CreateSmartIndent (ITextView textView)
 		{
-			return textView.Properties.GetOrCreateSingletonProperty (() => new XmlSmartIndent (textView, parserProvider));
+			return textView.Properties.GetOrCreateSingletonProperty (() => {
+				var logger = loggerFactory.CreateLogger<XmlSmartIndent> (textView);
+				return new XmlSmartIndent (textView, parserProvider, logger);
+			});
 		}
 	}
 }

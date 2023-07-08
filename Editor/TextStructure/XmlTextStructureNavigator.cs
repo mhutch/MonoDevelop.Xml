@@ -10,6 +10,7 @@
 using System;
 using System.Collections.Generic;
 
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Utilities;
@@ -17,6 +18,8 @@ using Microsoft.VisualStudio.Utilities;
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Editor.Parsing;
 using MonoDevelop.Xml.Parser;
+using MonoDevelop.Xml.Editor.Logging;
+using MonoDevelop.Xml.Logging;
 
 namespace MonoDevelop.Xml.Editor.TextStructure
 {
@@ -25,11 +28,13 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 		readonly ITextBuffer textBuffer;
 		readonly ITextStructureNavigator codeNavigator;
 		readonly XmlParserProvider parserProvider;
+		readonly ILogger logger;
 
 		public XmlTextStructureNavigator (ITextBuffer textBuffer, XmlTextStructureNavigatorProvider provider)
 		{
 			this.textBuffer = textBuffer;
 			parserProvider = provider.ParserProvider;
+			logger = provider.LoggerFactory.CreateLogger<XmlTextStructureNavigator> (textBuffer);
 
 			codeNavigator = provider.NavigatorService.CreateTextStructureNavigator (
 				textBuffer,
@@ -58,6 +63,9 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 		}
 
 		public SnapshotSpan GetSpanOfEnclosing (SnapshotSpan activeSpan)
+			=> logger.InvokeAndLogErrors (() => GetSpanOfEnclosingInternal (activeSpan));
+
+		SnapshotSpan GetSpanOfEnclosingInternal (SnapshotSpan activeSpan)
 		{
 			if (!parserProvider.TryGetParser (activeSpan.Snapshot.TextBuffer, out var parser)) {
 				return codeNavigator.GetSpanOfEnclosing (activeSpan);

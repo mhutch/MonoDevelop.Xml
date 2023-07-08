@@ -59,6 +59,9 @@ namespace MonoDevelop.Xml.Editor.BraceCompletion
 		public CommandState GetCommandState (TypeCharCommandArgs args, Func<CommandState> nextCommandHandler) => nextCommandHandler ();
 
 		public void ExecuteCommand (TypeCharCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
+			=> ExecuteCommandInternal (args, nextCommandHandler, executionContext);
+
+		void ExecuteCommandInternal (TypeCharCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
 		{
 			var openingPoint = args.TextView.Caret.Position.BufferPosition;
 

@@ -22,9 +22,7 @@ namespace MonoDevelop.MSBuild.Editor.HighlightReferences
 	{
 		readonly XmlParserProvider parserProvider;
 
-		public XmlHighlightEndTagTagger (
-			ITextView textView, XmlHighlightEndTagTaggerProvider provider, ILogger logger
-			)
+		public XmlHighlightEndTagTagger (ITextView textView, XmlHighlightEndTagTaggerProvider provider, ILogger logger)
 			: base (textView, provider.JoinableTaskContext, logger)
 		{
 			parserProvider = provider.ParserProvider;
