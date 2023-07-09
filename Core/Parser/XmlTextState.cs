@@ -7,7 +7,7 @@ namespace MonoDevelop.Xml.Parser
 {
 	public class XmlTextState : XmlParserState
 	{
-		public override XmlParserState? PushChar (char c, XmlParserContext context, ref string? rollback)
+		public override XmlParserState? PushChar (char c, XmlParserContext context, ref bool replayCharacter, bool isEndOfFile)
 		{
 			if (context.CurrentStateLength == 0) {
 				context.Nodes.Push (new XText (context.Position));
@@ -17,20 +17,9 @@ namespace MonoDevelop.Xml.Parser
 
 			//FIXME: handle entities?
 
-			if (c == '<') {
-				var node = (XText)context.Nodes.Pop ();
-
-				if (context.BuildTree) {
-					//trim the text down to the node length and add it
-					var length = context.StateTag - node.Span.Start + 1;
-					context.KeywordBuilder.Length = length;
-					node.End (context.KeywordBuilder.ToString ());
-					((XContainer)context.Nodes.Peek ()).AddChildNode (node);
-				} else {
-					node.End (context.StateTag + 1);
-				}
-
-				rollback = string.Empty;
+			if (c == '<' || isEndOfFile) {
+				EndAndPop ();
+				replayCharacter = true;
 				return Parent;
 			}
 
@@ -41,6 +30,20 @@ namespace MonoDevelop.Xml.Parser
 			context.KeywordBuilder.Append (c);
 			
 			return null;
+
+			void EndAndPop ()
+			{
+				var node = (XText)context.Nodes.Pop ();
+
+				//trim the text down to the last non-whitespace char and add it
+				var length = context.StateTag - node.Span.Start + 1;
+				context.KeywordBuilder.Length = length;
+				node.End (context.KeywordBuilder.ToString ());
+
+				if (context.BuildTree) {
+					((XContainer)context.Nodes.Peek ()).AddChildNode (node);
+				}
+			}
 		}
 
 		public override XmlParserContext? TryRecreateState (XObject xobject, int position)

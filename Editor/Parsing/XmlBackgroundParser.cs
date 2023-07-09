@@ -43,7 +43,7 @@ namespace MonoDevelop.Xml.Editor.Parsing
 					parser.Push (input[i]);
 					token.ThrowIfCancellationRequested ();
 				}
-				var (doc, diagnostics) = parser.FinalizeDocument ();
+				var (doc, diagnostics) = parser.EndAllNodes ();
 				return new XmlParseResult (doc, diagnostics, input);
 			}, token);
 		}

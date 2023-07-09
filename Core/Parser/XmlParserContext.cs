@@ -59,6 +59,13 @@ namespace MonoDevelop.Xml.Parser
 		public bool BuildTree { get; set; }
 		public List<XmlDiagnostic>? Diagnostics { get; set; }
 
+		internal bool IsAtEndOfFile { get; set; }
+
+		internal int PositionBeforeCurrentChar => Position;
+		internal int PositionAfterCurrentChar => IsAtEndOfFile ? Position : Position + 1;
+		internal TextSpan CurrentStateSpanIncludingCurrentChar => TextSpan.FromBounds(Position - CurrentStateLength, PositionAfterCurrentChar);
+		internal TextSpan CurrentStateSpanExcludingCurrentChar => TextSpan.FromBounds(Position - CurrentStateLength, PositionBeforeCurrentChar);
+
 		public void ConnectNodes ()
 		{
 			XNode? prev = null;

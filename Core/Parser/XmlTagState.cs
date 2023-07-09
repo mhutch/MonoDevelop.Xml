@@ -1,11 +1,11 @@
-// 
+//
 // XmlTagState.cs
-// 
+//
 // Author:
 //   Mikayla Hutchinson <m.j.hutchinson@gmail.com>
-// 
+//
 // Copyright (C) 2008 Novell, Inc (http://www.novell.com)
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
 // "Software"), to deal in the Software without restriction, including
@@ -13,10 +13,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -46,29 +46,29 @@ namespace MonoDevelop.Xml.Parser
 
 		readonly XmlAttributeState AttributeState;
 		readonly XmlNameState NameState;
-		
+
 		public XmlTagState () : this (new XmlAttributeState ()) {}
-		
+
 		public XmlTagState  (XmlAttributeState attributeState)
 			: this (attributeState, new XmlNameState ()) {}
-		
+
 		public XmlTagState (XmlAttributeState attributeState, XmlNameState nameState)
 		{
 			AttributeState = attributeState;
 			NameState = nameState;
-			
+
 			Adopt (AttributeState);
 			Adopt (NameState);
 		}
-		
-		public override XmlParserState? PushChar (char c, XmlParserContext context, ref string? rollback)
+
+		public override XmlParserState? PushChar (char c, XmlParserContext context, ref bool replayCharacter, bool isEndOfFile)
 		{
 			var peekedNode = (XContainer) context.Nodes.Peek ();
 			var element = peekedNode as XElement;
 
 			// if the current node on the stack is ended or not an element, then it's the parent
 			// and we need to create the new element
-			if (element is null || element.IsEnded) {
+			if ((element is null || (element.IsEnded && !isEndOfFile))) {
 				var parent = peekedNode;
 				element = new XElement (context.Position - STARTOFFSET) { Parent = parent };
 				context.Nodes.Push (element);
@@ -76,21 +76,29 @@ namespace MonoDevelop.Xml.Parser
 					parent.AddChildNode (element);
 				}
 			}
-			
-			if (c == '<') {
-				if (element.Name.IsValid) {
-					context.Diagnostics?.Add (XmlCoreDiagnostics.MalformedNamedTag, context.Position, element.Name.FullName, '<');
-					Close (element, context, context.Position);
-				} else {
-					context.Diagnostics?.Add (XmlCoreDiagnostics.MalformedTag, context.Position, '<');
+
+			if (isEndOfFile || c == '<') {
+				element.End (context.PositionBeforeCurrentChar);
+				if (isEndOfFile) {
+					context.Diagnostics?.Add (XmlCoreDiagnostics.IncompleteTagEof, context.PositionBeforeCurrentChar);
 				}
-				
-				rollback = string.Empty;
+				else if (element.Name.IsValid) {
+					context.Diagnostics?.Add (XmlCoreDiagnostics.MalformedNamedTag, context.PositionBeforeCurrentChar, element.Name.FullName, '<');
+				} else {
+					context.Diagnostics?.Add (XmlCoreDiagnostics.UnnamedTag, context.Position);
+				}
+
+				if (isEndOfFile) {
+					// no need to log it's unclosed, we already logged that it's incomplete
+					context.Nodes.Pop ();
+				}
+
+				replayCharacter = true;
 				return Parent;
 			}
-			
+
 			Debug.Assert (!element.IsEnded);
-			
+
 			if (element.IsClosed && c != '>') {
 				if (element.IsNamed) {
 					context.Diagnostics?.Add (XmlCoreDiagnostics.MalformedNamedSelfClosingTag, context.Position, c);
@@ -103,18 +111,19 @@ namespace MonoDevelop.Xml.Parser
 				context.Nodes.Pop ();
 				return Parent;
 			}
-			
+
 			//if tag closed
 			if (c == '>') {
 				element.HasEndBracket = true;
+				element.End (context.PositionAfterCurrentChar);
+
+				if (!element.IsNamed) {
+					context.Diagnostics?.Add (XmlCoreDiagnostics.UnnamedTag, element.Span);
+				}
+
 				if (context.StateTag == MAYBE_SELF_CLOSING) {
 					element.Close (element);
-				}
-				if (!element.IsNamed) {
-					context.Diagnostics?.Add (XmlCoreDiagnostics.UnnamedTag, context.Position);
-					element.End (context.Position + 1);
-				} else {
-					Close (element, context, context.Position + 1);
+					context.Nodes.Pop ();
 				}
 				return Parent;
 			}
@@ -139,12 +148,12 @@ namespace MonoDevelop.Xml.Parser
 			context.StateTag = FREE;
 
 			if (context.CurrentStateLength > 0 && XmlChar.IsFirstNameChar (c)) {
-				rollback = string.Empty;
+				replayCharacter = true;
 				return AttributeState;
 			}
 
 			if (!element.IsNamed && XmlChar.IsFirstNameChar (c)) {
-				rollback = string.Empty;
+				replayCharacter = true;
 				return NameState;
 			}
 
@@ -158,15 +167,6 @@ namespace MonoDevelop.Xml.Parser
 
 			context.StateTag = ATTEMPT_RECOVERY;
 			return null;
-		}
-		
-		protected virtual void Close (XElement element, XmlParserContext context, int endOffset)
-		{
-			//have already checked that element is not null, i.e. top of stack is our element
-			if (element.IsClosed)
-				context.Nodes.Pop ();
-
-			element.End (endOffset);
 		}
 
 		public override XmlParserContext? TryRecreateState (XObject xobject, int position)

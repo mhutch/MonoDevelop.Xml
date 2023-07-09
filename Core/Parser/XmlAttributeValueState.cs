@@ -1,11 +1,11 @@
-// 
+//
 // XmlAttributeValueState.cs
-// 
+//
 // Author:
 //   Mikayla Hutchinson <m.j.hutchinson@gmail.com>
-// 
+//
 // Copyright (C) 2008 Novell, Inc (http://www.novell.com)
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
 // "Software"), to deal in the Software without restriction, including
@@ -13,10 +13,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -43,13 +43,23 @@ namespace MonoDevelop.Xml.Parser
 		protected const int TagMask = 3;
 		protected const int TagShift = 2;
 
-		public override XmlParserState? PushChar (char c, XmlParserContext context, ref string? rollback)
+		public override XmlParserState? PushChar (char c, XmlParserContext context, ref bool replayCharacter, bool isEndOfFile)
 		{
 			System.Diagnostics.Debug.Assert (((XAttribute) context.Nodes.Peek ()).Value == null);
 
 			if (c == '<') {
 				//the parent state should report the error
-				rollback = string.Empty;
+				var att = (XAttribute)context.Nodes.Peek ();
+				att.Value = context.KeywordBuilder.ToString ();
+				replayCharacter = true;
+				return Parent;
+			}
+
+			if (isEndOfFile) {
+				//the parent state should report the error
+				context.Diagnostics?.Add (XmlCoreDiagnostics.IncompleteAttributeEof, context.PositionBeforeCurrentChar);
+				var att = (XAttribute)context.Nodes.Peek ();
+				att.Value = context.KeywordBuilder.ToString ();
 				return Parent;
 			}
 
@@ -68,7 +78,7 @@ namespace MonoDevelop.Xml.Parser
 			int maskedTag = context.StateTag & TagMask;
 
 			if (maskedTag == UNQUOTED) {
-				return BuildUnquotedValue (c, context, ref rollback);
+				return BuildUnquotedValue (c, context, ref replayCharacter);
 			}
 
 			if ((c == '"' && maskedTag == DOUBLEQUOTE) || c == '\'' && maskedTag == SINGLEQUOTE) {
@@ -82,18 +92,22 @@ namespace MonoDevelop.Xml.Parser
 			return null;
 		}
 
-		XmlParserState? BuildUnquotedValue (char c, XmlParserContext context, ref string? rollback)
+		public static bool IsUnquotedValueChar (char c) => char.IsLetterOrDigit (c) || c == '_' || c == '.' || c == '-';
+
+		XmlParserState? BuildUnquotedValue (char c, XmlParserContext context, ref bool replayCharacter)
 		{
-			if (char.IsLetterOrDigit (c) || c == '_' || c == '.') {
+			// even though unquoted values aren't legal, attempt to build a value anyway
+			if (IsUnquotedValueChar (c)) {
 				context.KeywordBuilder.Append (c);
 				return null;
 			}
 
+			// if first char is not something we can handle as an unquoted char, just reject it for parent to deal with
 			if (context.KeywordBuilder.Length == 0) {
 				if (context.Diagnostics is not null && context.Nodes.Peek () is XAttribute badAtt && badAtt.Name.IsValid) {
 					context.Diagnostics.Add (XmlCoreDiagnostics.IncompleteAttributeValue, context.Position, badAtt.Name!.FullName, c);
 				}
-				rollback = string.Empty;
+				replayCharacter = true;
 				return Parent;
 			}
 
@@ -104,7 +118,7 @@ namespace MonoDevelop.Xml.Parser
 				context.Diagnostics?.Add (XmlCoreDiagnostics.UnquotedAttributeValue, new TextSpan (context.Position - att.Value.Length, att.Value.Length), att.Name.FullName);
 			}
 
-			rollback = string.Empty;
+			replayCharacter = true;
 			return Parent;
 		}
 

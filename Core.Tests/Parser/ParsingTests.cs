@@ -515,7 +515,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 			foreach (char c in docTxt) {
 				treeParser.Push (c);
 			}
-			(var doc, var diag) = treeParser.FinalizeDocument ();
+			(var doc, var diag) = treeParser.EndAllNodes ();
 
 			Assert.AreEqual (0, diag.Count);
 

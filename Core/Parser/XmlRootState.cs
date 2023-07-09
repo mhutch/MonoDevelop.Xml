@@ -1,11 +1,11 @@
-// 
+//
 // XmlFreeState.cs
-// 
+//
 // Author:
 //   Mikayla Hutchinson <m.j.hutchinson@gmail.com>
-// 
+//
 // Copyright (C) 2008 Novell, Inc (http://www.novell.com)
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
 // "Software"), to deal in the Software without restriction, including
@@ -13,10 +13,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -76,13 +76,28 @@ namespace MonoDevelop.Xml.Parser
 		protected XmlProcessingInstructionState ProcessingInstructionState { get; }
 		protected XmlTextState TextState { get; }
 
-		public override XmlParserState? PushChar (char c, XmlParserContext context, ref string? rollback)
+		public override XmlParserState? PushChar (char c, XmlParserContext context, ref bool replayCharacter, bool isEndOfFile)
 		{
+			if (isEndOfFile) {
+				var node = context.Nodes.Peek ();
+				return node switch {
+					XElement => TagState,
+					XClosingTag => ClosingTagState,
+					XComment => CommentState,
+					XCData => CDataState,
+					XDocType => DocTypeState,
+					XProcessingInstruction => ProcessingInstructionState,
+					XText => TextState,
+					XDocument => Parent,
+					_ => throw new InvalidParserStateException ($"Root state could not find state for node '{node}'")
+				};
+			}
+
 			if (c == '<') {
 				if (context.StateTag != FREE)
 					context.Diagnostics?.Add (
 						XmlCoreDiagnostics.MalformedTagOpening,
-						TextSpan.FromBounds (context.Position + 1 - LengthFromOpenBracket (context), context.Position + 1),
+						TextSpan.FromBounds (context.PositionAfterCurrentChar - LengthFromOpenBracket (context), context.PositionAfterCurrentChar),
 						'<'
 					);
 				context.StateTag = BRACKET;
@@ -92,7 +107,7 @@ namespace MonoDevelop.Xml.Parser
 			switch (context.StateTag) {
 			case FREE:
 				if (!XmlChar.IsWhitespace (c)) {
-					rollback = string.Empty;
+					replayCharacter = true;
 					return TextState;
 				}
 
@@ -101,7 +116,7 @@ namespace MonoDevelop.Xml.Parser
 			case BRACKET:
 				switch (c) {
 				case '?':
-					rollback = string.Empty;
+					replayCharacter = true;
 					return ProcessingInstructionState;
 				case '!':
 					context.StateTag = BRACKET_EXCLAM;
@@ -110,7 +125,7 @@ namespace MonoDevelop.Xml.Parser
 					return ClosingTagState;
 				}
 				if (char.IsLetter (c) || c == '_' || char.IsWhiteSpace (c)) {
-					rollback = string.Empty;
+					replayCharacter = true;
 					return TagState;
 				}
 				break;

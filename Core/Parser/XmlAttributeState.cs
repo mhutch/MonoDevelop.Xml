@@ -1,11 +1,11 @@
-// 
+//
 // XmlAttributeState.cs
-// 
+//
 // Author:
 //   Mikayla Hutchinson <m.j.hutchinson@gmail.com>
-// 
+//
 // Copyright (C) 2008 Novell, Inc (http://www.novell.com)
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
 // "Software"), to deal in the Software without restriction, including
@@ -13,10 +13,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -37,16 +37,16 @@ namespace MonoDevelop.Xml.Parser
 	{
 		readonly XmlNameState XmlNameState;
 		readonly XmlAttributeValueState AttributeValueState;
-		
+
 		const int NAMING = 0;
 		const int GETTINGEQ = 1;
 		const int GETTINGVAL = 2;
-		
+
 		public XmlAttributeState () : this (
 			new XmlNameState (),
 			new XmlAttributeValueState ())
 		{}
-		
+
 		public XmlAttributeState (
 			XmlNameState nameState,
 			XmlAttributeValueState attributeValueState)
@@ -55,20 +55,20 @@ namespace MonoDevelop.Xml.Parser
 			AttributeValueState = Adopt (attributeValueState);
 		}
 
-		public override XmlParserState? PushChar (char c, XmlParserContext context, ref string? rollback)
+		public override XmlParserState? PushChar (char c, XmlParserContext context, ref bool replayCharacter, bool isEndOfFile)
 		{
 			var att = context.Nodes.Peek () as XAttribute;
 
 			//state has just been entered
-			if (context.CurrentStateLength == 0)  {
+			if (context.CurrentStateLength == 0 || att is null)  {
 				if (context.PreviousState is XmlNameState) {
 					if (att is null) {
 						InvalidParserStateException.ThrowExpected<XAttribute> (context);
 					}
-					//error parsing name
-					if (!att.IsNamed) {
-						context.Nodes.Pop ();
-						rollback = string.Empty;
+					// error parsing name, or end of file
+					// the name state will have logged an error already so no need to do so here
+					if (!att.IsNamed || isEndOfFile) {
+						EndAndPop ();
 						return Parent;
 					}
 					context.StateTag = GETTINGEQ;
@@ -77,26 +77,30 @@ namespace MonoDevelop.Xml.Parser
 					if (att is null) {
 						InvalidParserStateException.ThrowExpected<XAttribute> (context);
 					}
+
 					//Got value, so end attribute
-					context.Nodes.Pop ();
-					att.End (context.Position);
-					var element = (IAttributedXObject) context.Nodes.Peek ();
-					if (element.Attributes.Get (att.Name, false) != null) {
-						context.Diagnostics?.Add (XmlCoreDiagnostics.DuplicateAttributeName, att.Span, att.Name);
-					}
-					element.Attributes.AddAttribute (att);
-					rollback = string.Empty;
+					replayCharacter = true;
+					EndAndPop (logDuplicate: true);
 					return Parent;
 				}
 				else {
 					//starting a new attribute
 					Debug.Assert (att == null);
 					Debug.Assert (context.StateTag == NAMING);
-					att = new XAttribute (context.Position);
+					att = new XAttribute (context.PositionBeforeCurrentChar);
 					context.Nodes.Push (att);
-					rollback = string.Empty;
+					replayCharacter = true;
 					return XmlNameState;
 				}
+			}
+
+			if (att is null) {
+				InvalidParserStateException.ThrowExpected<XAttribute> (context);
+			}
+
+			if (isEndOfFile) {
+				context.Diagnostics?.Add (XmlCoreDiagnostics.IncompleteAttributeEof, context.PositionBeforeCurrentChar);
+				return EndAndPop ();
 			}
 
 			if (context.StateTag == GETTINGEQ) {
@@ -107,23 +111,40 @@ namespace MonoDevelop.Xml.Parser
 					context.StateTag = GETTINGVAL;
 					return null;
 				}
-				context.Diagnostics?.Add (XmlCoreDiagnostics.IncompleteAttribute, (TextSpan)context.Position, c);
+				context.Diagnostics?.Add (XmlCoreDiagnostics.IncompleteAttribute, (TextSpan)context.PositionBeforeCurrentChar, c);
 			} else if (context.StateTag == GETTINGVAL) {
 				if (char.IsWhiteSpace (c)) {
 					return null;
 				}
-				rollback = string.Empty;
+				replayCharacter = true;
 				return AttributeValueState;
 			} else if (c != '<') {
 				//parent handles message for '<'
-				context.Diagnostics?.Add (XmlCoreDiagnostics.IncompleteAttribute, (TextSpan)context.Position, c);
+				context.Diagnostics?.Add (XmlCoreDiagnostics.IncompleteAttribute, (TextSpan)context.PositionBeforeCurrentChar, c);
 			}
 
-			if (att != null)
-				context.Nodes.Pop ();
-			
-			rollback = string.Empty;
+			if (att is not null) {
+				replayCharacter = true;
+				return EndAndPop ();
+			}
+
+			replayCharacter = true;
 			return Parent;
+
+			XmlParserState? EndAndPop (bool logDuplicate = false)
+			{
+				var att = (XAttribute)context.Nodes.Pop ();
+				att.End (context.PositionBeforeCurrentChar);
+
+				var element = (IAttributedXObject)context.Nodes.Peek ();
+
+				if (logDuplicate && context.Diagnostics is not null && element.Attributes.Get (att.Name, false) is not null) {
+					context.Diagnostics?.Add (XmlCoreDiagnostics.DuplicateAttributeName, att.Span, att.Name);
+				}
+
+				element.Attributes.AddAttribute (att);
+				return Parent;
+			}
 		}
 
 		public override XmlParserContext? TryRecreateState (XObject xobject, int position)

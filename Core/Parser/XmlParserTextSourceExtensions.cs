@@ -32,14 +32,17 @@ namespace MonoDevelop.Xml.Parser
 			}
 
 			string name = text.GetText (start, length);
+			xname = XNameFromString (name);
+			return true;
+		}
 
+		static XName XNameFromString (string name)
+		{
 			int i = name.IndexOf (':');
 			if (i < 0) {
-				xname = new XName (name);
-				return true;
+				return new XName (name);
 			} else {
-				xname = new XName (name.Substring (0, i), name.Substring (i + 1));
-				return true;
+				return new XName (name.Substring (0, i), name.Substring (i + 1));
 			}
 		}
 
@@ -176,13 +179,13 @@ namespace MonoDevelop.Xml.Parser
 				}
 			}
 
-			// if at end of document, consider text nodes to be ended anyways
-			if (parser.Position == text.Length && ob is XText xt) {
-				xt.End (text.GetTextBetween (xt.Span.Start, text.Length));
+			// if at end of document, forcefully ends all nodes
+			if (parser.Position == text.Length) {
+				parser.EndAllNodes ();
 				return true;
 			}
 
-			if (parser.Position + 1 == readaheadLimit) {
+			if (parser.Position + 1 >= readaheadLimit) {
 				return false;
 			}
 

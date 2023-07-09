@@ -40,14 +40,19 @@ namespace MonoDevelop.Xml.Parser
 		/// </summary>
 		/// <param name="c">The current character.</param>
 		/// <param name = "context">The parser context.</param>
-		/// <param name="rollback"> If set non-null, the parser will be rolled back that number 
-		/// of characters (empty string means replay current char to the next state.
-		/// Note that this will not change the DOM state.</param>
+		/// <param name="replayCharacter">
+		/// If <c>true</c> when leaving the method, the parser will replay the current character on the next state.
+		/// </param>
+		/// <param name="isEndOfFile">
+		/// Whether the parser is at the end of the file.
+		/// If this is <c>true</c>,then <paramref name="c"/> will be <c>\0</c>,
+		/// and the state should end nodes with appropriate errors and as much recoverable information as possible.
+		/// </param>
 		/// <returns>
 		/// The next state. A new or parent <see cref="XmlParserState"/> will change the parser state; 
 		/// the current state or null will not.
 		/// </returns>
-		public abstract XmlParserState? PushChar (char c, XmlParserContext context, ref string? rollback);
+		public abstract XmlParserState? PushChar (char c, XmlParserContext context, ref bool replayCharacter, bool isEndOfFile);
 
 		public XmlParserState? Parent { get; private set;  }
 

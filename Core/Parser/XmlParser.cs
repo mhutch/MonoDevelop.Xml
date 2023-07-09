@@ -1,11 +1,11 @@
-// 
+//
 // Parser.cs
-// 
+//
 // Author:
 //   Mikayla Hutchinson <m.j.hutchinson@gmail.com>
-// 
+//
 // Copyright (C) 2008 Novell, Inc (http://www.novell.com)
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
 // "Software"), to deal in the Software without restriction, including
@@ -13,10 +13,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -27,8 +27,9 @@
 //
 
 using System;
-using System.Diagnostics;
-using System.Text;
+using System.Collections.Generic;
+using MonoDevelop.Xml.Analysis;
+using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
 {
@@ -74,17 +75,21 @@ namespace MonoDevelop.Xml.Parser
 		// without exposing the internal state directly
 		internal XmlParserContext GetContext () => Context;
 
+		const int REPLAY_LIMIT_PER_CHARACTER = 10;
+		const int REPLAY_LIMIT_PER_NODE = 10;
+
 		/// <summary>
 		/// Parse a document by pushing characters one at a time.
 		/// </summary>
 		/// <param name="c">The character</param>
 		public void Push (char c)
 		{
-			for (int loopLimit = 0; loopLimit < 10; loopLimit++) {
-				string? rollback = null;
+			for (int loopLimit = 0; loopLimit < REPLAY_LIMIT_PER_CHARACTER; loopLimit++) {
+				bool replayCharacter = false;
 				if (Context.CurrentState == null)
 					goto done;
-				XmlParserState? nextState = Context.CurrentState.PushChar (c, Context, ref rollback);
+
+				XmlParserState? nextState = Context.CurrentState.PushChar (c, Context, ref replayCharacter, isEndOfFile: false);
 
 				// no state change
 				if (nextState == Context.CurrentState || nextState == null) {
@@ -101,24 +106,56 @@ namespace MonoDevelop.Xml.Parser
 				Context.ResetKeywordBuilder ();
 
 				// only loop if the same char should be run through the new state
-				if (rollback == null)
+				if (!replayCharacter) {
 					goto done;
-
-				//simple rollback, just run same char through again
-				if (rollback.Length == 0)
-					continue;
-
-				//"complex" rollbacks require actually skipping backwards.
-				//Note the previous state is invalid for this operation.
-
-				foreach (char rollChar in rollback)
-					Push (rollChar);
+				}
 			}
-			throw new InvalidOperationException ($"Too many state changes for char '{c}'. Current state is {Context.CurrentState.ToString ()}.");
+			throw new InvalidOperationException ($"Too many state changes for char '{c}'. Current state is {Context.CurrentState}.");
 
 			done:
 				Context.Position++;
 				return;
+		}
+
+		/// <summary>
+		/// Indicate to the parser that the text document has ended, so it can end all nodes on the stack.
+		/// </summary>
+		public (XDocument document, IReadOnlyList<XmlDiagnostic>? diagnostics) EndAllNodes ()
+		{
+			XObject[] nodes = Context.Nodes.ToArray ();
+
+			Context.Position++;
+			Context.IsAtEndOfFile = true;
+
+			int loopMax = Context.Nodes.Count * REPLAY_LIMIT_PER_CHARACTER;
+			for (int i = 0; i < loopMax && Context.Nodes.Count > 1; i++) {
+
+				bool replayCharacter = false;
+				if (Context.CurrentState.PushChar ('\0', Context, ref replayCharacter, isEndOfFile: true) is XmlParserState state) {
+					Context.CurrentState = state;
+				} else {
+					break;
+				}
+			}
+
+			if (Context.Nodes.Count != 1 || Context.Nodes.Pop () is not XDocument doc) {
+				throw new InvalidParserStateException ("Malformed state stack when ending all nodes");
+			}
+			doc.End (Context.Position);
+
+			for (int i = nodes.Length - 1; i >= 0; i--) {
+				var node = nodes[i];
+				if (!node.IsEnded) {
+					throw new InvalidParserStateException ($"Parser states did not end '{node}' node");
+				}
+
+				// if we are in spine mode, restore all nodes that were on the stack at EOF
+				if (!Context.BuildTree) {
+					Context.Nodes.Push (nodes[i]);
+				}
+			}
+
+			return (doc, Context.Diagnostics);
 		}
 
 		public override string ToString () => Context.ToString ();

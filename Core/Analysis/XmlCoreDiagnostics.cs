@@ -124,12 +124,6 @@ namespace MonoDevelop.Xml.Analysis
 			XmlDiagnosticSeverity.Error
 		);
 
-		public static XmlDiagnosticDescriptor ZeroLengthName = new (
-			nameof (ZeroLengthName),
-			"Zero-length name",
-			XmlDiagnosticSeverity.Error
-		);
-
 		public static XmlDiagnosticDescriptor ZeroLengthNamespace = new (
 			nameof (ZeroLengthNamespace),
 			"Zero-length namespace",
@@ -152,6 +146,55 @@ namespace MonoDevelop.Xml.Analysis
 		public static XmlDiagnosticDescriptor MultipleNamespaceSeparators = new (
 			nameof (MultipleNamespaceSeparators),
 			"Name has multiple namespace separators",
+			XmlDiagnosticSeverity.Error
+		);
+
+		public static XmlDiagnosticDescriptor IncompleteAttributeEof = new (
+			nameof (IncompleteAttributeEof),
+			"Incomplete attribute",
+			"Incomplete attribute due to unexpected end of file",
+			XmlDiagnosticSeverity.Error
+		);
+
+		public static XmlDiagnosticDescriptor IncompleteClosingTagEof = new (
+			nameof (IncompleteClosingTagEof),
+			"Incomplete closing tag",
+			"Incomplete closing tag due to unexpected end of file",
+			XmlDiagnosticSeverity.Error
+		);
+
+		public static XmlDiagnosticDescriptor IncompleteDocTypeEof = new (
+			nameof (IncompleteDocTypeEof),
+			"Incomplete doctype",
+			"Incomplete doctype due to unexpected end of file",
+			XmlDiagnosticSeverity.Error
+		);
+
+		public static XmlDiagnosticDescriptor IncompleteTagEof = new (
+			nameof (IncompleteTagEof),
+			"Incomplete tag",
+			"Incomplete tag due to unexpected end of file",
+			XmlDiagnosticSeverity.Error
+		);
+
+		public static XmlDiagnosticDescriptor IncompleteCDataEof = new (
+			nameof (IncompleteCDataEof),
+			"Incomplete CDATA",
+			"Incomplete CDATA due to unexpected end of file",
+			XmlDiagnosticSeverity.Error
+		);
+
+		public static XmlDiagnosticDescriptor IncompleteCommentEof = new (
+			nameof (IncompleteCommentEof),
+			"Incomplete comment",
+			"Incomplete comment due to unexpected end of file",
+			XmlDiagnosticSeverity.Error
+		);
+
+		public static XmlDiagnosticDescriptor IncompleteProcessingInstructionEof = new (
+			nameof (IncompleteProcessingInstructionEof),
+			"Incomplete processing instruction",
+			"Incomplete processing instruction due to unexpected end of file",
 			XmlDiagnosticSeverity.Error
 		);
 	}

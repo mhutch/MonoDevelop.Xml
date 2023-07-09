@@ -51,7 +51,7 @@ namespace MonoDevelop.Xml.Parser
 
 		object ICloneable.Clone () => Clone ();
 
-		public XmlTreeParser GetTreeParser () => new XmlTreeParser (this);
+		public XmlTreeParser GetTreeParser () => new (this);
 
 		/// <summary>
 		/// Efficiently creates a spine parser using information from an existing document. The position of
