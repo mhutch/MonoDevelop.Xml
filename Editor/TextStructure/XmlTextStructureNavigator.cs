@@ -63,7 +63,7 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 		}
 
 		public SnapshotSpan GetSpanOfEnclosing (SnapshotSpan activeSpan)
-			=> logger.InvokeAndLogErrors (() => GetSpanOfEnclosingInternal (activeSpan));
+			=> logger.InvokeAndLogExceptions (() => GetSpanOfEnclosingInternal (activeSpan));
 
 		SnapshotSpan GetSpanOfEnclosingInternal (SnapshotSpan activeSpan)
 		{

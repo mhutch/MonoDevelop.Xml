@@ -68,7 +68,7 @@ public sealed class BackgroundParseServiceProvider
 		public void RegisterBackgroundOperation (Task task)
 		{
 			int taskCount = Interlocked.Increment (ref runningTasks);
-			task.ContinueWith (OperationCompleted, TaskScheduler.Default).LogExceptionsAndForget (logger);
+			task.ContinueWith (OperationCompleted, TaskScheduler.Default).LogTaskExceptionsAndForget (logger);
 
 			if (taskCount == 1 || taskCount == 0) {
 				RunningStateChanged?.Invoke (this, EventArgs.Empty);

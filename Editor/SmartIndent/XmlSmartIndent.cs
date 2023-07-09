@@ -44,7 +44,7 @@ namespace MonoDevelop.Xml.Editor.SmartIndent
 
 		//FIXME: make this smarter, it's very simple right now
 		public int? GetDesiredIndentation (ITextSnapshotLine line)
-			=> logger.InvokeAndLogErrors (() => GetDesiredIndentationInternal (line));
+			=> logger.InvokeAndLogExceptions (() => GetDesiredIndentationInternal (line));
 
 		int? GetDesiredIndentationInternal (ITextSnapshotLine line)
 		{

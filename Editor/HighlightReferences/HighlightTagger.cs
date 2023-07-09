@@ -91,7 +91,7 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 				await JoinableTaskContext.Factory.SwitchToMainThreadAsync (token);
 				TagsChanged?.Invoke (this, new SnapshotSpanEventArgs (updateSpan));
 			}, token)
-			.LogExceptionsAndForget (Logger, "HighlightTagger.TimerFired");
+			.LogTaskExceptionsAndForget (Logger, "HighlightTagger.TimerFired");
 		}
 
 		readonly object highlightsLocker = new ();
