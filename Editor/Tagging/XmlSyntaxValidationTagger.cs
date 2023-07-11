@@ -13,6 +13,9 @@ using Microsoft.VisualStudio.Threading;
 
 using MonoDevelop.Xml.Analysis;
 using MonoDevelop.Xml.Editor.Parsing;
+using MonoDevelop.Xml.Editor.Logging;
+using Microsoft.Extensions.Logging;
+using MonoDevelop.Xml.Logging;
 
 namespace MonoDevelop.MSBuild.Editor
 {
@@ -20,6 +23,7 @@ namespace MonoDevelop.MSBuild.Editor
 	{
 		readonly XmlBackgroundParser parser;
 		readonly JoinableTaskContext joinableTaskContext;
+		readonly ILogger<XmlSyntaxValidationTagger> logger;
 		ParseCompletedEventArgs<XmlParseResult>? lastArgs;
 
 		public XmlSyntaxValidationTagger (ITextBuffer buffer, XmlSyntaxValidationTaggerProvider provider)
@@ -27,6 +31,7 @@ namespace MonoDevelop.MSBuild.Editor
 			parser = provider.ParserProvider.GetParser (buffer);
 			parser.ParseCompleted += ParseCompleted;
 			joinableTaskContext = provider.JoinableTaskContext;
+			logger = provider.LoggerFactory.GetLogger<XmlSyntaxValidationTagger> (buffer);
 		}
 
 		void ParseCompleted (object? sender, ParseCompletedEventArgs<XmlParseResult> args)
@@ -48,6 +53,9 @@ namespace MonoDevelop.MSBuild.Editor
 		}
 
 		public IEnumerable<ITagSpan<IErrorTag>> GetTags (NormalizedSnapshotSpanCollection spans)
+			=> logger.InvokeAndLogExceptions (() => GetTagsInternal (spans));
+
+		IEnumerable<ITagSpan<IErrorTag>> GetTagsInternal (NormalizedSnapshotSpanCollection spans)
 		{
 			//this may be assigned from another thread so capture a consistent value
 			var args = lastArgs;
@@ -84,6 +92,10 @@ namespace MonoDevelop.MSBuild.Editor
 				return PredefinedErrorTypeNames.SyntaxError;
 			case XmlDiagnosticSeverity.Warning:
 				return PredefinedErrorTypeNames.Warning;
+			case XmlDiagnosticSeverity.Suggestion:
+				return PredefinedErrorTypeNames.HintedSuggestion;
+			case XmlDiagnosticSeverity.None:
+				return PredefinedErrorTypeNames.Suggestion;
 			}
 			throw new ArgumentException ($"Unknown DiagnosticSeverity value {severity}", nameof (severity));
 		}

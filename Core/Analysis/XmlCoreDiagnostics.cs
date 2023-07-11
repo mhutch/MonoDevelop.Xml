@@ -8,7 +8,7 @@ namespace MonoDevelop.Xml.Analysis
 		public static XmlDiagnosticDescriptor IncompleteAttributeValue = new (
 			nameof (IncompleteAttributeValue),
 			"Incomplete attribute value",
-			"The value of attribute '{0}' ended unexpectedly.",
+			"The value of attribute '{0}' ended unexpectedly due to character '{1}'.",
 			XmlDiagnosticSeverity.Error
 		);
 
@@ -29,7 +29,7 @@ namespace MonoDevelop.Xml.Analysis
 		public static XmlDiagnosticDescriptor IncompleteAttribute = new (
 			nameof (IncompleteAttribute),
 			"Incomplete attribute",
-			"Attribute is incomplete due to unexpected character '{O}'.",
+			"Attribute is incomplete due to unexpected character '{0}'.",
 			XmlDiagnosticSeverity.Error
 		);
 
@@ -64,7 +64,7 @@ namespace MonoDevelop.Xml.Analysis
 		public static XmlDiagnosticDescriptor MalformedTagOpening = new (
 			nameof (MalformedTagOpening),
 			"Malformed tag",
-			"Tag is malformed due to unexpected character '{O}'.",
+			"Tag is malformed due to unexpected character '{0}'.",
 			XmlDiagnosticSeverity.Error
 		);
 
