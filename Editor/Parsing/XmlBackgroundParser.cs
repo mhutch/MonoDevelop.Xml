@@ -60,7 +60,7 @@ namespace MonoDevelop.Xml.Editor.Parsing
 			while (newVersion.VersionNumber != oldVersion.VersionNumber) {
 				if (oldVersion.Changes != null) {
 					foreach (var change in oldVersion.Changes) {
-						if (change.OldPosition > position) {
+						if (change.OldPosition < position) {
 							position = change.OldPosition;
 							break;
 						}
