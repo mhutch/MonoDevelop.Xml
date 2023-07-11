@@ -46,7 +46,7 @@ namespace MonoDevelop.Xml.Parser
 			}
 		}
 
-		public override XmlParserContext? TryRecreateState (XObject xobject, int position)
+		public override XmlParserContext? TryRecreateState (ref XObject xobject, int position)
 		{
 			if (xobject is XText text && position >= text.Span.Start && position < text.Span.End) {
 

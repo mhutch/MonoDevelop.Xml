@@ -169,9 +169,9 @@ namespace MonoDevelop.Xml.Parser
 			return null;
 		}
 
-		public override XmlParserContext? TryRecreateState (XObject xobject, int position)
+		public override XmlParserContext? TryRecreateState (ref XObject xobject, int position)
 		{
-			var fromAtt = AttributeState.TryRecreateState (xobject, position);
+			var fromAtt = AttributeState.TryRecreateState (ref xobject, position);
 			if (fromAtt != null) {
 				return fromAtt;
 			}
@@ -179,7 +179,12 @@ namespace MonoDevelop.Xml.Parser
 			// we can also recreate state for attributes within the tag, if the attribute state didn't
 			var el = xobject as XElement;
 			if (el == null && xobject is XAttribute a) {
-				el = (XElement?) a.Parent;
+				if ((el = xobject.Parent as XElement) is null) {
+					return null;
+				}
+				// if we return control to parent via returning null, we want
+				// it to recreate state from use the element, not the attribute
+				xobject = el;
 			}
 
 			if (el != null && position >= el.Span.Start && position < el.Span.End - 1) {

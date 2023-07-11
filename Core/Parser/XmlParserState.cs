@@ -67,7 +67,7 @@ namespace MonoDevelop.Xml.Parser
 
 		public XmlRootState RootState => this as XmlRootState ?? Parent?.RootState ?? throw new InvalidParserGraphException ("Root node must be instance of XmlRootState or a derived class.");
 
-		public abstract XmlParserContext? TryRecreateState (XObject xobject, int position);
+		public abstract XmlParserContext? TryRecreateState (ref XObject xobject, int position);
 
 		public override string ToString ()
 		{

@@ -115,14 +115,14 @@ namespace MonoDevelop.Xml.Parser
 			att.Value = context.KeywordBuilder.ToString ();
 
 			if (context.Diagnostics is not null && att.Name.IsValid) {
-				context.Diagnostics?.Add (XmlCoreDiagnostics.UnquotedAttributeValue, new TextSpan (context.Position - att.Value.Length, att.Value.Length), att.Name.FullName);
+				context.Diagnostics.Add (XmlCoreDiagnostics.UnquotedAttributeValue, new TextSpan (context.Position - att.Value.Length, att.Value.Length), att.Name.FullName);
 			}
 
 			replayCharacter = true;
 			return Parent;
 		}
 
-		public override XmlParserContext TryRecreateState (XObject xobject, int position)
+		public override XmlParserContext TryRecreateState (ref XObject xobject, int position)
 			=> throw new InvalidOperationException ("State has no corresponding XObject");
 
 		public static char? GetDelimiterChar (XmlParserContext context)

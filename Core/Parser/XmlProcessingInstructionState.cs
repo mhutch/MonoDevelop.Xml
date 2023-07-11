@@ -72,7 +72,7 @@ namespace MonoDevelop.Xml.Parser
 			return null;
 		}
 
-		public override XmlParserContext? TryRecreateState (XObject xobject, int position)
+		public override XmlParserContext? TryRecreateState (ref XObject xobject, int position)
 		{
 			if (xobject is XProcessingInstruction pi && position >= pi.Span.Start + STARTOFFSET && position < pi.Span.End) {
 				var parents = NodeStack.FromParents (pi);

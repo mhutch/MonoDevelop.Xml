@@ -193,16 +193,14 @@ namespace MonoDevelop.Xml.Parser
 
 		public virtual XDocument CreateDocument () => new ();
 
-		public override XmlParserContext? TryRecreateState (XObject xobject, int position)
-		{
-			return
-				TagState.TryRecreateState (xobject, position)
-				?? ClosingTagState.TryRecreateState (xobject, position)
-				?? CommentState.TryRecreateState (xobject, position)
-				?? CDataState.TryRecreateState (xobject, position)
-				?? DocTypeState.TryRecreateState (xobject, position)
-				?? ProcessingInstructionState.TryRecreateState (xobject, position)
-				?? TextState.TryRecreateState (xobject, position)
+		public override XmlParserContext? TryRecreateState (ref XObject xobject, int position)
+			=> TagState.TryRecreateState (ref xobject, position)
+				?? TextState.TryRecreateState (ref xobject, position)
+				?? ClosingTagState.TryRecreateState (ref xobject, position)
+				?? CommentState.TryRecreateState (ref xobject, position)
+				?? CDataState.TryRecreateState (ref xobject, position)
+				?? DocTypeState.TryRecreateState (ref xobject, position)
+				?? ProcessingInstructionState.TryRecreateState (ref xobject, position)
 				?? new (
 					currentState: this,
 					position: xobject.Span.Start,
@@ -211,7 +209,6 @@ namespace MonoDevelop.Xml.Parser
 					nodes: NodeStack.FromParents (xobject),
 					stateTag: FREE
 				);
-		}
 
 		internal static bool IsFree (XmlParserContext context) => context.CurrentState is XmlRootState && context.StateTag == FREE;
 		internal static bool MaybeTag (XmlParserContext context) => context.CurrentState is XmlRootState && context.StateTag == BRACKET;

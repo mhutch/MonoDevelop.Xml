@@ -85,7 +85,7 @@ namespace MonoDevelop.Xml.Parser
 			}
 		}
 
-		public override XmlParserContext? TryRecreateState (XObject xobject, int position)
+		public override XmlParserContext? TryRecreateState (ref XObject xobject, int position)
 		{
 			if (xobject is XComment comment && position >= comment.Span.Start + STARTOFFSET && position < comment.Span.End) {
 				var parents = NodeStack.FromParents (comment);

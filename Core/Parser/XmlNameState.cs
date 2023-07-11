@@ -88,7 +88,7 @@ namespace MonoDevelop.Xml.Parser
 			return Parent;
 		}
 
-		public override XmlParserContext TryRecreateState (XObject xobject, int position)
+		public override XmlParserContext TryRecreateState (ref XObject xobject, int position)
 			=> throw new InvalidOperationException ("State has no corresponding XObject");
 	}
 }
