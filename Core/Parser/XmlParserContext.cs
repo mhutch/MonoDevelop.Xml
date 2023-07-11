@@ -29,13 +29,14 @@
 using System.Collections.Generic;
 using System.Text;
 
+using MonoDevelop.Xml.Analysis;
 using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
 {
 	public class XmlParserContext
 	{
-		public XmlParserContext (XmlParserState? previousState, XmlParserState currentState, int currentStateLength = 0, int stateTag = 0, StringBuilder? keywordBuilder = null, int position = 0, NodeStack? nodes = null, bool buildTree = false, List<XmlDiagnosticInfo>? diagnostics = null)
+		public XmlParserContext (XmlParserState? previousState, XmlParserState currentState, int currentStateLength = 0, int stateTag = 0, StringBuilder? keywordBuilder = null, int position = 0, NodeStack? nodes = null, bool buildTree = false, List<XmlDiagnostic>? diagnostics = null)
 		{
 			PreviousState = previousState;
 			CurrentState = currentState;
@@ -56,7 +57,7 @@ namespace MonoDevelop.Xml.Parser
 		public int Position { get; set; }
 		public NodeStack Nodes { get; }
 		public bool BuildTree { get; set; }
-		public List<XmlDiagnosticInfo>? Diagnostics { get; set; }
+		public List<XmlDiagnostic>? Diagnostics { get; set; }
 
 		public void ConnectNodes ()
 		{
@@ -137,9 +138,9 @@ namespace MonoDevelop.Xml.Parser
 			if (BuildTree && Diagnostics?.Count > 0) {
 				builder.Append (' ', 2);
 				builder.AppendLine ("Errors=");
-				foreach (XmlDiagnosticInfo err in Diagnostics) {
+				foreach (XmlDiagnostic err in Diagnostics) {
 					builder.Append (' ', 4);
-					builder.AppendLine ($"[{err.Severity}@{err.Span}: {err.Message}]");
+					builder.AppendLine ($"[{err.Descriptor.Severity}@{err.Span}: {err.GetFormattedMessage ()}");
 				}
 			}
 

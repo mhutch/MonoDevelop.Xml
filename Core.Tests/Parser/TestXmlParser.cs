@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+using MonoDevelop.Xml.Analysis;
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Editor.Completion;
 using MonoDevelop.Xml.Parser;
@@ -190,12 +191,12 @@ namespace MonoDevelop.Xml.Tests.Parser
 		public static T AssertNodeIs<T> (this XmlParser parser, int down = 0) where T : class
 			=> parser.AssertPeek(down).AssertCast<T> ();
 
-		public static void AssertNoDiagnostics (this XmlParser parser, Func<XmlDiagnosticInfo, bool>? filter = null) => AssertDiagnosticCount (parser, 0, filter);
+		public static void AssertNoDiagnostics (this XmlParser parser, Func<XmlDiagnostic, bool>? filter = null) => AssertDiagnosticCount (parser, 0, filter);
 
-		public static void AssertDiagnosticCount (this XmlParser parser, int count, Func<XmlDiagnosticInfo, bool>? filter = null)
+		public static void AssertDiagnosticCount (this XmlParser parser, int count, Func<XmlDiagnostic, bool>? filter = null)
 			=> AssertDiagnosticCount (parser.GetContext ().Diagnostics, count, filter);
 
-		static void AssertDiagnosticCount (List<XmlDiagnosticInfo>? diagnostics, int count, Func<XmlDiagnosticInfo, bool>? filter = null)
+		static void AssertDiagnosticCount (List<XmlDiagnostic>? diagnostics, int count, Func<XmlDiagnostic, bool>? filter = null)
 		{
 			if (diagnostics is null) {
 				#pragma warning disable NUnit2007 // The actual value should not be a constant
@@ -210,15 +211,15 @@ namespace MonoDevelop.Xml.Tests.Parser
 				var sb = new System.Text.StringBuilder ();
 				sb.AppendLine ($"Expected {count} diagnostics, got {actualCount}:");
 				foreach (var err in filter is null? diagnostics : diagnostics.Where (filter)) {
-					sb.AppendLine ($"{err.Severity}@{err.Span}: {err.Message}");
+					sb.AppendLine ($"{err.Descriptor.Severity}@{err.Span}: {err.GetFormattedMessage ()}");
 				}
 				Assert.AreEqual (count, actualCount, sb.ToString ());
 			}
 		}
 
-		public static List<XmlDiagnosticInfo> AssertDiagnostics (this XmlParser parser, int count, Func<XmlDiagnosticInfo, bool>? filter = null)
+		public static List<XmlDiagnostic> AssertDiagnostics (this XmlParser parser, int count, Func<XmlDiagnostic, bool>? filter = null)
 		{
-			var diagnostics = parser.GetContext ().Diagnostics ?? new List<XmlDiagnosticInfo> ();
+			var diagnostics = parser.GetContext ().Diagnostics ?? new List<XmlDiagnostic> ();
 
 			if (filter is not null) {
 				diagnostics = diagnostics.Where (filter).ToList ();
@@ -227,6 +228,37 @@ namespace MonoDevelop.Xml.Tests.Parser
 			AssertDiagnosticCount (diagnostics, count);
 
 			return diagnostics;
+		}
+
+		public static void AssertDiagnostics (this XmlParser parser, params (XmlDiagnosticDescriptor desc, int start, int length)[] expectedDiagnostics)
+		{
+			var diagnostics = parser.GetContext ().Diagnostics ?? new List<XmlDiagnostic> ();
+
+			var expectedSet = new HashSet<(XmlDiagnosticDescriptor desc, TextSpan span)> (expectedDiagnostics.Select (d => (d.desc, new TextSpan (d.start, d.length))));
+			var actualSet = new HashSet<(XmlDiagnosticDescriptor desc, TextSpan span)> (diagnostics.Select (d => (d.Descriptor, d.Span)));
+
+			var missing = expectedSet.Except (actualSet);
+			var unexpected = actualSet.Except (expectedSet);
+
+			bool hasMissing = missing.Any ();
+			bool hasUnexpected = unexpected.Any ();
+
+			if (hasMissing || hasUnexpected) {
+				var sb = new System.Text.StringBuilder ();
+				if (hasMissing) {
+					sb.AppendLine ($"Missing expected diagnostics:");
+					foreach (var err in missing) {
+						sb.AppendLine ($"    {err.desc.Id}@{err.span.Start}+{err.span.Length}");
+					}
+				}
+				if (hasUnexpected) {
+					sb.AppendLine ($"Unexpected diagnostics:");
+					foreach (var err in unexpected) {
+						sb.AppendLine ($"    {err.desc.Id}@{err.span.Start}+{err.span.Length}");
+					}
+				}
+				Assert.Fail (sb.ToString ());
+			}
 		}
 
 		public static void AssertAttributes (this XmlParser parser, params string[] nameValuePairs)

@@ -26,6 +26,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using MonoDevelop.Xml.Analysis;
 using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
@@ -65,7 +66,7 @@ namespace MonoDevelop.Xml.Parser
 					rollback = null;
 					return Parent;
 				} else {
-					context.Diagnostics?.LogWarning ("The string '--' should not appear within comments.", context.Position);
+					context.Diagnostics?.Add (XmlCoreDiagnostics.IncompleteEndComment, context.Position);
 					context.StateTag = NOMATCH;
 				}
 			} else {

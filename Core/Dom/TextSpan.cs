@@ -35,5 +35,7 @@ namespace MonoDevelop.Xml.Dom
 		public override bool Equals (object? obj) => obj is TextSpan t && t.Equals (this);
 
 		public override int GetHashCode () => (Start << 16) ^ (Start >> 16) ^ Length; //try to distribute bits over the range a bit better
+
+		public static explicit operator TextSpan (int position) => new (position, 0);
 	}
 }

@@ -27,6 +27,8 @@
 //
 
 using System;
+
+using MonoDevelop.Xml.Analysis;
 using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
@@ -160,9 +162,9 @@ namespace MonoDevelop.Xml.Parser
 			doc = (XDocType)context.Nodes.Pop ();
 			if (c == '<') {
 				rollback = string.Empty;
-				context.Diagnostics?.LogError ("Doctype ended prematurely.", context.Position);
-			} else if (c != '>') {
-				context.Diagnostics?.LogError ("Unexpected character '" + c +"' in doctype.", context.Position);
+			}
+			if (c != '>') {
+				context.Diagnostics?.Add (XmlCoreDiagnostics.IncompleteDocType, context.Position, c);
 			}
 			
 			doc.End (context.Position);

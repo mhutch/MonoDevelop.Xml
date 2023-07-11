@@ -28,6 +28,7 @@
 
 using System.Diagnostics;
 
+using MonoDevelop.Xml.Analysis;
 using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
@@ -81,7 +82,7 @@ namespace MonoDevelop.Xml.Parser
 					att.End (context.Position);
 					var element = (IAttributedXObject) context.Nodes.Peek ();
 					if (element.Attributes.Get (att.Name, false) != null) {
-						context.Diagnostics?.LogError ("'" + att.Name + "' is a duplicate attribute name.", att.Span);
+						context.Diagnostics?.Add (XmlCoreDiagnostics.DuplicateAttributeName, att.Span, att.Name);
 					}
 					element.Attributes.AddAttribute (att);
 					rollback = string.Empty;
@@ -106,7 +107,7 @@ namespace MonoDevelop.Xml.Parser
 					context.StateTag = GETTINGVAL;
 					return null;
 				}
-				context.Diagnostics?.LogError ("Expecting = in attribute, got '" + c + "'.", context.Position);
+				context.Diagnostics?.Add (XmlCoreDiagnostics.IncompleteAttribute, (TextSpan)context.Position, c);
 			} else if (context.StateTag == GETTINGVAL) {
 				if (char.IsWhiteSpace (c)) {
 					return null;
@@ -115,7 +116,7 @@ namespace MonoDevelop.Xml.Parser
 				return AttributeValueState;
 			} else if (c != '<') {
 				//parent handles message for '<'
-				context.Diagnostics?.LogError ("Unexpected character '" + c + "' in attribute.", context.Position);
+				context.Diagnostics?.Add (XmlCoreDiagnostics.IncompleteAttribute, (TextSpan)context.Position, c);
 			}
 
 			if (att != null)

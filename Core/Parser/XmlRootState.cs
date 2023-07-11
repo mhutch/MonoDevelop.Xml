@@ -27,6 +27,8 @@
 //
 
 using System;
+
+using MonoDevelop.Xml.Analysis;
 using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
@@ -78,12 +80,10 @@ namespace MonoDevelop.Xml.Parser
 		{
 			if (c == '<') {
 				if (context.StateTag != FREE)
-					context.Diagnostics?.LogError (
-						"Incomplete tag opening; encountered unexpected '<'.",
-						TextSpan.FromBounds (
-							context.Position + 1 - LengthFromOpenBracket (context),
-							context.Position + 1
-						)
+					context.Diagnostics?.Add (
+						XmlCoreDiagnostics.MalformedTagOpening,
+						TextSpan.FromBounds (context.Position + 1 - LengthFromOpenBracket (context), context.Position + 1),
+						'<'
 					);
 				context.StateTag = BRACKET;
 				return null;
@@ -158,10 +158,10 @@ namespace MonoDevelop.Xml.Parser
 				break;
 			}
 
-			context.Diagnostics?.LogError ($"Incomplete tag opening; encountered unexpected character '{c}'.",
-				TextSpan.FromBounds (
-					context.Position - LengthFromOpenBracket (context),
-					context.Position));
+			context.Diagnostics?.Add (XmlCoreDiagnostics.MalformedTagOpening,
+				TextSpan.FromBounds (context.Position - LengthFromOpenBracket (context), context.Position),
+				c
+			);
 
 			context.StateTag = FREE;
 			return null;

@@ -30,6 +30,7 @@ using System;
 using System.Diagnostics;
 using System.Text;
 
+using MonoDevelop.Xml.Analysis;
 using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
@@ -77,11 +78,11 @@ namespace MonoDevelop.Xml.Parser
 			}
 			
 			if (c == '<') {
-				if (element.IsNamed) {
-					context.Diagnostics?.LogError ("Unexpected '<' in tag '" + element.Name.FullName + "'.", context.Position);
+				if (element.Name.IsValid) {
+					context.Diagnostics?.Add (XmlCoreDiagnostics.MalformedNamedTag, context.Position, element.Name.FullName, '<');
 					Close (element, context, context.Position);
 				} else {
-					context.Diagnostics?.LogError ("Tag has no name.", element.Span.Start);
+					context.Diagnostics?.Add (XmlCoreDiagnostics.MalformedTag, context.Position, '<');
 				}
 				
 				rollback = string.Empty;
@@ -91,11 +92,14 @@ namespace MonoDevelop.Xml.Parser
 			Debug.Assert (!element.IsEnded);
 			
 			if (element.IsClosed && c != '>') {
+				if (element.IsNamed) {
+					context.Diagnostics?.Add (XmlCoreDiagnostics.MalformedNamedSelfClosingTag, context.Position, c);
+				} else {
+					context.Diagnostics?.Add (XmlCoreDiagnostics.MalformedSelfClosingTag, context.Position, c);
+				}
 				if (char.IsWhiteSpace (c)) {
-					context.Diagnostics?.LogWarning ("Unexpected whitespace after '/' in self-closing tag.", context.Position);
 					return null;
 				}
-				context.Diagnostics?.LogError ("Unexpected character '" + c + "' after '/' in self-closing tag.", context.Position);
 				context.Nodes.Pop ();
 				return Parent;
 			}
@@ -107,7 +111,7 @@ namespace MonoDevelop.Xml.Parser
 					element.Close (element);
 				}
 				if (!element.IsNamed) {
-					context.Diagnostics?.LogError ("Tag closed prematurely.", context.Position);
+					context.Diagnostics?.Add (XmlCoreDiagnostics.UnnamedTag, context.Position);
 					element.End (context.Position + 1);
 				} else {
 					Close (element, context, context.Position + 1);
@@ -147,7 +151,11 @@ namespace MonoDevelop.Xml.Parser
 			if (XmlChar.IsWhitespace (c))
 				return null;
 
-			context.Diagnostics?.LogError ($"Unexpected character '{c}' in tag.", context.Position - 1);
+			// namestate will have reported an error already
+			if (context.PreviousState is XmlNameState) {
+				context.Diagnostics?.Add (XmlCoreDiagnostics.MalformedTag, context.Position, c);
+			}
+
 			context.StateTag = ATTEMPT_RECOVERY;
 			return null;
 		}

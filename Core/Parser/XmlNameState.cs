@@ -28,6 +28,8 @@
 
 using System;
 using System.Diagnostics;
+
+using MonoDevelop.Xml.Analysis;
 using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
@@ -48,7 +50,7 @@ namespace MonoDevelop.Xml.Parser
 			if (XmlChar.IsWhitespace (c) || c == '<' || c == '>' || c == '/' || c == '=') {
 				rollback = string.Empty;
 				if (context.KeywordBuilder.Length == 0) {
-					context.Diagnostics?.LogError ("Zero-length name.", context.Position);
+					context.Diagnostics?.Add (XmlCoreDiagnostics.ZeroLengthName, context.Position);
 					namedObject.Name = XName.Empty;
 				} else {
 					string s = context.KeywordBuilder.ToString ();
@@ -57,11 +59,11 @@ namespace MonoDevelop.Xml.Parser
 						namedObject.Name = s;
 					} else {
 						if (i == 0) {
-							context.Diagnostics?.LogError ("Zero-length namespace.", context.Position);
-							namedObject.Name = XName.Empty;
+							context.Diagnostics?.Add (XmlCoreDiagnostics.ZeroLengthNamespace, context.Position - context.KeywordBuilder.Length);
+							namedObject.Name = new XName (s.Substring (i + 1));
 						} else if (i == s.Length - 1) {
-							context.Diagnostics?.LogError ("Zero-length name with a non-empty namespace.", context.Position);
-							namedObject.Name = XName.Empty;
+							context.Diagnostics?.Add (XmlCoreDiagnostics.ZeroLengthNameWithNamespace, new TextSpan (context.Position - context.KeywordBuilder.Length, context.KeywordBuilder.Length));
+							namedObject.Name = new XName (s.Substring (0, i));
 						} else {
 							namedObject.Name = new XName (s.Substring (0, i), s.Substring (i + 1));
 						}
@@ -72,7 +74,7 @@ namespace MonoDevelop.Xml.Parser
 			}
 			if (c == ':') {
 				if (context.KeywordBuilder.ToString ().IndexOf (':') > 0 && context.BuildTree)
-					context.Diagnostics?.LogError ("Unexpected ':' in name.", context.Position);
+					context.Diagnostics?.Add (XmlCoreDiagnostics.MultipleNamespaceSeparators, context.Position);
 				context.KeywordBuilder.Append (c);
 				return null;
 			}
@@ -83,7 +85,7 @@ namespace MonoDevelop.Xml.Parser
 			}
 			
 			rollback = string.Empty;
-			context.Diagnostics?.LogError ($"Unexpected character '{c}' in name", context.Position);
+			context.Diagnostics?.Add (XmlCoreDiagnostics.InvalidNameCharacter, context.Position, c);
 			return Parent;
 		}
 

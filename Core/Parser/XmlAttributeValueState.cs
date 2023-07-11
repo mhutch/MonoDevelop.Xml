@@ -26,6 +26,8 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 using System;
+
+using MonoDevelop.Xml.Analysis;
 using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
@@ -88,9 +90,8 @@ namespace MonoDevelop.Xml.Parser
 			}
 
 			if (context.KeywordBuilder.Length == 0) {
-				if (context.Diagnostics is not null) {
-					var badAtt = (XAttribute)context.Nodes.Peek ();
-					context.Diagnostics.LogError ($"The value of attribute '{badAtt.Name.FullName}' ended unexpectedly.", context.Position);
+				if (context.Diagnostics is not null && context.Nodes.Peek () is XAttribute badAtt && badAtt.Name.IsValid) {
+					context.Diagnostics.Add (XmlCoreDiagnostics.IncompleteAttributeValue, context.Position, badAtt.Name!.FullName, c);
 				}
 				rollback = string.Empty;
 				return Parent;
@@ -98,6 +99,11 @@ namespace MonoDevelop.Xml.Parser
 
 			var att = (XAttribute)context.Nodes.Peek ();
 			att.Value = context.KeywordBuilder.ToString ();
+
+			if (context.Diagnostics is not null && att.Name.IsValid) {
+				context.Diagnostics?.Add (XmlCoreDiagnostics.UnquotedAttributeValue, new TextSpan (context.Position - att.Value.Length, att.Value.Length), att.Name.FullName);
+			}
+
 			rollback = string.Empty;
 			return Parent;
 		}

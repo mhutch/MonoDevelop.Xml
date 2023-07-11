@@ -27,6 +27,8 @@
 //
 
 using System.Diagnostics;
+
+using MonoDevelop.Xml.Analysis;
 using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
@@ -62,7 +64,7 @@ namespace MonoDevelop.Xml.Parser
 			if (c == '>') {
 				context.Nodes.Pop ();
 				
-				if (ct.IsNamed) {
+				if (ct.Name.IsValid) {
 					ct.End (context.Position + 1);
 					
 					// walk up tree of parents looking for matching tag
@@ -80,8 +82,9 @@ namespace MonoDevelop.Xml.Parser
 					
 					//clear the stack of intermediate unclosed tags
 					while (popCount > 1) {
-						if (context.Nodes.Pop () is XElement el)
-							context.Diagnostics?.LogError (string.Format ("Unclosed tag '{0}'", el.Name.FullName), el.Span);
+						if (context.Nodes.Pop () is XElement el && el.Name.IsValid) {
+							context.Diagnostics?.Add (XmlCoreDiagnostics.UnclosedTag, el.Span, el.Name.FullName);
+						}
 						popCount--;
 					}
 					
@@ -91,10 +94,7 @@ namespace MonoDevelop.Xml.Parser
 						((XElement) context.Nodes.Pop ()).Close (ct);
 					} else {
 						if (context.BuildTree) {
-							context.Diagnostics?.LogError (
-								$"Closing tag '{ct.Name.FullName}' does not match any currently open tag.",
-								ct.Span
-							);
+							context.Diagnostics?.Add (XmlCoreDiagnostics.UnmatchedClosingTag, ct.Span, ct.Name.FullName);
 							// add it into the tree anyway so it's accessible
 							if (context.Nodes.TryPeek (out XContainer? parent)) {
 								if (!parent.IsEnded) {
@@ -105,13 +105,13 @@ namespace MonoDevelop.Xml.Parser
 						}
 					}
 				} else {
-					context.Diagnostics?.LogError ("Closing tag ended prematurely.", context.Position);
+					context.Diagnostics?.Add (XmlCoreDiagnostics.UnnamedClosingTag, context.Position);
 				}
 				return Parent;
 			}
 			
 			if (c == '<') {
-				context.Diagnostics?.LogError ("Unexpected '<' in tag.", context.Position - 1);
+				context.Diagnostics?.Add (XmlCoreDiagnostics.IncompleteClosingTag, context.Position - 1, '<');
 				context.Nodes.Pop ();
 				rollback = string.Empty;
 				return Parent;
@@ -127,7 +127,7 @@ namespace MonoDevelop.Xml.Parser
 			}
 			
 			rollback = string.Empty;
-			context.Diagnostics?.LogError ("Unexpected character '" + c + "' in closing tag.", context.Position - 1);
+				context.Diagnostics?.Add (XmlCoreDiagnostics.IncompleteClosingTag, context.Position - 1, c);
 			context.Nodes.Pop ();
 			return Parent;
 		}
