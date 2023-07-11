@@ -24,7 +24,7 @@ public static partial class LoggerExtensions
 			this.originMember = originMember;
 		}
 
-		void Log (Exception ex) => logger.LogInternalError (ex, originMember);
+		void Log (Exception ex) => logger.LogInternalException (ex, originMember);
 
 		public IEnumerator<T> GetEnumerator ()
 		{

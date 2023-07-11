@@ -31,6 +31,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
+using MonoDevelop.Xml.Analysis;
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Parser;
 using MonoDevelop.Xml.Tests.Utils;
@@ -86,7 +87,10 @@ namespace MonoDevelop.Xml.Tests.Parser
 				}
 			);
 			parser.AssertEmpty ();
-			parser.AssertNoDiagnostics ();
+			parser.AssertDiagnostics (
+				(XmlCoreDiagnostics.UnquotedAttributeValue, 30, 1),
+				(XmlCoreDiagnostics.UnquotedAttributeValue, 41, 1)
+			);
 		}
 
 		[Test]
@@ -104,11 +108,21 @@ namespace MonoDevelop.Xml.Tests.Parser
 				delegate {
 					parser.AssertStateIs<XmlTagState> ();
 					parser.AssertAttributes ("arg", "fff", "sdd", "sdsds", "ff", "5");
-					parser.AssertDiagnosticCount (3);
+					parser.AssertDiagnostics (
+						(XmlCoreDiagnostics.UnquotedAttributeValue, 41, 5),
+						(XmlCoreDiagnostics.InvalidNameCharacter, 52, 0),
+						(XmlCoreDiagnostics.UnquotedAttributeValue, 59, 1)
+					);
 				}
 			);
 			parser.AssertEmpty ();
-			parser.AssertDiagnosticCount (4);
+
+			parser.AssertDiagnostics (
+				(XmlCoreDiagnostics.UnquotedAttributeValue, 41, 5),
+				(XmlCoreDiagnostics.InvalidNameCharacter, 52, 0),
+				(XmlCoreDiagnostics.UnquotedAttributeValue, 59, 1),
+				(XmlCoreDiagnostics.IncompleteAttribute, 86, 0)
+			);
 		}
 
 		[Test]
@@ -147,7 +161,13 @@ namespace MonoDevelop.Xml.Tests.Parser
 				}
 			);
 			parser.AssertEmpty ();
-			parser.AssertDiagnosticCount (5, x => x.Severity == DiagnosticSeverity.Error);
+			parser.AssertDiagnostics (
+				(XmlCoreDiagnostics.IncompleteAttribute, 20, 0),
+				(XmlCoreDiagnostics.MalformedNamedTag, 43, 0),
+				(XmlCoreDiagnostics.MalformedNamedTag, 64, 0),
+				(XmlCoreDiagnostics.IncompleteAttributeValue, 79, 0),
+				(XmlCoreDiagnostics.MalformedNamedTag, 123, 0)
+			);
 		}
 
 		[Test]
@@ -204,7 +224,12 @@ namespace MonoDevelop.Xml.Tests.Parser
 			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (docTxt);
 			parser.AssertEmpty ();
-			parser.AssertDiagnosticCount (5);
+			parser.AssertDiagnostics (
+				(XmlCoreDiagnostics.ZeroLengthNameWithNamespace, 4, 2),
+				(XmlCoreDiagnostics.UnmatchedClosingTag, 7, 4),
+				(XmlCoreDiagnostics.UnclosedTag, 11, 3),
+				(XmlCoreDiagnostics.UnclosedTag, 3, 4)
+			);
 		}
 
 		[Test]
@@ -214,7 +239,13 @@ namespace MonoDevelop.Xml.Tests.Parser
 			var parser = new XmlTreeParser (CreateRootState ());
 			parser.Parse (docTxt);
 			parser.AssertEmpty ();
-			parser.AssertDiagnosticCount (6);
+			parser.AssertDiagnostics (
+				(XmlCoreDiagnostics.ZeroLengthNameWithNamespace, 4, 2),
+				(XmlCoreDiagnostics.IncompleteAttribute, 8, 0),
+				(XmlCoreDiagnostics.UnmatchedClosingTag, 9, 4),
+				(XmlCoreDiagnostics.UnclosedTag, 13, 3),
+				(XmlCoreDiagnostics.UnclosedTag, 3, 6)
+			);
 		}
 
 		[Test]
@@ -274,7 +305,8 @@ namespace MonoDevelop.Xml.Tests.Parser
 ".Replace ("\r\n", "\n");
 			var actualInternalDecl = docText.Substring (dt.InternalDeclarationRegion.Start, dt.InternalDeclarationRegion.Length);
 			Assert.AreEqual (expectedInternalDecl, actualInternalDecl);
-			parser.AssertNoDiagnostics ();
+
+			parser.AssertDiagnostics ();
 		}
 
 		[Test]
@@ -483,7 +515,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 			foreach (char c in docTxt) {
 				treeParser.Push (c);
 			}
-			(var doc, var diag) = treeParser.FinalizeDocument ();
+			(var doc, var diag) = treeParser.EndAllNodes ();
 
 			Assert.AreEqual (0, diag.Count);
 

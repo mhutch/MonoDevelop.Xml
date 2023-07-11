@@ -51,7 +51,7 @@ namespace MonoDevelop.Xml.Parser
 
 		object ICloneable.Clone () => Clone ();
 
-		public XmlTreeParser GetTreeParser () => new XmlTreeParser (this);
+		public XmlTreeParser GetTreeParser () => new (this);
 
 		/// <summary>
 		/// Efficiently creates a spine parser using information from an existing document. The position of
@@ -60,7 +60,7 @@ namespace MonoDevelop.Xml.Parser
 		/// <returns></returns>
 		public static XmlSpineParser? FromDocumentPosition (XmlRootState stateMachine, XDocument xdocument, int maximumPosition)
 			=> xdocument.FindAtOrBeforeOffset (maximumPosition) is XObject obj
-				&& stateMachine.TryRecreateState (obj, maximumPosition) is XmlParserContext ctx
+				&& stateMachine.TryRecreateState (ref obj, maximumPosition) is XmlParserContext ctx
 			? new XmlSpineParser (ctx, stateMachine)
 			: null;
 	}

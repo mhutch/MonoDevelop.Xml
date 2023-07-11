@@ -64,7 +64,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 		public Task<FilteredCompletionModel> UpdateCompletionListAsync (IAsyncCompletionSession session, AsyncCompletionSessionDataSnapshot data, CancellationToken token)
 			=> Task.Run (() => UpdateCompletionList (session, data, token), token)
-			   .WithExceptionLogger (logger);
+			   .WithTaskExceptionLogger (logger);
 
 		FilteredCompletionModel UpdateCompletionList (IAsyncCompletionSession session, AsyncCompletionSessionDataSnapshot data, CancellationToken token)
 		{
@@ -168,7 +168,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 		public Task<ImmutableArray<CompletionItem>> SortCompletionListAsync (IAsyncCompletionSession session, AsyncCompletionSessionInitialDataSnapshot data, CancellationToken token)
 			=> Task.Run (() => SortCompletionList (session, data, token), token)
-			   .WithExceptionLogger (logger);
+			   .WithTaskExceptionLogger (logger);
 
 		ImmutableArray<CompletionItem> SortCompletionList (IAsyncCompletionSession session, AsyncCompletionSessionInitialDataSnapshot data, CancellationToken token)
 		{

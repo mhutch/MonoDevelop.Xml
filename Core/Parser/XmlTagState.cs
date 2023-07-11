@@ -1,11 +1,11 @@
-// 
+//
 // XmlTagState.cs
-// 
+//
 // Author:
 //   Mikayla Hutchinson <m.j.hutchinson@gmail.com>
-// 
+//
 // Copyright (C) 2008 Novell, Inc (http://www.novell.com)
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
 // "Software"), to deal in the Software without restriction, including
@@ -13,10 +13,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -30,6 +30,7 @@ using System;
 using System.Diagnostics;
 using System.Text;
 
+using MonoDevelop.Xml.Analysis;
 using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
@@ -45,29 +46,33 @@ namespace MonoDevelop.Xml.Parser
 
 		readonly XmlAttributeState AttributeState;
 		readonly XmlNameState NameState;
-		
+
 		public XmlTagState () : this (new XmlAttributeState ()) {}
-		
+
 		public XmlTagState  (XmlAttributeState attributeState)
 			: this (attributeState, new XmlNameState ()) {}
-		
+
 		public XmlTagState (XmlAttributeState attributeState, XmlNameState nameState)
 		{
 			AttributeState = attributeState;
 			NameState = nameState;
-			
+
 			Adopt (AttributeState);
 			Adopt (NameState);
 		}
-		
-		public override XmlParserState? PushChar (char c, XmlParserContext context, ref string? rollback)
+
+		public override XmlParserState? PushChar (char c, XmlParserContext context, ref bool replayCharacter, bool isEndOfFile)
 		{
 			var peekedNode = (XContainer) context.Nodes.Peek ();
 			var element = peekedNode as XElement;
 
 			// if the current node on the stack is ended or not an element, then it's the parent
 			// and we need to create the new element
-			if (element is null || element.IsEnded) {
+			if (isEndOfFile) {
+				if (element is null) {
+					throw new InvalidParserStateException ("When entering tag state during EOF, there must be an XElement on the stack");
+				}
+			} else if (element is null || element.IsEnded) {
 				var parent = peekedNode;
 				element = new XElement (context.Position - STARTOFFSET) { Parent = parent };
 				context.Nodes.Push (element);
@@ -75,42 +80,56 @@ namespace MonoDevelop.Xml.Parser
 					parent.AddChildNode (element);
 				}
 			}
-			
-			if (c == '<') {
-				if (element.IsNamed) {
-					context.Diagnostics?.LogError ("Unexpected '<' in tag '" + element.Name.FullName + "'.", context.Position);
-					Close (element, context, context.Position);
-				} else {
-					context.Diagnostics?.LogError ("Tag has no name.", element.Span.Start);
+
+			if (isEndOfFile || c == '<') {
+				if (!element.IsEnded) {
+					element.End (context.PositionBeforeCurrentChar);
 				}
-				
-				rollback = string.Empty;
+				if (isEndOfFile) {
+					context.Diagnostics?.Add (XmlCoreDiagnostics.IncompleteTagEof, context.PositionBeforeCurrentChar);
+				}
+				else if (element.Name.IsValid) {
+					context.Diagnostics?.Add (XmlCoreDiagnostics.MalformedNamedTag, context.PositionBeforeCurrentChar, element.Name.FullName, '<');
+				} else {
+					context.Diagnostics?.Add (XmlCoreDiagnostics.UnnamedTag, context.PositionBeforeCurrentChar);
+				}
+
+				if (isEndOfFile) {
+					// no need to log it's unclosed, we already logged that it's incomplete
+					context.Nodes.Pop ();
+				}
+
+				replayCharacter = true;
 				return Parent;
 			}
-			
+
 			Debug.Assert (!element.IsEnded);
-			
+
 			if (element.IsClosed && c != '>') {
+				if (element.IsNamed) {
+					context.Diagnostics?.Add (XmlCoreDiagnostics.MalformedNamedSelfClosingTag, context.Position, c);
+				} else {
+					context.Diagnostics?.Add (XmlCoreDiagnostics.MalformedSelfClosingTag, context.Position, c);
+				}
 				if (char.IsWhiteSpace (c)) {
-					context.Diagnostics?.LogWarning ("Unexpected whitespace after '/' in self-closing tag.", context.Position);
 					return null;
 				}
-				context.Diagnostics?.LogError ("Unexpected character '" + c + "' after '/' in self-closing tag.", context.Position);
 				context.Nodes.Pop ();
 				return Parent;
 			}
-			
+
 			//if tag closed
 			if (c == '>') {
 				element.HasEndBracket = true;
+				element.End (context.PositionAfterCurrentChar);
+
+				if (!element.IsNamed) {
+					context.Diagnostics?.Add (XmlCoreDiagnostics.UnnamedTag, element.Span);
+				}
+
 				if (context.StateTag == MAYBE_SELF_CLOSING) {
 					element.Close (element);
-				}
-				if (!element.IsNamed) {
-					context.Diagnostics?.LogError ("Tag closed prematurely.", context.Position);
-					element.End (context.Position + 1);
-				} else {
-					Close (element, context, context.Position + 1);
+					context.Nodes.Pop ();
 				}
 				return Parent;
 			}
@@ -135,35 +154,30 @@ namespace MonoDevelop.Xml.Parser
 			context.StateTag = FREE;
 
 			if (context.CurrentStateLength > 0 && XmlChar.IsFirstNameChar (c)) {
-				rollback = string.Empty;
+				replayCharacter = true;
 				return AttributeState;
 			}
 
 			if (!element.IsNamed && XmlChar.IsFirstNameChar (c)) {
-				rollback = string.Empty;
+				replayCharacter = true;
 				return NameState;
 			}
 
 			if (XmlChar.IsWhitespace (c))
 				return null;
 
-			context.Diagnostics?.LogError ($"Unexpected character '{c}' in tag.", context.Position - 1);
+			// namestate will have reported an error already
+			if (context.PreviousState is XmlNameState) {
+				context.Diagnostics?.Add (XmlCoreDiagnostics.MalformedTag, context.Position, c);
+			}
+
 			context.StateTag = ATTEMPT_RECOVERY;
 			return null;
 		}
-		
-		protected virtual void Close (XElement element, XmlParserContext context, int endOffset)
-		{
-			//have already checked that element is not null, i.e. top of stack is our element
-			if (element.IsClosed)
-				context.Nodes.Pop ();
 
-			element.End (endOffset);
-		}
-
-		public override XmlParserContext? TryRecreateState (XObject xobject, int position)
+		public override XmlParserContext? TryRecreateState (ref XObject xobject, int position)
 		{
-			var fromAtt = AttributeState.TryRecreateState (xobject, position);
+			var fromAtt = AttributeState.TryRecreateState (ref xobject, position);
 			if (fromAtt != null) {
 				return fromAtt;
 			}
@@ -171,7 +185,12 @@ namespace MonoDevelop.Xml.Parser
 			// we can also recreate state for attributes within the tag, if the attribute state didn't
 			var el = xobject as XElement;
 			if (el == null && xobject is XAttribute a) {
-				el = (XElement?) a.Parent;
+				if ((el = xobject.Parent as XElement) is null) {
+					return null;
+				}
+				// if we return control to parent via returning null, we want
+				// it to recreate state from use the element, not the attribute
+				xobject = el;
 			}
 
 			if (el != null && position >= el.Span.Start && position < el.Span.End - 1) {

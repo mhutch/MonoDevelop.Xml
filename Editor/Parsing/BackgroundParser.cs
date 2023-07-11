@@ -23,7 +23,15 @@ namespace MonoDevelop.Xml.Editor.Parsing
 		Operation CreateOperation (TInput input)
 		{
 			var tokenSource = new CancellationTokenSource ();
-			var task = StartOperationAsync (input, tokenSource.Token);
+
+			Task<TOutput> task;
+			try {
+				task = StartOperationAsync (input, tokenSource.Token);
+			} catch (Exception ex) {
+				OnUnhandledParseError (ex);
+				return new Operation (this, Task.FromException<TOutput> (ex), input, new CancellationTokenSource ());
+			}
+
 			var operation = new Operation (this, task, input, tokenSource);
 
 			parseService.RegisterBackgroundOperation (task);
@@ -33,16 +41,12 @@ namespace MonoDevelop.Xml.Editor.Parsing
 			//capture successful parses
 			task.ContinueWith ((t, state) => {
 				Operation op = (Operation)state;
-				if (t.IsCompleted) {
+				try {
+					// op.Output accesses the task.Result, thowing any exceptions
+					op.Processor.OnOperationCompleted (op.Input, op.Output);
 					op.Processor.lastSuccessfulOperation = op;
-					try {
-						op.Processor.OnOperationCompleted (op.Input, op.Output);
-					} catch (Exception eventException) {
-						op.Processor.OnUnhandledParseError (eventException);
-					}
-				}
-				if (t.IsFaulted && t.Exception is Exception operationException) {
-					op.Processor.HandleUnhandledParseError (operationException);
+				} catch (Exception eventException) {
+					op.Processor.OnUnhandledParseError (eventException);
 				}
 			}, operation, tokenSource.Token, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
 
@@ -59,16 +63,6 @@ namespace MonoDevelop.Xml.Editor.Parsing
 
 		protected virtual void OnOperationCompleted (TInput input, TOutput output)
 		{
-		}
-
-		void HandleUnhandledParseError (Exception ex)
-		{
-			// ensure errors in error handlers don't crash us
-			try {
-				OnUnhandledParseError (ex);
-			} catch {
-				LastDitchLog (ex);
-			}
 		}
 
 		void LastDitchLog (Exception ex)

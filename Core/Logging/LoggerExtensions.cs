@@ -15,59 +15,57 @@ public static partial class LoggerExtensions
 	/// <summary>
 	/// Logs any exceptions thrown by the task, and observes the task so it doesn't throw unobserved exceptions.
 	/// </summary>
-	public static void LogExceptionsAndForget (this Task task, ILogger logger, [CallerMemberName] string? originMember = default)
-	{
-		task.CatchAndLogIfFaulted (logger, originMember);
-	}
+	public static void LogTaskExceptionsAndForget (this Task task, ILogger logger, [CallerMemberName] string? originMember = default)
+		=> _ = task.WithTaskExceptionLogger (logger, originMember);
 
 	/// <summary>
 	/// Attaches a continution to the task that logs any exception thrown by the task, and returns the task.
 	/// </summary>
-	public static Task WithExceptionLogger (this Task task, ILogger logger, [CallerMemberName] string? originMember = default)
+	public static TTask WithTaskExceptionLogger<TTask> (this TTask task, ILogger logger, [CallerMemberName] string? originMember = default) where TTask : Task
 	{
-		task.CatchAndLogIfFaulted (logger, originMember);
-		return task;
-	}
-
-	public static Task<T> WithExceptionLogger<T> (this Task<T> task, ILogger logger, [CallerMemberName] string? originMember = default)
-	{
-		task.CatchAndLogIfFaulted (logger, originMember);
-		return task;
-	}
-
-	public static Task<IEnumerable<T>> WithExceptionLogger<T> (this Task<IEnumerable<T>> task, ILogger logger, [CallerMemberName] string? originMember = default)
-	{
-		return task.ContinueWith (t => {
-			try {
-				return t.Result.WithExceptionLogger (logger, originMember);
-			} catch (Exception ex) {
-				LogInternalError (logger, ex, originMember);
-				throw;
-			}
-		},
-		TaskContinuationOptions.ExecuteSynchronously);
-	}
-
-	public static IEnumerable<T> WithExceptionLogger<T> (this IEnumerable<T> enumerable, ILogger logger, [CallerMemberName] string? originMember = default)
-		=> new LoggedEnumerable<T> (enumerable, logger, originMember ?? throw new ArgumentNullException (nameof (originMember)));
-
-	static Task CatchAndLogIfFaulted (this Task task, ILogger logger, string? originMember)
-	{
-		if (originMember is null) {
-			throw new ArgumentNullException (nameof (originMember));
-		}
-
+		originMember = originMember ?? throw new ArgumentNullException (nameof (originMember));
 		_ = task.ContinueWith (
-			t => LogExceptions (logger, originMember, t),
+			t => LogTaskExceptions (logger, originMember, t),
 			default,
 			TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
 			TaskScheduler.Default
 		);
-
 		return task;
 	}
 
-	static void LogExceptions (ILogger logger, string originMember, Task t)
+	/// <summary>
+	/// Attaches a continution to the task that logs any exception thrown by the task, and returns the task.
+	/// <para>
+	/// If the <see cref="IEnumerable{T}"/> task result is not a collection then it will be return wrapped in an enumerator that logs any exceptions thrown during enumeration.
+	/// </para>
+	/// </summary>
+	public static Task<IEnumerable<T>> WithTaskAndEnumeratorExceptionLogger<T> (this Task<IEnumerable<T>> task, ILogger logger, [CallerMemberName] string? originMember = default)
+	{
+		originMember = originMember ?? throw new ArgumentNullException (nameof (originMember));
+
+		return task.ContinueWith (t => {
+			try {
+				return t.Result.WithEnumeratorExceptionLogger (logger, originMember);
+			} catch (Exception ex) {
+				LogInternalException (logger, ex, originMember);
+				throw;
+			}
+		},
+		TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.NotOnCanceled);
+	}
+
+	/// <summary>
+	/// If the <see cref="IEnumerable{T}"/> is not a collection then it will be return wrapped in an enumerator that logs any exceptions thrown during enumeration.
+	/// </summary>
+	public static IEnumerable<T> WithEnumeratorExceptionLogger<T> (this IEnumerable<T> enumerable, ILogger logger, [CallerMemberName] string? originMember = default)
+	{
+		if (enumerable is ICollection<T> || enumerable is IReadOnlyCollection<T>) {
+			return enumerable;
+		}
+		return new LoggedEnumerable<T> (enumerable, logger, originMember ?? throw new ArgumentNullException (nameof (originMember)));
+	}
+
+	static void LogTaskExceptions (ILogger logger, string originMember, Task t)
 	{
 		if (t.Exception is null) {
 			return;
@@ -82,32 +80,42 @@ public static partial class LoggerExtensions
 			return;
 		}
 		Exception ex = unhandled.Count == 1 ? unhandled[0] : new AggregateException (unhandled);
-		logger.LogInternalError (ex, originMember);
+		logger.LogInternalException (ex, originMember);
 	}
 
 	/// <summary>
 	/// Logs an unhandled exception.
 	/// </summary>
-	public static void LogInternalError (this ILogger logger, Exception ex, [CallerMemberName] string? originMember = default)
-		=> logger.LogInternalErrorInMember (ex, originMember ?? throw new ArgumentNullException (nameof (originMember)));
+	public static void LogInternalException (this ILogger logger, Exception ex, [CallerMemberName] string? originMember = default)
+		=> logger.LogInternalExceptionInMember (ex, originMember ?? throw new ArgumentNullException (nameof (originMember)));
 
-	[LoggerMessage (Level = LogLevel.Error, Message = "Internal error in {originMember}")]
-	static partial void LogInternalErrorInMember (this ILogger logger, Exception ex, string originMember);
+	[LoggerMessage (Level = LogLevel.Error, Message = "Internal exception in {originMember}")]
+	static partial void LogInternalExceptionInMember (this ILogger logger, Exception ex, string originMember);
 
 	/// <summary>
-	/// Catches any exception thrown by the function, logs it, and rethrows. If the function returns a task that faults, its exception will also be logged.
+	/// Catches any exception thrown by the function, logs it, and rethrows.
 	/// </summary>
-	public static T InvokeAndLogErrors<T> (this ILogger logger, Func<T> function, [CallerMemberName] string? originMember = default)
+	public static T InvokeAndLogExceptions<T> (this ILogger logger, Func<T> function, [CallerMemberName] string? originMember = default)
 	{
+		originMember = originMember ?? throw new ArgumentNullException (nameof (originMember));
+
 		try {
-			var result = function ();
-			if (result is Task task) {
-				task.CatchAndLogIfFaulted (logger, originMember);
-			}
-			return result;
+			return function ();
 		} catch (Exception ex) {
-			logger.LogInternalError (ex, originMember);
+			logger.LogInternalException (ex, originMember);
 			throw;
 		}
 	}
+
+	public static Task InvokeAndLogExceptions (this ILogger logger, Func<Task> function, [CallerMemberName] string? originMember = default)
+		=> logger.InvokeAndLogExceptions<Task> (function, originMember)
+		   .WithTaskExceptionLogger (logger, originMember);
+
+	public static Task<T> InvokeAndLogExceptions<T> (this ILogger logger, Func<Task<T>> function, [CallerMemberName] string? originMember = default)
+		=> logger.InvokeAndLogExceptions<Task<T>> (function, originMember)
+		   .WithTaskExceptionLogger (logger, originMember);
+
+	public static IEnumerable<T> InvokeAndLogExceptions<T> (this ILogger logger, Func<IEnumerable<T>> function, [CallerMemberName] string? originMember = default)
+		=> logger.InvokeAndLogExceptions<IEnumerable<T>> (function, originMember)
+		   .WithEnumeratorExceptionLogger (logger, originMember);
 }

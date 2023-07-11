@@ -26,6 +26,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using MonoDevelop.Xml.Analysis;
 using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
@@ -38,10 +39,15 @@ namespace MonoDevelop.Xml.Parser
 		const int SINGLE_BRACKET = 1;
 		const int DOUBLE_BRACKET = 2;
 		
-		public override XmlParserState? PushChar (char c, XmlParserContext context, ref string? rollback)
+		public override XmlParserState? PushChar (char c, XmlParserContext context, ref bool replayCharacter, bool isEndOfFIle)
 		{
 			if (context.CurrentStateLength == 0) {
 				context.Nodes.Push (new XCData (context.Position - STARTOFFSET));
+			}
+
+			if (isEndOfFIle) {
+				context.Diagnostics?.Add (XmlCoreDiagnostics.IncompleteCDataEof, context.PositionBeforeCurrentChar);
+				return EndAndPop ();
 			}
 			
 			if (c == ']') {
@@ -54,22 +60,27 @@ namespace MonoDevelop.Xml.Parser
 			} else if (c == '>' && context.StateTag == DOUBLE_BRACKET) {
 				// if the ']]' is followed by a '>', the state has ended
 				// so attach a node to the DOM and end the state
-				var cdata = (XCData) context.Nodes.Pop ();
-				cdata.End (context.Position + 1);
-				
-				if (context.BuildTree) {
-					((XContainer) context.Nodes.Peek ()).AddChildNode (cdata); 
-				}
-				return Parent;
+				return EndAndPop ();
 			} else {
 				// not any part of a ']]>', so make sure matching is reset
 				context.StateTag = NOMATCH;
 			}
 			
 			return null;
+
+			XmlParserState? EndAndPop ()
+			{
+				var cdata = (XCData)context.Nodes.Pop ();
+				cdata.End (context.PositionAfterCurrentChar);
+
+				if (context.BuildTree) {
+					((XContainer)context.Nodes.Peek ()).AddChildNode (cdata);
+				}
+				return Parent;
+			}
 		}
 
-		public override XmlParserContext? TryRecreateState (XObject xobject, int position)
+		public override XmlParserContext? TryRecreateState (ref XObject xobject, int position)
 		{
 			if (xobject is XCData cd && position >= cd.Span.Start + STARTOFFSET && position < cd.Span.End) {
 				var parents = NodeStack.FromParents (cd);

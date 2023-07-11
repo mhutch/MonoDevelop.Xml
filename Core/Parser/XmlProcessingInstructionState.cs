@@ -26,6 +26,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using MonoDevelop.Xml.Analysis;
 using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
@@ -36,25 +37,29 @@ namespace MonoDevelop.Xml.Parser
 		const int NOMATCH = 0;
 		const int QUESTION = 1;
 		
-		public override XmlParserState? PushChar (char c, XmlParserContext context, ref string? rollback)
+		public override XmlParserState? PushChar (char c, XmlParserContext context, ref bool replayCharacter, bool isEndOfFile)
 		{
 			if (context.CurrentStateLength == 0) {
 				context.Nodes.Push (new XProcessingInstruction (context.Position - QUESTION));
 			}
-			
+
+			if (isEndOfFile) {
+				context.Diagnostics?.Add (XmlCoreDiagnostics.IncompleteProcessingInstructionEof, context.PositionAfterCurrentChar);
+			}
+
 			if (c == '?') {
 				if (context.StateTag == NOMATCH) {
 					context.StateTag = QUESTION;
 					return null;
 				}
-			} else if (c == '>' && context.StateTag == QUESTION) {
+			} else if ((c == '>' && context.StateTag == QUESTION) || isEndOfFile) {
 				// if the '?' is followed by a '>', the state has ended
 				// so attach a node to the DOM and end the state
 				var xpi = (XProcessingInstruction) context.Nodes.Pop ();
 
 				// at this point the position isn't incremented to include the '>' yet
 				// so make sure to include the closing '>' in the span
-				xpi.End (context.Position + 1);
+				xpi.End (context.PositionAfterCurrentChar);
 
 				if (context.BuildTree) {
 					((XContainer) context.Nodes.Peek ()).AddChildNode (xpi); 
@@ -67,7 +72,7 @@ namespace MonoDevelop.Xml.Parser
 			return null;
 		}
 
-		public override XmlParserContext? TryRecreateState (XObject xobject, int position)
+		public override XmlParserContext? TryRecreateState (ref XObject xobject, int position)
 		{
 			if (xobject is XProcessingInstruction pi && position >= pi.Span.Start + STARTOFFSET && position < pi.Span.End) {
 				var parents = NodeStack.FromParents (pi);

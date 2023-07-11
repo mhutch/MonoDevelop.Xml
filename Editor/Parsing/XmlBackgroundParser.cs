@@ -43,7 +43,7 @@ namespace MonoDevelop.Xml.Editor.Parsing
 					parser.Push (input[i]);
 					token.ThrowIfCancellationRequested ();
 				}
-				var (doc, diagnostics) = parser.FinalizeDocument ();
+				var (doc, diagnostics) = parser.EndAllNodes ();
 				return new XmlParseResult (doc, diagnostics, input);
 			}, token);
 		}
@@ -80,16 +80,7 @@ namespace MonoDevelop.Xml.Editor.Parsing
 			if (prevParse != null) {
 				var startPos = Math.Min (point.Position, MaximumCompatiblePosition (prevParse.TextSnapshot, point.Snapshot));
 				if (startPos > 0) {
-					var obj = prevParse.XDocument.FindAtOrBeforeOffset (startPos);
-
-					// check for null as there may not be a node before startPos
-					if (obj != null) {
-						var state = StateMachine.TryRecreateState (obj, startPos);
-						if (state != null) {
-							LogRecovered (logger, state.Position, point.Position);
-							parser = new XmlSpineParser (state, StateMachine);
-						}
-					}
+					parser = XmlSpineParser.FromDocumentPosition (StateMachine, prevParse.XDocument, startPos);
 				}
 			}
 

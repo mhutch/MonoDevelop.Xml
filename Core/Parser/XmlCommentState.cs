@@ -26,6 +26,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using MonoDevelop.Xml.Analysis;
 using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Parser
@@ -38,12 +39,17 @@ namespace MonoDevelop.Xml.Parser
 		const int SINGLE_DASH = 1;
 		const int DOUBLE_DASH = 2;
 		
-		public override XmlParserState? PushChar (char c, XmlParserContext context, ref string? rollback)
+		public override XmlParserState? PushChar (char c, XmlParserContext context, ref bool replayCharacter, bool isEndOfFile)
 		{
 			if (context.CurrentStateLength == 0) {
 				context.Nodes.Push (new XComment (context.Position - STARTOFFSET));
 			}
-			
+
+			if (isEndOfFile) {
+				context.Diagnostics?.Add (XmlCoreDiagnostics.IncompleteCommentEof, context.PositionBeforeCurrentChar);
+				return EndAndPop ();
+			}
+
 			if (c == '-') {
 				//make sure we know when there are two '-' chars together
 				if (context.StateTag == NOMATCH)
@@ -55,17 +61,9 @@ namespace MonoDevelop.Xml.Parser
 				if (c == '>') {
 					// if the '--' is followed by a '>', the state has ended
 					// so attach a node to the DOM and end the state
-					var comment = (XComment) context.Nodes.Pop ();
-					
-					comment.End (context.Position + 1);
-					if (context.BuildTree) {
-						((XContainer) context.Nodes.Peek ()).AddChildNode (comment);
-					}
-					
-					rollback = null;
-					return Parent;
+					return EndAndPop ();
 				} else {
-					context.Diagnostics?.LogWarning ("The string '--' should not appear within comments.", context.Position);
+					context.Diagnostics?.Add (XmlCoreDiagnostics.IncompleteEndComment, context.Position);
 					context.StateTag = NOMATCH;
 				}
 			} else {
@@ -74,9 +72,20 @@ namespace MonoDevelop.Xml.Parser
 			}
 			
 			return null;
+
+			XmlParserState? EndAndPop ()
+			{
+				var comment = (XComment)context.Nodes.Pop ();
+
+				comment.End (context.PositionAfterCurrentChar);
+				if (context.BuildTree) {
+					((XContainer)context.Nodes.Peek ()).AddChildNode (comment);
+				}
+				return Parent;
+			}
 		}
 
-		public override XmlParserContext? TryRecreateState (XObject xobject, int position)
+		public override XmlParserContext? TryRecreateState (ref XObject xobject, int position)
 		{
 			if (xobject is XComment comment && position >= comment.Span.Start + STARTOFFSET && position < comment.Span.End) {
 				var parents = NodeStack.FromParents (comment);

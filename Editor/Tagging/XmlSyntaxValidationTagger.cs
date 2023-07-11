@@ -11,8 +11,8 @@ using Microsoft.VisualStudio.Text.Adornments;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Threading;
 
+using MonoDevelop.Xml.Analysis;
 using MonoDevelop.Xml.Editor.Parsing;
-using MonoDevelop.Xml.Parser;
 
 namespace MonoDevelop.MSBuild.Editor
 {
@@ -70,19 +70,19 @@ namespace MonoDevelop.MSBuild.Editor
 					}
 
 					if (diagSpan.IntersectsWith (taggingSpan)) {
-						var errorType = GetErrorTypeName (diag.Severity);
-						yield return new TagSpan<ErrorTag> (diagSpan, new ErrorTag (errorType, diag.Message));
+						var errorType = GetErrorTypeName (diag.Descriptor.Severity);
+						yield return new TagSpan<ErrorTag> (diagSpan, new ErrorTag (errorType, diag.GetFormattedMessage ()));
 					}
 				}
 			}
 		}
 
-		static string GetErrorTypeName (DiagnosticSeverity severity)
+		static string GetErrorTypeName (XmlDiagnosticSeverity severity)
 		{
 			switch (severity) {
-			case DiagnosticSeverity.Error:
+			case XmlDiagnosticSeverity.Error:
 				return PredefinedErrorTypeNames.SyntaxError;
-			case DiagnosticSeverity.Warning:
+			case XmlDiagnosticSeverity.Warning:
 				return PredefinedErrorTypeNames.Warning;
 			}
 			throw new ArgumentException ($"Unknown DiagnosticSeverity value {severity}", nameof (severity));
