@@ -141,7 +141,7 @@ namespace MonoDevelop.Xml.Parser
 			if (Context.Nodes.Count != 1 || Context.Nodes.Pop () is not XDocument doc) {
 				throw new InvalidParserStateException ("Malformed state stack when ending all nodes");
 			}
-			doc.End (Context.Position);
+			doc.End (Context.PositionBeforeCurrentChar);
 
 			for (int i = nodes.Length - 1; i >= 0; i--) {
 				var node = nodes[i];

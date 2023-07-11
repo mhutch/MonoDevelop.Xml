@@ -68,7 +68,11 @@ namespace MonoDevelop.Xml.Parser
 
 			// if the current node on the stack is ended or not an element, then it's the parent
 			// and we need to create the new element
-			if ((element is null || (element.IsEnded && !isEndOfFile))) {
+			if (isEndOfFile) {
+				if (element is null) {
+					throw new InvalidParserStateException ("When entering tag state during EOF, there must be an XElement on the stack");
+				}
+			} else if (element is null || element.IsEnded) {
 				var parent = peekedNode;
 				element = new XElement (context.Position - STARTOFFSET) { Parent = parent };
 				context.Nodes.Push (element);
@@ -78,14 +82,16 @@ namespace MonoDevelop.Xml.Parser
 			}
 
 			if (isEndOfFile || c == '<') {
-				element.End (context.PositionBeforeCurrentChar);
+				if (!element.IsEnded) {
+					element.End (context.PositionBeforeCurrentChar);
+				}
 				if (isEndOfFile) {
 					context.Diagnostics?.Add (XmlCoreDiagnostics.IncompleteTagEof, context.PositionBeforeCurrentChar);
 				}
 				else if (element.Name.IsValid) {
 					context.Diagnostics?.Add (XmlCoreDiagnostics.MalformedNamedTag, context.PositionBeforeCurrentChar, element.Name.FullName, '<');
 				} else {
-					context.Diagnostics?.Add (XmlCoreDiagnostics.UnnamedTag, context.Position);
+					context.Diagnostics?.Add (XmlCoreDiagnostics.UnnamedTag, context.PositionBeforeCurrentChar);
 				}
 
 				if (isEndOfFile) {

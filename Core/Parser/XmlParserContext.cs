@@ -61,8 +61,10 @@ namespace MonoDevelop.Xml.Parser
 
 		internal bool IsAtEndOfFile { get; set; }
 
-		internal int PositionBeforeCurrentChar => Position;
-		internal int PositionAfterCurrentChar => IsAtEndOfFile ? Position : Position + 1;
+		// during EOF, the position is after the last char, so these helpers ensure we don't end up with an invalid span
+		internal int PositionBeforeCurrentChar => IsAtEndOfFile? Position - 1 : Position;
+		internal int PositionAfterCurrentChar => IsAtEndOfFile ? Position - 1 : Position + 1;
+
 		internal TextSpan CurrentStateSpanIncludingCurrentChar => TextSpan.FromBounds(Position - CurrentStateLength, PositionAfterCurrentChar);
 		internal TextSpan CurrentStateSpanExcludingCurrentChar => TextSpan.FromBounds(Position - CurrentStateLength, PositionBeforeCurrentChar);
 

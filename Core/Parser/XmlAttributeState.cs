@@ -136,6 +136,10 @@ namespace MonoDevelop.Xml.Parser
 				var att = (XAttribute)context.Nodes.Pop ();
 				att.End (context.PositionBeforeCurrentChar);
 
+				if (!att.IsNamed) {
+					return Parent;
+				}
+
 				var element = (IAttributedXObject)context.Nodes.Peek ();
 
 				if (logDuplicate && context.Diagnostics is not null && element.Attributes.Get (att.Name, false) is not null) {
