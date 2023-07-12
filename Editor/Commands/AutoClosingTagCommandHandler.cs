@@ -110,9 +110,19 @@ namespace MonoDevelop.Xml.Editor.Commands
 			}
 
 			var bufferEdit = args.SubjectBuffer.CreateEdit ();
+
+			// if there's an extra > after committing due to VS losing track of overtype, delete it
+			ITextSnapshot snapshot = args.SubjectBuffer.CurrentSnapshot;
+			if (snapshot.Length > position && snapshot[position] == '>') {
+				bufferEdit.Delete (new Span (position, 1));
+			}
+
 			bufferEdit.Insert (position, $"</{el.Name.FullName}>");
+
 			bufferEdit.Apply ();
-			args.TextView.Caret.MoveTo (new SnapshotPoint (args.SubjectBuffer.CurrentSnapshot, position));
+			snapshot = args.SubjectBuffer.CurrentSnapshot;
+
+			args.TextView.Caret.MoveTo (new SnapshotPoint (snapshot, position));
 
 			if (completionSession != null) {
 				var trigger = new CompletionTrigger (
