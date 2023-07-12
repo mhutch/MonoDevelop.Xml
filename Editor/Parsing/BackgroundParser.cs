@@ -40,9 +40,9 @@ namespace MonoDevelop.Xml.Editor.Parsing
 
 			//capture successful parses
 			task.ContinueWith ((t, state) => {
-				Operation op = (Operation)state;
+				Operation op = (Operation)state!;
 				try {
-					// op.Output accesses the task.Result, thowing any exceptions
+					// op.Output accesses the task.Result, throwing any exceptions
 					op.Processor.OnOperationCompleted (op.Input, op.Output);
 					op.Processor.lastSuccessfulOperation = op;
 				} catch (Exception eventException) {

@@ -24,6 +24,6 @@ namespace MonoDevelop.Xml.Editor.Logging;
 /// </summary>
 public interface IEditorLoggerFactory
 {
-	ILogger<T> CreateLogger<T> (string contentTypeName);
-	ILogger<T> CreateLogger<T> (IContentType contentType);
+	ILogger<TCategoryName> CreateLogger<TCategoryName> (string contentTypeName);
+	ILogger<TCategoryName> CreateLogger<TCategoryName> (IContentType contentType);
 }

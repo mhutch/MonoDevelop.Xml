@@ -76,7 +76,7 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 			// use last parse if it's up to date, which is most likely will be
 			// else use a spine from the end of the selection and update as needed
 			var lastParse = parser.LastOutput;
-			List<XObject> nodePath;
+			List<XObject>? nodePath = null;
 			XmlSpineParser? spine = null;
 			if (lastParse != null && lastParse.TextSnapshot.Version.VersionNumber == activeSpan.Snapshot.Version.VersionNumber) {
 				var n = lastParse.XDocument.FindAtOrBeforeOffset (activeSpan.Start.Position);

@@ -16,61 +16,70 @@ using Microsoft.VisualStudio.Text.Editor.Commanding.Commands;
 using Microsoft.VisualStudio.Text.Outlining;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Utilities;
+
+using MonoDevelop.Xml.Logging;
 using MonoDevelop.Xml.Editor.Tagging;
-using VSCommanding = Microsoft.VisualStudio.Commanding;
+using MonoDevelop.Xml.Editor.Logging;
 
 namespace MonoDevelop.Xml.Editor.Commands
 {
-	[Export (typeof (VSCommanding.ICommandHandler))]
+	[Export (typeof (ICommandHandler))]
 	[ContentType (XmlContentTypeNames.XmlCore)]
 	[Name ("Xml Navigate to Highlighted Reference Command Handler")]
 	internal partial class NavigateToHighlightReferenceCommandHandler :
-		VSCommanding.ICommandHandler<NavigateToNextHighlightedReferenceCommandArgs>,
-		VSCommanding.ICommandHandler<NavigateToPreviousHighlightedReferenceCommandArgs>
+		ICommandHandler<NavigateToNextHighlightedReferenceCommandArgs>,
+		ICommandHandler<NavigateToPreviousHighlightedReferenceCommandArgs>
 	{
-		private readonly IOutliningManagerService _outliningManagerService;
-		private readonly IViewTagAggregatorFactoryService _tagAggregatorFactory;
+		readonly IEditorLoggerFactory loggerFactory;
+		readonly IOutliningManagerService _outliningManagerService;
+		readonly IViewTagAggregatorFactoryService _tagAggregatorFactory;
 
 		public string DisplayName => "Navigate To Highlighted Reference";
 
+		// log
+
 		[ImportingConstructor]
 		public NavigateToHighlightReferenceCommandHandler (
+			IEditorLoggerFactory loggerFactory,
 			IOutliningManagerService outliningManagerService,
 			IViewTagAggregatorFactoryService tagAggregatorFactory)
 		{
 			_outliningManagerService = outliningManagerService ?? throw new ArgumentNullException (nameof (outliningManagerService));
 			_tagAggregatorFactory = tagAggregatorFactory ?? throw new ArgumentNullException (nameof (tagAggregatorFactory));
+			this.loggerFactory = loggerFactory;
 		}
 
-		public CommandState GetCommandState (NavigateToNextHighlightedReferenceCommandArgs args)
-		{
-			return GetCommandStateImpl (args);
-		}
+		public CommandState GetCommandState (NavigateToNextHighlightedReferenceCommandArgs args) => GetCommandStateImpl (args);
 
-		public CommandState GetCommandState (NavigateToPreviousHighlightedReferenceCommandArgs args)
-		{
-			return GetCommandStateImpl (args);
-		}
+		public CommandState GetCommandState (NavigateToPreviousHighlightedReferenceCommandArgs args) => GetCommandStateImpl (args);
 
 		private CommandState GetCommandStateImpl (EditorCommandArgs args)
 		{
-			using (var tagAggregator = _tagAggregatorFactory.CreateTagAggregator<NavigableHighlightTag> (args.TextView)) {
-				var tagUnderCursor = FindTagUnderCaret (tagAggregator, args.TextView);
-				return tagUnderCursor == null ? CommandState.Unavailable : CommandState.Available;
+			try {
+				using (var tagAggregator = _tagAggregatorFactory.CreateTagAggregator<NavigableHighlightTag> (args.TextView)) {
+					var tagUnderCursor = FindTagUnderCaret (tagAggregator, args.TextView);
+					return tagUnderCursor == null ? CommandState.Unavailable : CommandState.Available;
+				}
+			} catch (Exception ex) {
+				loggerFactory.GetLogger<NavigateToHighlightReferenceCommandHandler> (args.TextView).LogInternalException (ex);
+				throw;
 			}
 		}
 
-		public bool ExecuteCommand (NavigateToNextHighlightedReferenceCommandArgs args, CommandExecutionContext context)
-		{
-			return ExecuteCommandImpl (args, navigateToNext: true, context);
-		}
+		public bool ExecuteCommand (NavigateToNextHighlightedReferenceCommandArgs args, CommandExecutionContext context) => ExecuteCommandImpl (args, navigateToNext: true, context);
 
-		public bool ExecuteCommand (NavigateToPreviousHighlightedReferenceCommandArgs args, CommandExecutionContext context)
-		{
-			return ExecuteCommandImpl (args, navigateToNext: false, context);
-		}
+		public bool ExecuteCommand (NavigateToPreviousHighlightedReferenceCommandArgs args, CommandExecutionContext context) => ExecuteCommandImpl (args, navigateToNext: false, context);
 
 		private bool ExecuteCommandImpl (EditorCommandArgs args, bool navigateToNext, CommandExecutionContext context)
+		{
+			try {
+				return ExecuteCommandImplInternal (args, navigateToNext, context);
+			} catch (Exception ex) {
+				loggerFactory.GetLogger<NavigateToHighlightReferenceCommandHandler> (args.TextView).LogInternalException (ex);
+				throw;
+			}
+		}
+		bool ExecuteCommandImplInternal (EditorCommandArgs args, bool navigateToNext, CommandExecutionContext context)
 		{
 			using (var tagAggregator = _tagAggregatorFactory.CreateTagAggregator<NavigableHighlightTag> (args.TextView)) {
 				var tagUnderCursor = FindTagUnderCaret (tagAggregator, args.TextView);

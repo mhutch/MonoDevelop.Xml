@@ -24,18 +24,18 @@ namespace MonoDevelop.Xml.Editor.SmartIndent
 		readonly ITextView textView;
 		readonly IEditorOptions options;
 		readonly XmlParserProvider parserProvider;
-		readonly ILogger<XmlSmartIndent> logger;
+		readonly ILogger logger;
 
-		public XmlSmartIndent (ITextView textView, XmlParserProvider parserProvider, ILogger<XmlSmartIndent> logger) : this (textView, parserProvider, textView.Options)
+		public XmlSmartIndent (ITextView textView, XmlParserProvider parserProvider, ILogger logger) : this (textView, parserProvider, textView.Options, logger)
 		{
-			this.logger = logger;
 		}
 
-		public XmlSmartIndent (ITextView textView, XmlParserProvider parserProvider, IEditorOptions options)
+		public XmlSmartIndent (ITextView textView, XmlParserProvider parserProvider, IEditorOptions options, ILogger logger)
 		{
 			this.textView = textView;
 			this.options = options;
 			this.parserProvider = parserProvider;
+			this.logger = logger;
 		}
 
 		public void Dispose ()
