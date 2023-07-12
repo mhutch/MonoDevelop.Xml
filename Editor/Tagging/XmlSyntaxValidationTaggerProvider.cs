@@ -12,6 +12,7 @@ using Microsoft.VisualStudio.Threading;
 using Microsoft.VisualStudio.Utilities;
 
 using MonoDevelop.Xml.Editor;
+using MonoDevelop.Xml.Editor.Logging;
 using MonoDevelop.Xml.Editor.Parsing;
 
 namespace MonoDevelop.MSBuild.Editor
@@ -25,12 +26,14 @@ namespace MonoDevelop.MSBuild.Editor
 	{
 		public JoinableTaskContext JoinableTaskContext { get; }
 		public XmlParserProvider ParserProvider { get; }
+		public IEditorLoggerFactory LoggerFactory { get; }
 
 		[ImportingConstructor]
-		public XmlSyntaxValidationTaggerProvider (JoinableTaskContext joinableTaskContext, XmlParserProvider parserProvider)
+		public XmlSyntaxValidationTaggerProvider (JoinableTaskContext joinableTaskContext, XmlParserProvider parserProvider, IEditorLoggerFactory loggerFactory)
 		{
 			JoinableTaskContext = joinableTaskContext;
 			ParserProvider = parserProvider;
+			LoggerFactory = loggerFactory;
 		}
 
 		public ITagger<T> CreateTagger<T> (ITextBuffer buffer) where T : ITag
