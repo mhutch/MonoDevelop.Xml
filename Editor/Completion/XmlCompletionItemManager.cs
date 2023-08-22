@@ -192,6 +192,12 @@ namespace MonoDevelop.Xml.Editor.Completion
 		}
 
 		Comparison<CompletionItem> GetSortComparer (CancellationToken token) => (x, y) => {
+			int cancelCount = 0;
+			if (++cancelCount == 1000) {
+				token.ThrowIfCancellationRequested ();
+				cancelCount = 0;
+			}
+
 			return string.Compare (x.SortText, y.SortText, StringComparison.Ordinal);
 		};
 
