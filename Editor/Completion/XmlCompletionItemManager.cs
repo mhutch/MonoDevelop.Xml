@@ -26,7 +26,7 @@ using MonoDevelop.Xml.Logging;
 namespace MonoDevelop.Xml.Editor.Completion
 {
 	[Export (typeof (IAsyncCompletionItemManagerProvider))]
-	[Name (nameof(XmlCompletionItemManagerProvider))]
+	[Name (XmlCompletionItemManager.ProviderName)]
 	[ContentType (XmlContentTypeNames.XmlCore)]
 	[TextViewRole (PredefinedTextViewRoles.Editable)]
 	[Order(Before = PredefinedCompletionNames.DefaultCompletionItemManager)]
@@ -44,31 +44,36 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 		public IAsyncCompletionItemManager GetOrCreate (ITextView textView)
 		{
-			var logger = loggerFactory.CreateLogger<XmlCompletionItemManager> (textView);
-			return textView.Properties.GetOrCreateSingletonProperty (
-				typeof (XmlCompletionItemManagerProvider),
-				() => new XmlCompletionItemManager (patternMatcherFactory, loggerFactory.CreateLogger<XmlCompletionItemManager> (textView)));
+			return textView.Properties.GetOrCreateSingletonProperty (() =>
+				new XmlCompletionItemManager (patternMatcherFactory, loggerFactory.CreateLogger<XmlCompletionItemManager> (textView))
+			);
 		}
 	}
 
-	internal sealed class XmlCompletionItemManager : IAsyncCompletionItemManager
+	public class XmlCompletionItemManager : IAsyncCompletionItemManager
 	{
-		readonly IPatternMatcherFactory _patternMatcherFactory;
-		readonly ILogger<XmlCompletionItemManager> logger;
+		/// <summary>
+		/// Allows derived classes to insert their <see cref="IAsyncCompletionItemManagerProvider"/> before this manager's provider.
+		/// </summary>
+		public const string ProviderName = nameof (XmlCompletionItemManager);
 
-		internal XmlCompletionItemManager (IPatternMatcherFactory patternMatcherFactory, ILogger<XmlCompletionItemManager> logger)
+		protected IPatternMatcherFactory PatternMatcherFactory;
+		protected ILogger Logger { get; }
+
+		public XmlCompletionItemManager (IPatternMatcherFactory patternMatcherFactory, ILogger logger)
 		{
-			_patternMatcherFactory = patternMatcherFactory;
-			this.logger = logger;
+			PatternMatcherFactory = patternMatcherFactory;
+			Logger = logger;
 		}
 
-		public Task<FilteredCompletionModel> UpdateCompletionListAsync (IAsyncCompletionSession session, AsyncCompletionSessionDataSnapshot data, CancellationToken token)
-			=> Task.Run (() => UpdateCompletionList (session, data, token), token)
-			   .WithTaskExceptionLogger (logger);
+		Task<FilteredCompletionModel> IAsyncCompletionItemManager.UpdateCompletionListAsync (IAsyncCompletionSession session, AsyncCompletionSessionDataSnapshot data, CancellationToken token)
+			=> UpdateCompletionListAsync (session, data, token).WithTaskExceptionLogger (Logger);
 
-		FilteredCompletionModel UpdateCompletionList (IAsyncCompletionSession session, AsyncCompletionSessionDataSnapshot data, CancellationToken token)
+		protected virtual Task<FilteredCompletionModel> UpdateCompletionListAsync (IAsyncCompletionSession session, AsyncCompletionSessionDataSnapshot data, CancellationToken token)
+			=> Task.Run (() => UpdateCompletionList (session, data, token), token);
+
+		protected virtual FilteredCompletionModel UpdateCompletionList (IAsyncCompletionSession session, AsyncCompletionSessionDataSnapshot data, CancellationToken token)
 		{
-
 			// Filter by text
 			var filterText = session.ApplicableToSpan.GetText (data.Snapshot);
 			if (string.IsNullOrWhiteSpace (filterText)) {
@@ -86,7 +91,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 			// Pattern matcher not only filters, but also provides a way to order the results by their match quality.
 			// The relevant CompletionItem is match.Item1, its PatternMatch is match.Item2
-			var patternMatcher = _patternMatcherFactory.CreatePatternMatcher (
+			var patternMatcher = PatternMatcherFactory.CreatePatternMatcher (
 				filterText,
 				new PatternMatcherCreationOptions (System.Globalization.CultureInfo.CurrentCulture, PatternMatcherCreationFlags.IncludeMatchedSpans));
 
@@ -166,14 +171,35 @@ namespace MonoDevelop.Xml.Editor.Completion
 			return new FilteredCompletionModel (listWithHighlights, selectedItemIndex, updatedFilters, selectionHint, centerSelection: true, uniqueItem: null);
 		}
 
-		public Task<ImmutableArray<CompletionItem>> SortCompletionListAsync (IAsyncCompletionSession session, AsyncCompletionSessionInitialDataSnapshot data, CancellationToken token)
-			=> Task.Run (() => SortCompletionList (session, data, token), token)
-			   .WithTaskExceptionLogger (logger);
+		Task<ImmutableArray<CompletionItem>> IAsyncCompletionItemManager.SortCompletionListAsync (IAsyncCompletionSession session, AsyncCompletionSessionInitialDataSnapshot data, CancellationToken token)
+			=> SortCompletionListAsync (session, data, token).WithTaskExceptionLogger (Logger);
 
-		ImmutableArray<CompletionItem> SortCompletionList (IAsyncCompletionSession session, AsyncCompletionSessionInitialDataSnapshot data, CancellationToken token)
+		/// <summary>
+		/// Asynchronously sorts the completion list. The default implementation starts a task to run <see cref="SortCompletionList"/> on a background thread.
+		/// </summary>
+		/// <remarks>Exceptions from this method are caught and logged to <see cref="Logger"/></remarks>
+		protected virtual Task<ImmutableArray<CompletionItem>> SortCompletionListAsync (IAsyncCompletionSession session, AsyncCompletionSessionInitialDataSnapshot data, CancellationToken token)
+			=> Task.Run (() => SortCompletionList (session, data, token), token);
+
+		/// <summary>
+		/// Synchronously sorts the completion list. This is called by the default implementation of <see cref="SortCompletionListAsync"/> and otherwise ignored.
+		/// </summary>
+		/// <remarks>Exceptions from this method are caught and logged to <see cref="Logger"/></remarks>
+		protected virtual ImmutableArray<CompletionItem> SortCompletionList (IAsyncCompletionSession session, AsyncCompletionSessionInitialDataSnapshot data, CancellationToken token)
 		{
-			return data.InitialList.Sort ((x, y) => string.Compare (x.SortText, y.SortText, StringComparison.Ordinal));
+			var sortComparer = GetSortComparer (token);
+			return data.InitialList.Sort (sortComparer);
 		}
+
+		Comparison<CompletionItem> GetSortComparer (CancellationToken token) => (x, y) => {
+			int cancelCount = 0;
+			if (++cancelCount == 1000) {
+				token.ThrowIfCancellationRequested ();
+				cancelCount = 0;
+			}
+
+			return string.Compare (x.SortText, y.SortText, StringComparison.Ordinal);
+		};
 
 		#region Filtering
 
