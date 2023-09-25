@@ -58,7 +58,7 @@ namespace MonoDevelop.Xml.Dom
 		/// <summary>
 		/// Whether this node is fully parsed i.e. has an end position.
 		/// </summary>
-		public bool IsEnded => Span.Length > 0;
+		public virtual bool IsEnded => Span.Length > 0;
 
 		/// <summary>
 		/// Whether this node is complete. Will be false if it was ended prematurely due to an error or EOF.

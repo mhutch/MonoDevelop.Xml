@@ -34,7 +34,7 @@ namespace MonoDevelop.Xml.Dom
 	{
 		public XElement? RootElement { get; private set; }
 
-		public XDocument () : base (0) {}
+		public XDocument () : base (0) { }
 		protected override XObject NewInstance () { return new XDocument (); }
 
 		public override string FriendlyPathRepresentation {
@@ -44,8 +44,20 @@ namespace MonoDevelop.Xml.Dom
 		public override void AddChildNode (XNode newChild)
 		{
 			if (RootElement == null && newChild is XElement)
-				RootElement = (XElement) newChild;
+				RootElement = (XElement)newChild;
 			base.AddChildNode (newChild);
 		}
+
+		// normally IsEnded checks whether the span is non-zero
+		// but XDocument is the only node type that can have a zero-length span
+		public new void End (int endPos)
+		{
+			base.End (endPos);
+			isEnded = true;
+		}
+
+		bool isEnded;
+
+		public override bool IsEnded => isEnded;
 	}
 }

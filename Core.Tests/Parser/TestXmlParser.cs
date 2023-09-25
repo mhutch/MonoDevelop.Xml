@@ -41,33 +41,34 @@ namespace MonoDevelop.Xml.Tests.Parser
 {
 	public static class TestXmlParser
 	{
-		public static void Parse (string doc, params Action<XmlParser>[] asserts)
+		public static (XDocument doc, IReadOnlyList<XmlDiagnostic>? diagnostics) Parse (string doc, params Action<XmlParser>[] asserts)
 		{
 			var p = new XmlTreeParser (new XmlRootState ());
-			p.Parse (doc, Array.ConvertAll (asserts, a => (Action)(() => a (p))));
+			return p.Parse (doc, Array.ConvertAll (asserts, a => (Action)(() => a (p))));
 		}
 
-		public static void Parse (string txt, params Action<XNode?>[] asserts)
+		public static (XDocument doc, IReadOnlyList<XmlDiagnostic>? diagnostics) Parse (string txt, params Action<XNode?>[] asserts)
 		{
 			var p = new XmlTreeParser (new XmlRootState ());
 			var context = p.GetContext ();
 
 			//parse and capture span info
 			var list = new List<int> ();
-			p.Parse (txt, Array.ConvertAll (asserts, a => (Action)(() => list.Add (context.Position))));
+			var result = p.Parse (txt, Array.ConvertAll (asserts, a => (Action)(() => list.Add (context.Position))));
 
-			var doc = (XDocument)context.Nodes.Last ();
 
 			for (int i = 0; i < asserts.Length; i++) {
-				asserts[i] (doc.AllDescendentNodes.FirstOrDefault (n => n.Span.Contains (list[i])));
+				asserts[i] (result.doc.AllDescendentNodes.FirstOrDefault (n => n.Span.Contains (list[i])));
 			}
+
+			return result;
 		}
 
-		public static void Parse (this XmlParser parser, string doc, params Action[] asserts) => parser.Parse (doc, '$', false, asserts);
+		public static (XDocument doc, IReadOnlyList<XmlDiagnostic>? diagnostics) Parse (this XmlParser parser, string doc, params Action[] asserts) => parser.Parse (doc, '$', false, asserts);
 
-		public static void Parse (this XmlParser parser, string doc, char trigger, params Action[] asserts) => parser.Parse (doc, trigger, false, asserts);
+		public static (XDocument doc, IReadOnlyList<XmlDiagnostic>? diagnostics) Parse (this XmlParser parser, string doc, char trigger, params Action[] asserts) => parser.Parse (doc, trigger, false, asserts);
 
-		public static void Parse (this XmlParser parser, string doc, char trigger = '$', bool preserveWindowsNewlines = false, params Action[] asserts)
+		public static (XDocument doc, IReadOnlyList<XmlDiagnostic>? diagnostics) Parse (this XmlParser parser, string doc, char trigger = '$', bool preserveWindowsNewlines = false, params Action[] asserts)
 		{
 			var context = parser.GetContext ();
 			Assert.AreEqual (0, context.Position);
@@ -89,15 +90,10 @@ namespace MonoDevelop.Xml.Tests.Parser
 					parser.Push (c);
 				}
 			}
+
 			Assert.AreEqual (asserts.Length, assertNo);
 
-			var diagnostics = context.Diagnostics;
-			if (diagnostics != null) {
-				foreach (var diagnostic in diagnostics) {
-					Assert.GreaterOrEqual (diagnostic.Span.Start, 0);
-					Assert.GreaterOrEqual (diagnostic.Span.Length, 0);
-				}
-			}
+			return parser.EndAllNodes ();
 		}
 
 		public static T AssertCast<T> (this object? o) where T : class
@@ -191,12 +187,14 @@ namespace MonoDevelop.Xml.Tests.Parser
 		public static T AssertNodeIs<T> (this XmlParser parser, int down = 0) where T : class
 			=> parser.AssertPeek(down).AssertCast<T> ();
 
-		public static void AssertNoDiagnostics (this XmlParser parser, Func<XmlDiagnostic, bool>? filter = null) => AssertDiagnosticCount (parser, 0, filter);
+		public static void AssertNoDiagnostics (this (XDocument doc, IReadOnlyList<XmlDiagnostic>? diagnostics) parseResult, Func<XmlDiagnostic, bool>? filter = null) => AssertDiagnosticCount (parseResult.diagnostics, 0, filter);
 
+		public static void AssertDiagnosticCount (this (XDocument doc, IReadOnlyList<XmlDiagnostic>? diagnostics) parseResult, int count, Func<XmlDiagnostic, bool>? filter = null)
+			=> AssertDiagnosticCount (parseResult.diagnostics, count, filter);
 		public static void AssertDiagnosticCount (this XmlParser parser, int count, Func<XmlDiagnostic, bool>? filter = null)
 			=> AssertDiagnosticCount (parser.GetContext ().Diagnostics, count, filter);
 
-		static void AssertDiagnosticCount (List<XmlDiagnostic>? diagnostics, int count, Func<XmlDiagnostic, bool>? filter = null)
+		public static void AssertDiagnosticCount (this IReadOnlyList<XmlDiagnostic>? diagnostics, int count, Func<XmlDiagnostic, bool>? filter = null)
 		{
 			if (diagnostics is null) {
 				#pragma warning disable NUnit2007 // The actual value should not be a constant
@@ -217,9 +215,9 @@ namespace MonoDevelop.Xml.Tests.Parser
 			}
 		}
 
-		public static List<XmlDiagnostic> AssertDiagnostics (this XmlParser parser, int count, Func<XmlDiagnostic, bool>? filter = null)
+		public static IReadOnlyList<XmlDiagnostic> AssertDiagnostics (this (XDocument doc, IReadOnlyList<XmlDiagnostic>? diagnostics) parseResult, int count, Func<XmlDiagnostic, bool>? filter = null)
 		{
-			var diagnostics = parser.GetContext ().Diagnostics ?? new List<XmlDiagnostic> ();
+			var diagnostics = parseResult.diagnostics ?? new List<XmlDiagnostic> ();
 
 			if (filter is not null) {
 				diagnostics = diagnostics.Where (filter).ToList ();
@@ -230,9 +228,15 @@ namespace MonoDevelop.Xml.Tests.Parser
 			return diagnostics;
 		}
 
+		public static void AssertDiagnostics (this (XDocument doc, IReadOnlyList<XmlDiagnostic>? diagnostics) parseResult, params (XmlDiagnosticDescriptor desc, int start, int length)[] expectedDiagnostics)
+			=> AssertDiagnostics (parseResult.diagnostics, expectedDiagnostics);
+
 		public static void AssertDiagnostics (this XmlParser parser, params (XmlDiagnosticDescriptor desc, int start, int length)[] expectedDiagnostics)
+			=> AssertDiagnostics (parser.GetContext ().Diagnostics, expectedDiagnostics);
+
+		public static void AssertDiagnostics (this IReadOnlyList<XmlDiagnostic>? diagnostics, params (XmlDiagnosticDescriptor desc, int start, int length)[] expectedDiagnostics)
 		{
-			var diagnostics = parser.GetContext ().Diagnostics ?? new List<XmlDiagnostic> ();
+			diagnostics ??= new List<XmlDiagnostic> ();
 
 			var expectedSet = new HashSet<(XmlDiagnosticDescriptor desc, TextSpan span)> (expectedDiagnostics.Select (d => (d.desc, new TextSpan (d.start, d.length))));
 			var actualSet = new HashSet<(XmlDiagnosticDescriptor desc, TextSpan span)> (diagnostics.Select (d => (d.Descriptor, d.Span)));
@@ -281,12 +285,6 @@ namespace MonoDevelop.Xml.Tests.Parser
 				i += 2;
 			}
 			Assert.AreEqual (nameValuePairs.Length, i);
-		}
-		
-		public static void AssertEmpty (this XmlParser parser)
-		{
-			parser.AssertNodeDepth (1);
-			parser.AssertNodeIs<XDocument> (); 
 		}
 
 		public static void AssertNodeName (this XmlParser parser, string name) => parser.AssertNodeName (null, name);
