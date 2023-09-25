@@ -53,40 +53,46 @@ namespace MonoDevelop.Xml.Tests.Parser
 		}
 
 		[Test]
+		public void EmptyDocument ()
+		{
+			var parser = new XmlTreeParser (CreateRootState ());
+			parser.Parse ("");
+		}
+
+		[Test]
 		public void AttributeName ()
 		{
 			var parser = new XmlTreeParser (CreateRootState ());
-			parser.Parse (@"
+			var result = parser.Parse (@"
 <doc>
 	<tag.a>
 		<tag.b id=""$foo"" />
 	</tag.a>
 </doc>
 ",
-				delegate {
+				() => {
 					parser.AssertStateIs<XmlAttributeValueState> ();
 					parser.AssertPath ("//doc/tag.a/tag.b/@id");
 				}
 			);
-			parser.AssertEmpty ();
-			parser.AssertNoDiagnostics ();
+			result.AssertNoDiagnostics ();
 		}
 
 		[Test]
 		public void Attributes ()
 		{
 			var parser = new XmlTreeParser (CreateRootState ());
-			parser.Parse (@"
+			var result = parser.Parse (@"
 <doc>
 	<tag.a name=""foo"" arg=5 wibble = 6 bar.baz = 'y.ff7]' $ />
 </doc>
 ",
-				delegate {
+				() => {
 					parser.AssertStateIs<XmlTagState> ();
 					parser.AssertAttributes ("name", "foo", "arg", "5", "wibble", "6", "bar.baz", "y.ff7]");
 				}
 			);
-			parser.AssertEmpty ();
+
 			parser.AssertDiagnostics (
 				(XmlCoreDiagnostics.UnquotedAttributeValue, 30, 1),
 				(XmlCoreDiagnostics.UnquotedAttributeValue, 41, 1)
@@ -97,7 +103,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		public void AttributeRecovery ()
 		{
 			var parser = new XmlTreeParser (CreateRootState ());
-			parser.Parse (@"
+			var result = parser.Parse (@"
 <doc>
 	<tag.a>
 		<tag.b arg='fff' sdd = sdsds= 'foo' ff = 5 $ />
@@ -105,7 +111,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 <a><b valid/></a>
 </doc>
 ",
-				delegate {
+				() => {
 					parser.AssertStateIs<XmlTagState> ();
 					parser.AssertAttributes ("arg", "fff", "sdd", "sdsds", "ff", "5");
 					parser.AssertDiagnostics (
@@ -115,9 +121,8 @@ namespace MonoDevelop.Xml.Tests.Parser
 					);
 				}
 			);
-			parser.AssertEmpty ();
 
-			parser.AssertDiagnostics (
+			result.AssertDiagnostics (
 				(XmlCoreDiagnostics.UnquotedAttributeValue, 41, 5),
 				(XmlCoreDiagnostics.InvalidNameCharacter, 52, 0),
 				(XmlCoreDiagnostics.UnquotedAttributeValue, 59, 1),
@@ -129,7 +134,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		public void IncompleteTags ()
 		{
 			var parser = new XmlTreeParser (CreateRootState ());
-			parser.Parse (@"
+			var result = parser.Parse (@"
 <doc>
 	<tag.a att1 >
 		<tag.b att2="" >
@@ -144,13 +149,13 @@ namespace MonoDevelop.Xml.Tests.Parser
 	</tag.a>
 </doc>
 ",
-				delegate {
+				() => {
 					parser.AssertStateIs<XmlTagState> ();
 					parser.AssertNodeIs<XObject> (1).AssertIncomplete ();
 					parser.AssertNodeDepth (6);
 					parser.AssertPath ("//doc/tag.a/tag.b/tag.c/tag.d");
 				},
-				delegate {
+				() => {
 					parser.AssertStateIs<XmlAttributeValueState> ();
 					parser.AssertNodeDepth (9);
 					parser.AssertNodeIs<XElement> (3).AssertName ("tag.d").AssertComplete ();
@@ -160,8 +165,8 @@ namespace MonoDevelop.Xml.Tests.Parser
 					parser.AssertPath ("//doc/tag.a/tag.b/tag.c/tag.d/tag.e/tag.f/@id");
 				}
 			);
-			parser.AssertEmpty ();
-			parser.AssertDiagnostics (
+
+			result.AssertDiagnostics (
 				(XmlCoreDiagnostics.IncompleteAttribute, 20, 0),
 				(XmlCoreDiagnostics.MalformedNamedTag, 43, 0),
 				(XmlCoreDiagnostics.MalformedNamedTag, 64, 0),
@@ -174,25 +179,25 @@ namespace MonoDevelop.Xml.Tests.Parser
 		public void Unclosed ()
 		{
 			var parser = new XmlTreeParser (CreateRootState ());
-			parser.Parse (@"
+			var result = parser.Parse (@"
 <doc>
 	<tag.a>
 		<tag.b><tag.b>$
 	</tag.a>$
 </doc>
 ",
-				delegate {
+				() => {
 					parser.AssertStateIs<XmlRootState> ();
 					parser.AssertNodeDepth (5);
 					parser.AssertPath ("//doc/tag.a/tag.b/tag.b");
 				},
-				delegate {
+				() => {
 					parser.AssertStateIs<XmlRootState> ();
 					parser.AssertNodeDepth (2);
 					parser.AssertPath ("//doc");
 				}
 			);
-			parser.AssertEmpty ();
+
 			parser.AssertDiagnosticCount (2);
 		}
 
@@ -202,9 +207,9 @@ namespace MonoDevelop.Xml.Tests.Parser
 		public void ClosingTagWithWhitespace ()
 		{
 			var parser = new XmlTreeParser (CreateRootState ());
-			parser.Parse (@"<doc><a></ a></doc >");
-			parser.AssertEmpty ();
-			parser.AssertNoDiagnostics ();
+			var result = parser.Parse (@"<doc><a></ a></doc >");
+
+			result.AssertNoDiagnostics ();
 		}
 
 
@@ -212,9 +217,9 @@ namespace MonoDevelop.Xml.Tests.Parser
 		public void BadClosingTag ()
 		{
 			var parser = new XmlTreeParser (CreateRootState ());
-			parser.Parse (@"<doc><x><abc></ab c><cd></cd></x></doc>");
-			parser.AssertEmpty ();
-			parser.AssertDiagnosticCount (2);
+			var result = parser.Parse (@"<doc><x><abc></ab c><cd></cd></x></doc>");
+
+			result.AssertDiagnosticCount (2);
 		}
 
 		[Test]
@@ -222,9 +227,9 @@ namespace MonoDevelop.Xml.Tests.Parser
 		{
 			var docTxt = "<X><n:></a><b></X>";
 			var parser = new XmlTreeParser (CreateRootState ());
-			parser.Parse (docTxt);
-			parser.AssertEmpty ();
-			parser.AssertDiagnostics (
+			var result = parser.Parse (docTxt);
+
+			result.AssertDiagnostics (
 				(XmlCoreDiagnostics.ZeroLengthNameWithNamespace, 4, 2),
 				(XmlCoreDiagnostics.UnmatchedClosingTag, 7, 4),
 				(XmlCoreDiagnostics.UnclosedTag, 11, 3),
@@ -237,9 +242,9 @@ namespace MonoDevelop.Xml.Tests.Parser
 		{
 			var docTxt = "<X><n:\na></a><b></X>";
 			var parser = new XmlTreeParser (CreateRootState ());
-			parser.Parse (docTxt);
-			parser.AssertEmpty ();
-			parser.AssertDiagnostics (
+			var result = parser.Parse (docTxt);
+
+			result.AssertDiagnostics (
 				(XmlCoreDiagnostics.ZeroLengthNameWithNamespace, 4, 2),
 				(XmlCoreDiagnostics.IncompleteAttribute, 8, 0),
 				(XmlCoreDiagnostics.UnmatchedClosingTag, 9, 4),
@@ -252,31 +257,31 @@ namespace MonoDevelop.Xml.Tests.Parser
 		public void Misc ()
 		{
 			var parser = new XmlTreeParser (CreateRootState ());
-			parser.Parse (@"
+			var result = parser.Parse (@"
 <doc>
 	<!DOCTYPE $  >
 	<![CDATA[ ]  $ ]  ]]>
 	<!--   <foo> <bar arg=""> $  -->
 </doc>
 ",
-				delegate {
+				() => {
 					parser.AssertStateIs<XmlDocTypeState> ();
 					parser.AssertNodeDepth (3);
 					parser.AssertPath ("//doc/<!DOCTYPE>");
 				},
-				delegate {
+				() => {
 					parser.AssertStateIs<XmlCDataState> ();
 					parser.AssertNodeDepth (3);
 					parser.AssertPath ("//doc/<![CDATA[ ]]>");
 				},
-				delegate {
+				() => {
 					parser.AssertStateIs<XmlCommentState> ();
 					parser.AssertNodeDepth (3);
 					parser.AssertPath ("//doc/<!-- -->");
 				}
 			);
-			parser.AssertEmpty ();
-			parser.AssertNoDiagnostics ();
+
+			result.AssertNoDiagnostics ();
 		}
 
 		[Test]
@@ -291,9 +296,9 @@ namespace MonoDevelop.Xml.Tests.Parser
 ]>
 <doc><foo/></doc>".Replace ("\r\n", "\n");
 			var parser = new XmlTreeParser (CreateRootState ());
-			parser.Parse (docText);
-			parser.AssertEmpty ();
-			var doc = parser.AssertNodeIs<XDocument> ();
+			var result = parser.Parse (docText);
+
+			var doc = result.doc;
 			Assert.IsInstanceOf<XDocType> (doc.FirstChild);
 			XDocType dt = doc.FirstChild.AssertCast<XDocType> ();
 			Assert.AreEqual ("html", dt.RootElement.FullName);
@@ -306,22 +311,23 @@ namespace MonoDevelop.Xml.Tests.Parser
 			var actualInternalDecl = docText.Substring (dt.InternalDeclarationRegion.Start, dt.InternalDeclarationRegion.Length);
 			Assert.AreEqual (expectedInternalDecl, actualInternalDecl);
 
-			parser.AssertDiagnostics ();
+			result.AssertDiagnostics ();
 		}
 
 		[Test]
 		public void NamespacedAttributes ()
 		{
 			var parser = new XmlTreeParser (CreateRootState ());
-			parser.Parse (@"<tag foo:bar='1' foo:bar:baz='2' foo='3' />");
-			parser.AssertEmpty ();
-			var doc = parser.AssertNodeIs<XDocument> ();
-			var el = doc.FirstChild.AssertCast<XElement> ();
+			var result = parser.Parse (@"<tag foo:bar='1' foo:bar:baz='2' foo='3' />");
+
+			var el = result.doc.FirstChild.AssertCast<XElement> ();
+
 			Assert.AreEqual (3, el.Attributes.Count);
 			el.Attributes.ElementAt (0).AssertName ("foo", "bar");
 			el.Attributes.ElementAt (1).AssertName ("foo", "bar:baz");
 			el.Attributes.ElementAt (2).AssertName ("foo");
-			var diags = parser.AssertDiagnostics (1);
+
+			var diags = result.AssertDiagnostics (1);
 			Assert.AreEqual (26, diags[0].Span.Start, 26);
 		}
 
@@ -329,7 +335,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 		public void SimpleTree ()
 		{
 			var parser = new XmlTreeParser (CreateRootState ());
-			parser.Parse (@"
+			var result = parser.Parse (@"
 <doc>
 	<a>
 		<b>
@@ -343,9 +349,9 @@ namespace MonoDevelop.Xml.Tests.Parser
 		</b>
 	</a>
 </doc>");
-			parser.AssertNoDiagnostics ();
+			result.AssertNoDiagnostics ();
 
-			var doc = parser.AssertNodeIs<XDocument> ().RootElement
+			var doc = result.doc.RootElement
 				.AssertNotNull ()
 				.AssertName ("doc");
 			Assert.True (doc.IsEnded);
@@ -407,10 +413,10 @@ namespace MonoDevelop.Xml.Tests.Parser
 </doc>";
 
 			var parser = new XmlTreeParser (CreateRootState ());
-			parser.Parse (docTxt, preserveWindowsNewlines: true);
-			parser.AssertNoDiagnostics ();
+			var result = parser.Parse (docTxt, preserveWindowsNewlines: true);
+			result.AssertNoDiagnostics ();
 
-			var el = parser.AssertNodeIs<XDocument> ()
+			var el = result.doc
 				.RootElement.AssertNotNull()
 				.FirstChild.AssertCast<XElement>();
 			Assert.AreEqual (2, el.Nodes.Count ());
@@ -432,18 +438,17 @@ namespace MonoDevelop.Xml.Tests.Parser
 </foo>
 ";
 			var parser = new XmlTreeParser (CreateRootState ());
-			parser.Parse (docTxt, preserveWindowsNewlines: true);
-			parser.AssertEmpty ();
-			var doc = parser.AssertNodeIs<XDocument> ()
-				.RootElement.AssertNotNull ();
+			var result = parser.Parse(docTxt, preserveWindowsNewlines: true);
+
+			var rootElement = result.doc.RootElement.AssertNotNull ();
 
 			static void AssertSubstring (string expected, XObject obj) => Assert.AreEqual (expected, docTxt.Substring (obj.Span.Start, obj.Span.Length));
 
-			AssertSubstring (@"<foo someAtt=""SomeVal"">", doc);
-			AssertSubstring (@"someAtt=""SomeVal""", doc.Attributes.First.AssertNotNull ());
-			AssertSubstring (@"<!-- blah -->", doc.Nodes.OfType<XComment>().First ());
-			AssertSubstring (@"<![CDATA[ dfdfdf ]]>", doc.Nodes.OfType<XCData>().First ());
-			AssertSubstring (@"</foo>", doc.ClosingTag.AssertNotNull ());
+			AssertSubstring (@"<foo someAtt=""SomeVal"">", rootElement);
+			AssertSubstring (@"someAtt=""SomeVal""", rootElement.Attributes.First.AssertNotNull ());
+			AssertSubstring (@"<!-- blah -->", rootElement.Nodes.OfType<XComment>().First ());
+			AssertSubstring (@"<![CDATA[ dfdfdf ]]>", rootElement.Nodes.OfType<XCData>().First ());
+			AssertSubstring (@"</foo>", rootElement.ClosingTag.AssertNotNull ());
 		}
 
 		[Test]
@@ -452,9 +457,8 @@ namespace MonoDevelop.Xml.Tests.Parser
 			var docTxt = @"<?x?>";
 
 			var parser = new XmlTreeParser (CreateRootState ());
-			parser.Parse (docTxt, preserveWindowsNewlines: true);
-			parser.AssertEmpty ();
-			var doc = parser.AssertNodeIs<XDocument>();
+			(var doc, _) = parser.Parse (docTxt, preserveWindowsNewlines: true);
+
 			var processingInstruction = doc.FirstChild.AssertNotNull ();
 
 			Assert.AreEqual (0, processingInstruction.Span.Start);
@@ -474,9 +478,9 @@ namespace MonoDevelop.Xml.Tests.Parser
 		{
 			var docTxt = "<X><n\n:a></a><b></X>";
 			var parser = new XmlTreeParser (CreateRootState ());
-			parser.Parse (docTxt);
-			parser.AssertEmpty ();
-			parser.AssertDiagnosticCount (4);
+			var result = parser.Parse (docTxt);
+
+			result.AssertDiagnosticCount (4);
 		}
 
 		[Test]
@@ -484,8 +488,9 @@ namespace MonoDevelop.Xml.Tests.Parser
 		{
 			var docTxt = "<a:<x";
 			var parser = new XmlTreeParser (CreateRootState ());
-			parser.Parse (docTxt);
-			parser.AssertDiagnosticCount (2);
+			var result = parser.Parse (docTxt);
+
+			result.AssertDiagnosticCount (4);
 		}
 
 		[Test]
@@ -493,8 +498,9 @@ namespace MonoDevelop.Xml.Tests.Parser
 		{
 			var docTxt = "<<";
 			var parser = new XmlTreeParser (CreateRootState ());
-			parser.Parse (docTxt);
-			var diagnostic = parser.AssertDiagnostics (1)[0];
+			var result = parser.Parse (docTxt);
+
+			var diagnostic = result.AssertDiagnostics (1)[0];
 			Assert.AreEqual (1, diagnostic.Span.Start);
 			Assert.AreEqual (1, diagnostic.Span.Length);
 		}
