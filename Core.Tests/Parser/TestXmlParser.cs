@@ -128,29 +128,36 @@ namespace MonoDevelop.Xml.Tests.Parser
 			return o;
 		}
 
-		public static string GetPath (this XmlParser parser)
+		public static string GetPathString (this XmlParser parser) => parser.GetPath ().ToPathString ();
+
+		public static string ToPathString (this List<XObject> nodePath)
 		{
-			System.Text.StringBuilder sb = new System.Text.StringBuilder ();
-			foreach (XObject obj in parser.GetContext().Nodes) {
-				if (obj is XDocument) {
-					sb.Insert (0, '/');
-					break;
-				}
-				sb.Insert (0, obj.FriendlyPathRepresentation);
-				sb.Insert (0, '/');
+			Assert.Greater (nodePath.Count, 0, "Node path is empty");
+
+
+			if (nodePath[0] is not XDocument) {
+				Assert.Fail ("First node in path must be a document");
 			}
+
+			var sb = new System.Text.StringBuilder ("/");
+
+			for (int i = 1; i< nodePath.Count; i++) {
+				sb.Append ('/');
+				sb.Append (nodePath[i].FriendlyPathRepresentation);
+			}
+
 			return sb.ToString ();
 		}
 		
 		public static void AssertPath (this XmlParser parser, string path)
 		{
-			Assert.AreEqual (path, parser.GetPath ());
+			Assert.AreEqual (path, parser.GetPathString ());
 		}
 		
 		public static Action PathAssertion (this XmlParser parser, string path)
 		{
 			return delegate {
-				Assert.AreEqual (path, parser.GetPath ());
+				Assert.AreEqual (path, parser.GetPathString ());
 			};
 		}
 		

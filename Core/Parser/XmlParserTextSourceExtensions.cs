@@ -227,7 +227,7 @@ namespace MonoDevelop.Xml.Parser
 		/// <param name="text">The text snapshot corresponding to the parser.</param>
 		public static bool TryGetNodePath (this XmlSpineParser parser, ITextSource text, [NotNullWhen (true)] out List<XObject>? nodePath, int maximumReadahead = DEFAULT_READAHEAD_LIMIT, CancellationToken cancellationToken = default)
 		{
-			var path = parser.Spine.ToNodePath ();
+			var path = parser.GetPath ();
 
 			//complete last node's name without altering the parser state
 			int lastIdx = path.Count - 1;
@@ -280,7 +280,7 @@ namespace MonoDevelop.Xml.Parser
 				}
 			}
 
-			var path = parser.Spine.ToNodePath ();
+			var path = parser.GetPath ();
 
 			// make sure the leaf node is ended
 			if (path.Count > 0) {
@@ -299,43 +299,6 @@ namespace MonoDevelop.Xml.Parser
 
 			nodePath = path;
 			return true;
-		}
-
-		static List<XObject> ToNodePath (this NodeStack stack)
-		{
-			var path = new List<XObject> (stack);
-			path.Reverse ();
-			return path;
-		}
-
-		public static List<XObject> GetPath (this XObject obj)
-		{
-			XObject? current = obj;
-			var path = new List<XObject> ();
-			while (current is not null) {
-				path.Add (current);
-				current = current.Parent;
-			}
-			path.Reverse ();
-			return path;
-		}
-
-		public static void ConnectParents (this List<XObject> nodePath)
-		{
-			if (nodePath.Count > 1) {
-				var parent = nodePath[0];
-				for (int i = 1; i < nodePath.Count; i++) {
-					var node = nodePath[i];
-					if (node.Parent == null) {
-						if (parent is XContainer c && node is XNode n) {
-							c.AddChildNode (n);
-						} else {
-							node.Parent = parent;
-						}
-					}
-					parent = node;
-				}
-			}
 		}
 	}
 }
