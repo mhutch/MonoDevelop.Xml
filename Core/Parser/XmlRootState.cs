@@ -206,7 +206,7 @@ namespace MonoDevelop.Xml.Parser
 					position: xobject.Span.Start,
 					previousState: Parent,
 					currentStateLength: 0,
-					nodes: NodeStack.FromParents (xobject),
+					nodes: xobject.Parent is not null? NodeStack.FromParents (xobject) : new NodeStack (CreateDocument ()),
 					stateTag: FREE
 				);
 

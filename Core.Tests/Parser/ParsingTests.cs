@@ -523,7 +523,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 			}
 			(var doc, var diag) = treeParser.EndAllNodes ();
 
-			Assert.AreEqual (0, diag.Count);
+			Assert.AreEqual (0, diag?.Count);
 
 			var spineParser = new XmlSpineParser (rootState);
 

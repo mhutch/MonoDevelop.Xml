@@ -6,10 +6,10 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Text;
 
-using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Parser;
 
 namespace MonoDevelop.Xml.Editor.Parsing
@@ -72,11 +72,13 @@ namespace MonoDevelop.Xml.Editor.Parsing
 			return position;
 		}
 
-		public XmlSpineParser GetSpineParser (SnapshotPoint point, CancellationToken token = default)
+		public XmlSpineParser GetSpineParser (SnapshotPoint point, CancellationToken token = default) => GetSpineParser (LastOutput, point, token);
+
+		// allow test to pass in an explicit parse result avoid races on LastOutput being updated after changing the doc
+		internal XmlSpineParser GetSpineParser (XmlParseResult? prevParse, SnapshotPoint point, CancellationToken token = default)
 		{
 			XmlSpineParser? parser = null;
 
-			var prevParse = LastOutput;
 			if (prevParse != null) {
 				var startPos = Math.Min (point.Position, MaximumCompatiblePosition (prevParse.TextSnapshot, point.Snapshot));
 				if (startPos > 0) {
@@ -97,6 +99,8 @@ namespace MonoDevelop.Xml.Editor.Parsing
 
 			return parser;
 		}
+
+
 
 		[LoggerMessage (EventId = 3, Level = LogLevel.Trace, Message = "XML parser recovered {recoveredPos}/{requestedPos} state'")]
 		static partial void LogRecovered (ILogger logger, int recoveredPos, int requestedPos);

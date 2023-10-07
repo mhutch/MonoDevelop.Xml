@@ -39,7 +39,7 @@ namespace MonoDevelop.MSBuild.Editor.HighlightReferences
 		public ITagger<T> CreateTagger<T> (ITextView textView, ITextBuffer buffer) where T : ITag
 			=> (ITagger<T>)buffer.Properties.GetOrCreateSingletonProperty (() => {
 				var logger = LoggerService.CreateLogger<XmlHighlightEndTagTagger> (textView);
-				return new XmlHighlightEndTagTagger (textView, this, logger);
+				return new XmlHighlightEndTagTagger (textView, ParserProvider, JoinableTaskContext, logger);
 			});
 	}
 }

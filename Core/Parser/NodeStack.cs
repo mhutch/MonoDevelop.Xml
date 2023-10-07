@@ -37,6 +37,8 @@ namespace MonoDevelop.Xml.Parser
 	public class NodeStack : Stack<XObject>
 	{
 		public NodeStack (IEnumerable<XObject> collection) : base (collection) { }
+		public NodeStack (params XObject[] collection) : base (collection) { }
+
 		public NodeStack () { }
 
 		public NodeStack (int capacity) : base (capacity) { }
