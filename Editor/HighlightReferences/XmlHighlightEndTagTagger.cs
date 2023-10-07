@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Threading;
 
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Editor.HighlightReferences;
@@ -22,10 +23,10 @@ namespace MonoDevelop.MSBuild.Editor.HighlightReferences
 	{
 		readonly XmlParserProvider parserProvider;
 
-		public XmlHighlightEndTagTagger (ITextView textView, XmlHighlightEndTagTaggerProvider provider, ILogger logger)
-			: base (textView, provider.JoinableTaskContext, logger)
+		public XmlHighlightEndTagTagger (ITextView textView, XmlParserProvider parserProvider, JoinableTaskContext joinableTaskContext, ILogger logger)
+			: base (textView, joinableTaskContext, logger)
 		{
-			parserProvider = provider.ParserProvider;
+			this.parserProvider = parserProvider;
 		}
 
 		protected async override
@@ -43,7 +44,7 @@ namespace MonoDevelop.MSBuild.Editor.HighlightReferences
 
 			var parseResult = await parser.GetOrProcessAsync (caretLocation.Snapshot, token).ConfigureAwait (false);
 
-			var node = parseResult.XDocument.RootElement.FindAtOffset (caretLocation.Position);
+			var node = parseResult.XDocument.FindAtOffset (caretLocation.Position);
 
 			if (node is XElement element) {
 				if (element.ClosingTag is XClosingTag closingTag && closingTag.IsNamed) {
