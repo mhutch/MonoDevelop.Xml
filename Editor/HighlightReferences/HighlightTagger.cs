@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Microsoft.CodeAnalysis.Editor.Shared.Extensions;
 using Microsoft.Extensions.Logging;
 
 using Microsoft.VisualStudio.Text;
@@ -62,7 +63,12 @@ namespace MonoDevelop.Xml.Editor.HighlightReferences
 		// internal for testing
 		internal async Task<(SnapshotSpan? sourceSpan, SnapshotSpan tagsChangedSpan)?> UpdateHighlightsAsync (CancellationToken cancellationToken = default)
 		{
-			var position = TextView.Caret.Position.BufferPosition;
+			var positioninSubjectBuffer = TextView.GetCaretPoint();
+			if (!positioninSubjectBuffer.HasValue) {
+				return null;
+			}
+
+			var position = positioninSubjectBuffer.Value;
 			var newHighlights = await GetHighlightsAsync (position, cancellationToken).ConfigureAwait (false);
 			sourceSpan = newHighlights.highlights.Length == 0 ? (SnapshotSpan?)null : newHighlights.sourceSpan;
 
