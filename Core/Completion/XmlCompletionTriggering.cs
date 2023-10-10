@@ -220,6 +220,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 	{
 		Invocation,
 		TypedChar,
-		Backspace
+		Backspace,
+		Unknown
 	}
 }

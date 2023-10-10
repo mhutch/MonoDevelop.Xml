@@ -110,7 +110,7 @@ namespace MonoDevelop.Xml.Editor.Tests
 
 		protected virtual IEnumerable<string> GetAssembliesToCompose () => new[] {
 			typeof (XmlParser).Assembly.Location,
-			typeof (XmlCompletionSource).Assembly.Location,
+			typeof (XmlCompletionSource<>).Assembly.Location,
 			typeof (XmlTestEnvironment).Assembly.Location
 		};
 
