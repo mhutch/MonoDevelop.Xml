@@ -25,11 +25,12 @@ using Microsoft.VisualStudio.Text.Editor;
 
 using MonoDevelop.Xml.Dom;
 using MonoDevelop.Xml.Editor.Parsing;
+using MonoDevelop.Xml.Logging;
 using MonoDevelop.Xml.Parser;
 
 namespace MonoDevelop.Xml.Editor.Completion
 {
-	public abstract partial class XmlCompletionSource : IAsyncCompletionSource
+	public abstract partial class XmlCompletionSource<TCompletionTriggerContext> : IAsyncCompletionSource where TCompletionTriggerContext : XmlCompletionTriggerContext
 	{
 		protected XmlParserProvider XmlParserProvider { get; }
 
@@ -42,7 +43,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			XmlParserProvider = parserProvider;
 			TextView = textView;
 			Logger = logger;
-			InitializeBuiltinItems ();
+			InitializeBuiltInItems ();
 		}
 
 		protected XmlBackgroundParser GetParser (ITextBuffer textBuffer) => XmlParserProvider.GetParser (textBuffer);
@@ -54,11 +55,23 @@ namespace MonoDevelop.Xml.Editor.Completion
 			return spineParser;
 		}
 
-		public async virtual Task<CompletionContext> GetCompletionContextAsync (IAsyncCompletionSession session, CompletionTrigger trigger, SnapshotPoint triggerLocation, SnapshotSpan applicableToSpan, CancellationToken token)
-		{
-			var tasks = GetCompletionTasks (session, trigger, triggerLocation, applicableToSpan, token).ToList ();
+		public Task<CompletionContext> GetCompletionContextAsync (IAsyncCompletionSession session, CompletionTrigger trigger, SnapshotPoint triggerLocation, SnapshotSpan applicableToSpan, CancellationToken token)
+			=> Logger.InvokeAndLogExceptions (() => GetCompletionContextAsyncInternal (session, trigger, triggerLocation, applicableToSpan, token));
 
-			await Task.WhenAll (tasks);
+		async Task<CompletionContext> GetCompletionContextAsyncInternal (IAsyncCompletionSession session, CompletionTrigger trigger, SnapshotPoint triggerLocation, SnapshotSpan applicableToSpan, CancellationToken token)
+		{
+			var spineParser = GetSpineParser (triggerLocation);
+			var triggerContext = CreateTriggerContext (session, trigger, spineParser, triggerLocation, applicableToSpan);
+
+			if (!triggerContext.IsSupportedTriggerReason) {
+				return CompletionContext.Empty;
+			}
+
+			await triggerContext.InitializeNodePath (Logger, token).ConfigureAwait (false);
+
+			var tasks = GetCompletionTasks (triggerContext, token).ToList ();
+
+			await Task.WhenAll (tasks).ConfigureAwait (false);
 
 			var allItems = ImmutableArray<CompletionItem>.Empty;
 			foreach (var task in tasks) {
@@ -76,89 +89,83 @@ namespace MonoDevelop.Xml.Editor.Completion
 			return new CompletionContext (allItems, null, InitialSelectionHint.SoftSelection);
 		}
 
-		IEnumerable<Task<IList<CompletionItem>?>> GetCompletionTasks (IAsyncCompletionSession session, CompletionTrigger trigger, SnapshotPoint triggerLocation, SnapshotSpan applicableToSpan, CancellationToken cancellationToken)
+		/// <summary>
+		/// Construct a context that gathers computed information about the current completion trigger point.
+		/// </summary>
+		protected abstract TCompletionTriggerContext CreateTriggerContext (IAsyncCompletionSession session, CompletionTrigger trigger, XmlSpineParser spineParser, SnapshotPoint triggerLocation, SnapshotSpan applicableToSpan);
+
+		IEnumerable<Task<IList<CompletionItem>?>> GetCompletionTasks (TCompletionTriggerContext triggerContext, CancellationToken cancellationToken)
 		{
-			yield return GetAdditionalCompletionsAsync (session, trigger, triggerLocation, applicableToSpan, cancellationToken);
+			yield return GetAdditionalCompletionsAsync (triggerContext, cancellationToken);
 
-			var reason = ConvertReason (trigger.Reason, trigger.Character);
-			if (reason == null) {
+			if (triggerContext.XmlTriggerKind == XmlCompletionTrigger.None) {
 				yield break;
 			}
 
-			var parser = GetSpineParser (triggerLocation);
+			// this is used by XmlCompletionCommitManager.ShouldCommitCompletion to determine whether XmlCompletionSource participated in the session and how the completion should be committed
+			triggerContext.Session.Properties[typeof (XmlCompletionTrigger)] = triggerContext.XmlTriggerKind;
 
-			// FIXME: cache the value from InitializeCompletion somewhere?
-			var kind = XmlCompletionTriggering.GetTrigger (parser, reason.Value, trigger.Character);
-
-			if (kind == XmlCompletionTrigger.None) {
-				yield break;
-			}
-
-			if (!parser.TryGetNodePath (triggerLocation.Snapshot, out List<XObject>? nodePath, cancellationToken: cancellationToken)) {
-				yield break;
-			}
-
-			session.Properties.AddProperty (typeof (XmlCompletionTrigger), kind);
-
-			switch (kind) {
+			switch (triggerContext.XmlTriggerKind) {
 			case XmlCompletionTrigger.ElementValue:
-				yield return GetElementValueCompletionsAsync (session, triggerLocation, nodePath, cancellationToken);
+				yield return GetElementValueCompletionsAsync (triggerContext, cancellationToken);
 				goto case XmlCompletionTrigger.Tag;
 
 			case XmlCompletionTrigger.Tag:
 			case XmlCompletionTrigger.ElementName:
-				// if we're completing an existing element, remove it from the path
-				// so we don't get completions for its children instead
-				if (nodePath.Count > 0) {
-					if (nodePath[nodePath.Count - 1] is XElement leaf && leaf.Name.Length == applicableToSpan.Length) {
-						nodePath.RemoveAt (nodePath.Count - 1);
-					}
-				}
 				//TODO: if it's on the first or second line and there's no DTD declaration, add the DTDs, or at least <!DOCTYPE
 				//TODO: add snippets // MonoDevelop.Ide.CodeTemplates.CodeTemplateService.AddCompletionDataForFileName (DocumentContext.Name, list);
-				yield return GetElementCompletionsAsync (session, triggerLocation, nodePath, kind != XmlCompletionTrigger.ElementName, cancellationToken);
+				yield return GetElementCompletionsAsync (triggerContext, triggerContext.XmlTriggerKind != XmlCompletionTrigger.ElementName, cancellationToken);
 				break;
 
 			case XmlCompletionTrigger.AttributeName:
-				if (parser.Spine.TryFind<IAttributedXObject> (maxDepth: 1) is not IAttributedXObject attributedOb) {
+				if (triggerContext.SpineParser.Spine.TryFind<IAttributedXObject> (maxDepth: 1) is not IAttributedXObject attributedOb) {
 					throw new InvalidOperationException ("Did not find IAttributedXObject in stack for XmlCompletionTrigger.Attribute");
 				}
-				parser.Clone ().AdvanceUntilEnded ((XObject)attributedOb, triggerLocation.Snapshot, 1000);
+				triggerContext.SpineParser.Clone ().AdvanceUntilEnded ((XObject)attributedOb, triggerContext.TriggerLocation.Snapshot, 1000);
 				var attributes = attributedOb.Attributes.ToDictionary (StringComparer.OrdinalIgnoreCase);
-				yield return GetAttributeCompletionsAsync (session, triggerLocation, nodePath, attributedOb, attributes, cancellationToken);
+				yield return GetAttributeCompletionsAsync (triggerContext, attributedOb, attributes, cancellationToken);
 				break;
 
 			case XmlCompletionTrigger.AttributeValue:
-				if (parser.Spine.TryPeek (out XAttribute? att) && parser.Spine.TryPeek (1, out IAttributedXObject? attributedObject)) {
-					yield return GetAttributeValueCompletionsAsync (session, triggerLocation, nodePath, attributedObject, att, cancellationToken);
+				if (triggerContext.SpineParser.Spine.TryPeek (out XAttribute? att) && triggerContext.SpineParser.Spine.TryPeek (1, out IAttributedXObject? attributedObject)) {
+					yield return GetAttributeValueCompletionsAsync (triggerContext, attributedObject, att, cancellationToken);
 				}
 				break;
 
 			case XmlCompletionTrigger.Entity:
-				yield return GetEntityCompletionsAsync (session, triggerLocation, nodePath, cancellationToken);
+				yield return GetEntityCompletionsAsync (triggerContext, cancellationToken);
 				break;
 
 			case XmlCompletionTrigger.DocType:
 			case XmlCompletionTrigger.DeclarationOrCDataOrComment:
-				yield return GetDeclarationCompletionsAsync (session, triggerLocation, nodePath, cancellationToken);
+				yield return GetDeclarationCompletionsAsync (triggerContext, cancellationToken);
 				break;
 			}
 		}
 
-		public virtual Task<object> GetDescriptionAsync (IAsyncCompletionSession session, CompletionItem item, CancellationToken token) => item.GetDocumentationAsync (session, token);
+		public Task<object> GetDescriptionAsync (IAsyncCompletionSession session, CompletionItem item, CancellationToken token)
+			=> Logger.InvokeAndLogExceptions (() => item.GetDocumentationAsync (session, token));
 
-		public virtual CompletionStartData InitializeCompletion (CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token)
+		public CompletionStartData InitializeCompletion (CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token)
+			=> Logger.InvokeAndLogExceptions (
+				() => {
+					var spine = GetSpineParser (triggerLocation);
+					return InitializeCompletion (trigger, triggerLocation, spine, token);
+				});
+
+		/// <summary>
+		/// Determine whether the current location is a completion trigger point, and what its span is. Runs on the UI thread so must be fast.
+		/// </summary>
+		protected virtual CompletionStartData InitializeCompletion (CompletionTrigger trigger, SnapshotPoint triggerLocation, XmlSpineParser spineParser, CancellationToken token)
 		{
-			var reason = ConvertReason (trigger.Reason, trigger.Character);
-			if (reason == null) {
+			var reason = XmlCompletionTriggerContext.ConvertReason (trigger.Reason, trigger.Character);
+			if (reason == XmlTriggerReason.Unknown) {
 				return CompletionStartData.DoesNotParticipateInCompletion;
 			}
 
-			var spine = GetSpineParser (triggerLocation);
+			LogAttemptingCompletion (Logger, spineParser.CurrentState, spineParser.CurrentStateLength, trigger.Character, trigger.Reason);
 
-			LogAttemptingCompletion (Logger, spine.CurrentState, spine.CurrentStateLength, trigger.Character, trigger.Reason);
-
-			var (kind, spanStart, spanLength) = XmlCompletionTriggering.GetTriggerAndSpan (spine, reason.Value, trigger.Character, new SnapshotTextSource (triggerLocation.Snapshot));
+			var (kind, spanStart, spanLength) = XmlCompletionTriggering.GetTriggerAndSpan (spineParser, reason, trigger.Character, new SnapshotTextSource (triggerLocation.Snapshot));
 
 			if (kind != XmlCompletionTrigger.None) {
 				return new CompletionStartData (CompletionParticipation.ProvidesItems, new SnapshotSpan (triggerLocation.Snapshot, spanStart, spanLength));
@@ -172,83 +179,34 @@ namespace MonoDevelop.Xml.Editor.Completion
 		[LoggerMessage (EventId = 2, Level = LogLevel.Trace, Message = "Attempting completion for state '{state}'x{currentSpineLength}, character='{triggerChar}', trigger='{triggerReason}'")]
 		static partial void LogAttemptingCompletion (ILogger logger, XmlParserState state, int currentSpineLength, char triggerChar, CompletionTriggerReason triggerReason);
 
-		protected virtual Task<IList<CompletionItem>?> GetElementCompletionsAsync (
-			IAsyncCompletionSession session,
-			SnapshotPoint triggerLocation,
-			List<XObject> nodePath,
-			bool includeBracket,
-			CancellationToken token
-			)
-			=> Task.FromResult<IList<CompletionItem>?> (null);
+		protected virtual Task<IList<CompletionItem>?> GetElementCompletionsAsync (TCompletionTriggerContext context, bool includeBracket, CancellationToken token)
+			=> TaskCompleted (null);
 
-		protected virtual Task<IList<CompletionItem>?> GetAttributeCompletionsAsync (
-			IAsyncCompletionSession session,
-			SnapshotPoint triggerLocation,
-			List<XObject> nodePath,
-			IAttributedXObject attributedObject,
-			Dictionary<string, string> existingAtts,
-			CancellationToken token
-			)
-			=> Task.FromResult<IList<CompletionItem>?> (null);
+		protected virtual Task<IList<CompletionItem>?> GetAttributeCompletionsAsync (TCompletionTriggerContext context, IAttributedXObject attributedObject, Dictionary<string, string> existingAttributes, CancellationToken token)
+			=> TaskCompleted (null);
 
-		protected virtual Task<IList<CompletionItem>?> GetAttributeValueCompletionsAsync (
-			IAsyncCompletionSession session,
-			SnapshotPoint triggerLocation,
-			List<XObject> nodePath,
-			IAttributedXObject attributedObject,
-			XAttribute attribute,
-			CancellationToken token
-			)
-			=> Task.FromResult<IList<CompletionItem>?> (null);
+		protected virtual Task<IList<CompletionItem>?> GetAttributeValueCompletionsAsync (TCompletionTriggerContext context, IAttributedXObject attributedObject, XAttribute attribute, CancellationToken token)
+			=> TaskCompleted (null);
 
-		protected virtual Task<IList<CompletionItem>?> GetEntityCompletionsAsync (
-			IAsyncCompletionSession session,
-			SnapshotPoint triggerLocation,
-			List<XObject> nodePath,
-			CancellationToken token
-			)
-			=> Task.FromResult<IList<CompletionItem>?> (null);
+		protected virtual Task<IList<CompletionItem>?> GetEntityCompletionsAsync (TCompletionTriggerContext context, CancellationToken token)
+			=> TaskCompleted (null);
 
-		protected virtual Task<IList<CompletionItem>?> GetDeclarationCompletionsAsync (
-			IAsyncCompletionSession session,
-			SnapshotPoint triggerLocation,
-			List<XObject> nodePath,
-			CancellationToken token
-			)
-			=> Task.FromResult<IList<CompletionItem>?> (
-				nodePath.Any (n => n is XElement)
+		protected virtual Task<IList<CompletionItem>?> GetDeclarationCompletionsAsync (TCompletionTriggerContext context, CancellationToken token)
+			=> TaskCompleted (
+				context.NodePath.Any (n => n is XElement)
 					? new [] { cdataItemWithBracket, commentItemWithBracket }
 					: new [] { commentItemWithBracket }
 				);
 
-		protected virtual Task<IList<CompletionItem>?> GetElementValueCompletionsAsync (
-			IAsyncCompletionSession session,
-			SnapshotPoint triggerLocation,
-			List<XObject> nodePath,
-			CancellationToken token) => Task.FromResult<IList<CompletionItem>?> (null);
+		protected virtual Task<IList<CompletionItem>?> GetElementValueCompletionsAsync (TCompletionTriggerContext context, CancellationToken token)
+			=> TaskCompleted (null);
 
-		protected virtual Task<IList<CompletionItem>?> GetAdditionalCompletionsAsync (
-			IAsyncCompletionSession session,
-			CompletionTrigger trigger,
-			SnapshotPoint triggerLocation,
-			SnapshotSpan applicableToSpan,
-			CancellationToken token) => Task.FromResult<IList<CompletionItem>?> (null);
+		/// <summary>
+		/// Get additional completions that are not handled by the XmlCompletionSource.
+		protected virtual Task<IList<CompletionItem>?> GetAdditionalCompletionsAsync (TCompletionTriggerContext context, CancellationToken token)
+			=> TaskCompleted (null);
 
-		static XmlTriggerReason? ConvertReason (CompletionTriggerReason reason, char typedChar)
-		{
-			switch (reason) {
-			case CompletionTriggerReason.Insertion:
-				if (typedChar != '\0')
-					return XmlTriggerReason.TypedChar;
-				break;
-			case CompletionTriggerReason.Backspace:
-				return XmlTriggerReason.Backspace;
-			case CompletionTriggerReason.Invoke:
-			case CompletionTriggerReason.InvokeAndCommitIfUnique:
-				return XmlTriggerReason.Invocation;
-			}
-			return null;
-		}
+		static Task<IList<CompletionItem>?> TaskCompleted (IList<CompletionItem>? items) => Task.FromResult (items);
 
 		CompletionItem cdataItem, commentItem, prologItem;
 		CompletionItem cdataItemWithBracket, commentItemWithBracket, prologItemWithBracket;
@@ -258,7 +216,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			nameof (cdataItem), nameof (commentItem), nameof (prologItem),
 			nameof (cdataItemWithBracket), nameof (commentItemWithBracket), nameof (prologItemWithBracket),
 			nameof (entityItems))]
-		void InitializeBuiltinItems ()
+		void InitializeBuiltInItems ()
 		{
 			cdataItem = new CompletionItem ("![CDATA[", this, XmlImages.CData)
 					.AddDocumentation ("XML character data")
