@@ -34,6 +34,11 @@ namespace Microsoft.CodeAnalysis.Editor.Shared.Extensions
 			return textView.BufferGraph.MapUpOrDownToBuffer (caret.BufferPosition, subjectBuffer);
 		}
 
+		public static SnapshotPoint? GetCaretPoint(this ITextView textView, string contentType = MonoDevelop.Xml.Editor.XmlContentTypeNames.XmlCore)
+		{
+			return GetCaretPoint (textView, s => s.ContentType.IsOfType(contentType));
+		}
+
 		public static SnapshotPoint? GetCaretPoint (this ITextView textView, Predicate<ITextSnapshot> match)
 		{
 			var caret = textView.Caret.Position;
