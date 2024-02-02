@@ -108,7 +108,30 @@ class XmlCompletionCommitManager (ILogger logger, JoinableTaskContext joinableTa
 				//if the user typed the quote char we're inserting, swallow it so they don't end up mismatched
 				return typedChar == quoteChar? CommitSwallowChar : CommitResult.Handled;
 			}
-		case XmlCompletionItemKind.Element:
+		case XmlCompletionItemKind.Element: {
+				// elements can be made self-closing by committing with a /, but only if this does not cause the span to start with a /
+				// otherwise that will prevent matching a closing tag item
+				if (typedChar == '/') {
+					var snapshot = buffer.CurrentSnapshot;
+					var spanText = snapshot.GetText (span);
+					if (span.Length == 0) {
+						return CommitCancel;
+					}
+					var firstChar = snapshot[span.Start];
+					if (span.Length == 1) {
+						if (firstChar == '<' || firstChar == '/') {
+							return CommitCancel;
+						}
+					} else {
+						var secondChar = snapshot[span.Start + 1];
+						if (firstChar == '/' || (firstChar == '<' && secondChar == '/')) {
+							return CommitCancel;
+						}
+					}
+				}
+				ReplaceSpan (buffer, span, item.InsertText);
+				return CommitResult.Handled;
+			}
 		case XmlCompletionItemKind.AttributeValue: {
 				ReplaceSpan (buffer, span, item.InsertText);
 				return CommitResult.Handled;
