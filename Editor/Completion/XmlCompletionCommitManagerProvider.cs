@@ -12,33 +12,27 @@ using Microsoft.VisualStudio.Threading;
 using Microsoft.VisualStudio.Utilities;
 using MonoDevelop.Xml.Editor.Logging;
 
-namespace MonoDevelop.Xml.Editor.Completion
+namespace MonoDevelop.Xml.Editor.Completion;
+
+[Export (typeof (IAsyncCompletionCommitManagerProvider))]
+[Name ("XML Completion Commit Manager Provider")]
+[ContentType (XmlContentTypeNames.XmlCore)]
+[method: ImportingConstructor]
+class XmlCompletionCommitManagerProvider (
+		JoinableTaskContext joinableTaskContext, ISmartIndentationService smartIndentationService,
+		IEditorCommandHandlerServiceFactory commandServiceFactory, IEditorLoggerFactory loggerService
+	) : IAsyncCompletionCommitManagerProvider
 {
-	[Export (typeof (IAsyncCompletionCommitManagerProvider))]
-	[Name ("XML Completion Commit Manager Provider")]
-	[ContentType (XmlContentTypeNames.XmlCore)]
-	class XmlCompletionCommitManagerProvider : IAsyncCompletionCommitManagerProvider
+	public JoinableTaskContext JoinableTaskContext { get; } = joinableTaskContext;
+	public ISmartIndentationService SmartIndentationService { get; } = smartIndentationService;
+	public IEditorCommandHandlerServiceFactory CommandServiceFactory { get; } = commandServiceFactory;
+	public IEditorLoggerFactory LoggerService { get; } = loggerService;
+
+	public IAsyncCompletionCommitManager GetOrCreate (ITextView textView)
 	{
-		[ImportingConstructor]
-		public XmlCompletionCommitManagerProvider (JoinableTaskContext joinableTaskContext, ISmartIndentationService smartIndentationService, IEditorCommandHandlerServiceFactory commandServiceFactory, IEditorLoggerFactory loggerService)
-		{
-			JoinableTaskContext = joinableTaskContext;
-			SmartIndentationService = smartIndentationService;
-			CommandServiceFactory = commandServiceFactory;
-			LoggerService = loggerService;
-		}
-
-		public JoinableTaskContext JoinableTaskContext { get; }
-		public ISmartIndentationService SmartIndentationService { get; }
-		public IEditorCommandHandlerServiceFactory CommandServiceFactory { get; }
-		public IEditorLoggerFactory LoggerService { get; }
-
-		public IAsyncCompletionCommitManager GetOrCreate (ITextView textView)
-		{
-			return textView.Properties.GetOrCreateSingletonProperty (() => {
-				var logger = LoggerService.CreateLogger<XmlCompletionCommitManager> (textView);
-				return new XmlCompletionCommitManager (this, logger);
-			});
-		}
+		return textView.Properties.GetOrCreateSingletonProperty (() => {
+			var logger = LoggerService.CreateLogger<XmlCompletionCommitManager> (textView);
+			return new XmlCompletionCommitManager (logger, JoinableTaskContext, CommandServiceFactory);
+		});
 	}
 }
