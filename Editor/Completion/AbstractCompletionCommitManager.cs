@@ -90,7 +90,7 @@ public abstract class AbstractCompletionCommitManager<TSessionTriggerKind, TItem
 				if (!IsCommitCharForTriggerKind (trigger, session, buffer.CurrentSnapshot, typedChar)) {
 					return CommitCancel;
 				}
-			} else if (item.CommitCharacters.Contains (typedChar)) {
+			} else if (!item.CommitCharacters.Contains (typedChar)) {
 				return CommitCancel;
 			}
 		}
