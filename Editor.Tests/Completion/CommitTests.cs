@@ -84,6 +84,34 @@ namespace MonoDevelop.Xml.Editor.Tests.Completion
 			);
 
 		[Test]
+		public Task ClosingTagSingleLineEof ()
+			=> this.TestCommands (
+@"<foo><bar>$",
+@"<foo><bar></bar>$",
+				(s) => {
+					s.InvokeCompletion ();
+					s.Type ("</b");
+					s.Enter ();
+				}
+			);
+
+		[Test]
+		public Task ClosingTagEof ()
+			=> this.TestCommands (
+@"<foo>
+  <bar>
+  $",
+@"<foo>
+  <bar>
+  </bar>$",
+				(s) => {
+					s.InvokeCompletion ();
+					s.Type ("</b");
+					s.Enter ();
+				}
+			);
+
+		[Test]
 		public Task MultipleClosingTags ()
 			=> this.TestCommands (
 @"<foo>
