@@ -49,7 +49,8 @@ class XmlCompletionCommitManager (ILogger logger, JoinableTaskContext joinableTa
 	protected override bool IsCommitCharForTriggerKind (XmlCompletionTrigger trigger, IAsyncCompletionSession session, ITextSnapshot snapshot, char typedChar)
 	{
 		switch (trigger) {
-		case XmlCompletionTrigger.ElementValue:
+		case XmlCompletionTrigger.Tag:
+		case XmlCompletionTrigger.ElementName:
 			// allow using / as a commit char for elements as self-closing elements, but special case disallowing it
 			// in the cases where that could conflict with typing the / at the start of a closing tag
 			if (typedChar == '/') {
