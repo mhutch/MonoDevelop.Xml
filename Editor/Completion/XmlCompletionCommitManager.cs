@@ -14,6 +14,7 @@ using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor.Commanding;
+using Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods;
 using Microsoft.VisualStudio.Threading;
 
 using MonoDevelop.Xml.Dom;
@@ -187,20 +188,24 @@ class XmlCompletionCommitManager (ILogger logger, JoinableTaskContext joinableTa
 			span = new SnapshotSpan (span.Start - 1, span.Length + 1);
 		}
 
-		// if this completion is the first thing on the current line, reindent the current line
 		var thisLine = snapshot.GetLineFromPosition (span.Start);
+		ITextSnapshotLine? prevLine = thisLine.LineNumber > 0? snapshot.GetLineFromLineNumber (thisLine.LineNumber - 1) : null;
+
+		// if this completion is the first thing on the current line, reindent the current line
 		var thisLineFirstNonWhitespaceOffset = thisLine.GetFirstNonWhitespaceOffset ();
 		var replaceFirstIndent = thisLineFirstNonWhitespaceOffset.HasValue && thisLineFirstNonWhitespaceOffset + thisLine.Start == span.Start;
 		if (replaceFirstIndent) {
-			if (thisLine.LineNumber > 0) {
-				var prevLine = snapshot.GetLineFromLineNumber (thisLine.LineNumber - 1);
-				span = new SnapshotSpan (prevLine.End, span.End);
-			} else {
-				span = new SnapshotSpan (thisLine.Start, span.End);
-			}
+			span = prevLine is not null
+				?  new SnapshotSpan (prevLine.End, span.End)
+				: new SnapshotSpan (thisLine.Start, span.End);
 		}
 
-		var newLine = snapshot.GetText (thisLine.End, thisLine.EndIncludingLineBreak - thisLine.End);
+		// for consistency, take the newline char from the beginning of this line if possible,
+		// else from the end of this line, else from the options
+		var newLine = prevLine?.GetLineBreakText () ?? thisLine.GetLineBreakText ();
+		if (string.IsNullOrEmpty (newLine)) {
+			newLine = session.TextView.Options.GetNewLineCharacter ();
+		}
 
 		var sb = new StringBuilder ();
 		foreach (var element in elements) {
