@@ -49,28 +49,39 @@ namespace MonoDevelop.Xml.Parser
 				context.Diagnostics?.Add (XmlCoreDiagnostics.IncompleteCDataEof, context.PositionBeforeCurrentChar);
 				return EndAndPop ();
 			}
-			
+
 			if (c == ']') {
 				//make sure we know when there are two ']' chars together
 				if (context.StateTag == NOMATCH)
 					context.StateTag = SINGLE_BRACKET;
-				else
+				else if (context.StateTag == SINGLE_BRACKET)
 					context.StateTag = DOUBLE_BRACKET;
-				
+				else {
+					// not any part of a ']]>', so make sure matching is reset
+					context.StateTag = NOMATCH;
+					context.KeywordBuilder.Append (c);
+				}
+				return null;
 			} else if (c == '>' && context.StateTag == DOUBLE_BRACKET) {
 				// if the ']]' is followed by a '>', the state has ended
 				// so attach a node to the DOM and end the state
 				return EndAndPop ();
 			} else {
 				// not any part of a ']]>', so make sure matching is reset
+				if (context.StateTag == SINGLE_BRACKET)
+					context.KeywordBuilder.Append (']');
+				else if (context.StateTag == DOUBLE_BRACKET)
+					context.KeywordBuilder.Append ("]]");
+
+				context.KeywordBuilder.Append (c);
 				context.StateTag = NOMATCH;
+				return null;
 			}
-			
-			return null;
 
 			XmlParserState? EndAndPop ()
 			{
 				var cdata = (XCData)context.Nodes.Pop ();
+				cdata.InnerText = context.KeywordBuilder.ToString ();
 				cdata.End (context.PositionAfterCurrentChar);
 
 				if (context.BuildTree) {

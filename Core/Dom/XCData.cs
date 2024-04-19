@@ -36,6 +36,8 @@ namespace MonoDevelop.Xml.Dom
 		protected XCData () {}
 		protected override XObject NewInstance () { return new XCData (); }
 
+		public string? InnerText { get; internal set; }
+
 		public override string FriendlyPathRepresentation {
 			get { return "<![CDATA[ ]]>"; }
 		}
