@@ -157,6 +157,7 @@ namespace MonoDevelop.Xml.Editor.Tests.Completion
 			var actions = typeChars.Split ('^').Select (t => { Action<IEditorCommandHandlerService> a = (s) => s.Type (t); return a; });
 			return this.TestCommands (before, after, actions, initialize: (ITextView tv) => {
 				tv.Options.SetOptionValue ("BraceCompletion/Enabled", true);
+				return Task.CompletedTask;
 			});
 		}
 
