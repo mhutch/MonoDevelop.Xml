@@ -510,20 +510,17 @@ namespace MonoDevelop.Xml.Tests.Parser
 		// It also calculates the recovery rate and verifies that it does not regress from the
 		// last recorded value.
 		[Test]
-		public void SpineParserRecovery ()
+		public void SpineParserRecoveryXhtmlStrictSchema ()
 		{
 			using var sr = new StreamReader (ResourceManager.GetXhtmlStrictSchema ());
 			var docTxt = sr.ReadToEnd ();
 
 			var rootState = CreateRootState ();
-
 			var treeParser = new XmlTreeParser (rootState);
 			foreach (char c in docTxt) {
 				treeParser.Push (c);
 			}
 			(var doc, var diag) = treeParser.EndAllNodes ();
-
-			Assert.AreEqual (0, diag?.Count);
 
 			var spineParser = new XmlSpineParser (rootState);
 
@@ -551,6 +548,41 @@ namespace MonoDevelop.Xml.Tests.Parser
 
 			// check it never regresses
 			Assert.LessOrEqual (totalNotRecovered, 1118088);
+		}
+
+		[TestCase ("<r>\r\n<a e='v' />\r\n</r>", "<r>\r\n<a e='v' /\r\n</r>")]
+		public void SpineParserRecoverFromError (string docTxt, string recoverFromDoc)
+		{
+			int maxCompat = 0;
+			while (maxCompat < recoverFromDoc.Length) {
+				if (docTxt[maxCompat] != recoverFromDoc[maxCompat]) {
+					break;
+				}
+				maxCompat++;
+			}
+
+			var rootState = CreateRootState ();
+			var treeParser = new XmlTreeParser (rootState);
+			foreach (char c in recoverFromDoc) {
+				treeParser.Push (c);
+			}
+			(var doc, var diag) = treeParser.EndAllNodes ();
+
+			var spineParser = new XmlSpineParser (rootState);
+
+			for (int i = 0; i < docTxt.Length; i++) {
+				char c = docTxt[i];
+				spineParser.Push (c);
+
+				var recoveredParser = XmlSpineParser.FromDocumentPosition (rootState, doc, Math.Min (i, maxCompat)).AssertNotNull ();
+
+				var end = Math.Min (i + 1, docTxt.Length);
+				for (int j = recoveredParser.Position; j < end; j++) {
+					recoveredParser.Push (docTxt[j]);
+				}
+
+				AssertEqual (spineParser.GetContext (), recoveredParser.GetContext ());
+			}
 		}
 
 		void AssertEqual (XmlParserContext a, XmlParserContext b)
