@@ -23,7 +23,7 @@ namespace MonoDevelop.Xml.Editor.Tests.Extensions
 			string beforeDocumentText, string afterDocumentText,
 			Action<IEditorCommandHandlerService> command,
 			string filename = default, char caretMarkerChar = '$',
-			Action<ITextView> initialize = null,
+			Func<ITextView, Task> initialize = null,
 			CancellationToken cancellationToken = default)
 		{
 			return test.TestCommands (
@@ -41,7 +41,7 @@ namespace MonoDevelop.Xml.Editor.Tests.Extensions
 			string beforeDocumentText, string afterDocumentText,
 			IEnumerable<Action<IEditorCommandHandlerService>> commands,
 			string filename = default, char caretMarkerChar = '$',
-			Action<ITextView> initialize = null,
+			Func<ITextView, Task> initialize = null,
 			CancellationToken cancellationToken = default)
 		{
 			(beforeDocumentText, int beforeCaretOffset) = SelectionHelper.ExtractCaret (beforeDocumentText, caretMarkerChar);
@@ -61,7 +61,7 @@ namespace MonoDevelop.Xml.Editor.Tests.Extensions
 			string afterDocumentText, int afterCaretOffset,
 			IEnumerable<Action<IEditorCommandHandlerService>> commands,
 			string filename = default,
-			Action<ITextView> initialize = null,
+			Func<ITextView,Task> initialize = null,
 			CancellationToken cancellationToken = default)
 		{
 			await test.Catalog.JoinableTaskContext.Factory.SwitchToMainThreadAsync (cancellationToken);
@@ -69,7 +69,9 @@ namespace MonoDevelop.Xml.Editor.Tests.Extensions
 			var textView = test.CreateTextView (beforeDocumentText, filename);
 			textView.Caret.MoveTo (new SnapshotPoint (textView.TextBuffer.CurrentSnapshot, beforeCaretOffset));
 
-			initialize?.Invoke (textView);
+			if (initialize is not null) {
+				await initialize (textView);
+			}
 
 			var commandService = test.Catalog.CommandServiceFactory.GetService (textView);
 

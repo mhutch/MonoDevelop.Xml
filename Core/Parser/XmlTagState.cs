@@ -193,6 +193,12 @@ namespace MonoDevelop.Xml.Parser
 				xobject = el;
 			}
 
+			// if the element is incomplete due to an error, don't try to recover,
+			// instead let parent recreate state at start of tag
+			if (el != null && !el.IsComplete) {
+				return null;
+			}
+
 			if (el != null && position >= el.Span.Start && position < el.Span.End - 1) {
 				// recreating name builder and value builder state is a pain to get right
 				// for now, let parent recreate state at start of tag

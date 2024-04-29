@@ -92,10 +92,7 @@ namespace MonoDevelop.Xml.Editor.Commands
 			// this is not as accurate as the tree parse we did above as it uses
 			// the last parse result, which might be a little stale
 			var lastParseResult = parser.LastOutput;
-			if (lastParseResult == null) {
-				return;
-			}
-			if (el.Parent != null) {
+			if (lastParseResult != null && el.Parent != null) {
 				if (lastParseResult.XDocument.FindAtOffset (el.Parent.Span.Start + 1) is XContainer parent) {
 					foreach (var n in parent.Nodes) {
 						if (n is XClosingTag) {
