@@ -50,7 +50,7 @@ namespace MonoDevelop.Xml.Parser
 			if (c == '<') {
 				//the parent state should report the error
 				var att = (XAttribute)context.Nodes.Peek ();
-				att.Value = context.KeywordBuilder.ToString ();
+				att.SetValue (context.Position - context.CurrentStateLength, context.KeywordBuilder.ToString ());
 				replayCharacter = true;
 				return Parent;
 			}
@@ -59,7 +59,7 @@ namespace MonoDevelop.Xml.Parser
 				//the parent state should report the error
 				context.Diagnostics?.Add (XmlCoreDiagnostics.IncompleteAttributeEof, context.PositionBeforeCurrentChar);
 				var att = (XAttribute)context.Nodes.Peek ();
-				att.Value = context.KeywordBuilder.ToString ();
+				att.SetValue (context.Position - context.CurrentStateLength, context.KeywordBuilder.ToString ());
 				return Parent;
 			}
 
@@ -84,7 +84,7 @@ namespace MonoDevelop.Xml.Parser
 			if ((c == '"' && maskedTag == DOUBLEQUOTE) || c == '\'' && maskedTag == SINGLEQUOTE) {
 				//ending the value
 				var att = (XAttribute) context.Nodes.Peek ();
-				att.Value = context.KeywordBuilder.ToString ();
+				att.SetValue (context.Position - context.KeywordBuilder.Length, context.KeywordBuilder.ToString ());
 				return Parent;
 			}
 
@@ -112,7 +112,7 @@ namespace MonoDevelop.Xml.Parser
 			}
 
 			var att = (XAttribute)context.Nodes.Peek ();
-			att.Value = context.KeywordBuilder.ToString ();
+			att.SetValue (context.Position - context.CurrentStateLength, context.KeywordBuilder.ToString ());
 
 			if (context.Diagnostics is not null && att.Name.IsValid) {
 				context.Diagnostics.Add (XmlCoreDiagnostics.UnquotedAttributeValue, new TextSpan (context.Position - att.Value.Length, att.Value.Length), att.Name.FullName);
