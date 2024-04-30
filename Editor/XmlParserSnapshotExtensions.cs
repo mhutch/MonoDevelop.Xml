@@ -77,26 +77,54 @@ namespace MonoDevelop.Xml.Editor
 			=> parser.TryAdvanceToNodeEndAndGetNodePath (new SnapshotTextSource (snapshot), out nodePath, maximumReadahead, cancellationToken);
 
 
-		public static string GetIncompleteValue (this XmlSpineParser spineAtCaret, ITextSnapshot snapshot)
-		{
-			int caretPosition = spineAtCaret.Position;
-			var node = spineAtCaret.Spine.Peek ();
+		/// <summary>
+		/// If the parser is within an attribute value or XText node, determine the full value and span of that value.
+		/// </summary>
+		/// <param name="parser">A spine parser. Its position will not be modified.</param>
+		/// <param name="text">The text snapshot corresponding to the parser.</param>
+		/// <param name="value">The full value of the attribute or text, or as much as could be recovered before hitting the readahead limit.</param>
+		/// <param name="valueSpan">The span of the <paramref name="value"/>.</param>
+		/// <param name="startAtLineBreak">Whether to truncate the value so that it does not start before the beginning of line that contains the parser position.</param>
+		/// <param name="stopAtLineBreak">Whether to truncate the value upon reaching a line break.</param>
+		/// <param name="maximumReadahead">Maximum number of characters to advance before giving up.</param>
+		/// <returns>Whether the parser is in a value state and the full value could be read. If <c>false</c>, and the parser was in a value state, the <paramref name="value"/> may be non-null but incomplete.</returns>
 
-			int valueStart;
-			if (node is XText t) {
-				valueStart = t.Span.Start;
-			} else if (node is XElement el && el.IsEnded) {
-				valueStart = el.Span.End;
-			} else {
-				int lineStart = snapshot.GetLineFromPosition (caretPosition).Start.Position;
-				valueStart = spineAtCaret.Position - spineAtCaret.CurrentStateLength;
-				if (spineAtCaret.GetAttributeValueDelimiter ().HasValue) {
-					valueStart += 1;
-				}
-				valueStart = Math.Min (Math.Max (valueStart, lineStart), caretPosition);
+		public static bool TryGetIncompleteValue (
+			this XmlSpineParser parser, ITextSnapshot snapshot, [NotNullWhen (true)] out string? value, [NotNullWhen (true)] out SnapshotSpan? valueSpan,
+			bool startAtLineBreak = false, bool stopAtLineBreak = false, int maximumReadahead = DEFAULT_READAHEAD_LIMIT, CancellationToken cancellationToken = default)
+		{
+			int caretPosition = parser.Position;
+
+			bool isTextNode = parser.IsInText ();
+
+			var success = parser.TryGetIncompleteValue (new SnapshotTextSource (snapshot), out value, out var textSpan, stopAtLineBreak, maximumReadahead, cancellationToken);
+
+			if (textSpan is not TextSpan span || value is null) {
+				valueSpan = null;
+				return false;
 			}
 
-			return snapshot.GetText (valueStart, caretPosition - valueStart);
+			if (startAtLineBreak) {
+				int lineStart = snapshot.GetLineFromPosition (caretPosition).Start.Position;
+				if (span.ContainsOuter (lineStart)) {
+					valueSpan = new SnapshotSpan (snapshot, lineStart, span.Length - (lineStart - span.Start));
+					var valueRaw = valueSpan.Value.GetText ();
+					// trim any leading whitespace if it's a text node
+					// since text nodes already ignore surrounding whitespace
+					if (isTextNode) {
+						value = valueRaw.TrimStart ();
+						int trimmed = valueRaw.Length - value.Length;
+						if (trimmed > 0) {
+							valueSpan = new SnapshotSpan (snapshot, valueSpan.Value.Start + trimmed, valueSpan.Value.Length - trimmed);
+						}
+					}
+
+					return success;
+				}
+			}
+
+			valueSpan = new SnapshotSpan (snapshot, span.Start, span.Length);
+			return success;
 		}
 
 		public static string GetAttributeOrElementValueToCaret (this XmlSpineParser spineAtCaret, SnapshotPoint caretPosition)
