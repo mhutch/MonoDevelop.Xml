@@ -44,8 +44,9 @@ namespace MonoDevelop.Xml.Editor.Tests.Extensions
 			Func<ITextView, Task> initialize = null,
 			CancellationToken cancellationToken = default)
 		{
-			(beforeDocumentText, int beforeCaretOffset) = SelectionHelper.ExtractCaret (beforeDocumentText, caretMarkerChar);
-			(afterDocumentText, int afterCaretOffset) = SelectionHelper.ExtractCaret (afterDocumentText, caretMarkerChar);
+			(beforeDocumentText, int beforeCaretOffset) = TextWithMarkers.ExtractSinglePosition (beforeDocumentText, caretMarkerChar);
+			(afterDocumentText, int afterCaretOffset) = TextWithMarkers.ExtractSinglePosition (afterDocumentText, caretMarkerChar);
+
 			return test.TestCommands (
 				beforeDocumentText, beforeCaretOffset,
 				afterDocumentText, afterCaretOffset,
