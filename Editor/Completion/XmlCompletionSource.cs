@@ -193,7 +193,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 		protected virtual Task<IList<CompletionItem>?> GetDeclarationCompletionsAsync (TCompletionTriggerContext context, CancellationToken token)
 			=> TaskCompleted (
-				context.NodePath.Any (n => n is XElement)
+				context.NodePath is not null && context.NodePath.Any (n => n is XElement)
 					? new [] { cdataItemWithBracket, commentItemWithBracket }
 					: new [] { commentItemWithBracket }
 				);
