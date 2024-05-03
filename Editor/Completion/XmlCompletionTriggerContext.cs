@@ -51,7 +51,7 @@ public class XmlCompletionTriggerContext
 
 		// if we're completing an existing element, remove it from the path
 		// so we don't get completions for its children instead
-		if ((XmlTriggerKind == XmlCompletionTrigger.ElementName || XmlTriggerKind == XmlCompletionTrigger.Tag) && nodePath.Count > 0) {
+		if ((XmlTriggerKind == XmlCompletionTrigger.ElementName || XmlTriggerKind == XmlCompletionTrigger.Tag) && nodePath?.Count > 0) {
 			if (nodePath[nodePath.Count - 1] is XElement leaf && leaf.Name.Length == ApplicableToSpan.Length) {
 				nodePath.RemoveAt (nodePath.Count - 1);
 			}
@@ -74,7 +74,7 @@ public class XmlCompletionTriggerContext
 	internal XmlCompletionTrigger XmlTriggerKind { get; }
 	internal XmlTriggerReason XmlTriggerReason { get; }
 
-	public List<XObject> NodePath { get; private set; }
+	public List<XObject>? NodePath { get; private set; }
 
 	internal static XmlTriggerReason ConvertReason (CompletionTriggerReason reason, char typedChar)
 	{

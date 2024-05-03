@@ -218,9 +218,9 @@ namespace MonoDevelop.Xml.Editor.TextStructure
 					level = SelectionLevel.Name;
 					return true;
 				}
-				if (newNode is XAttribute attribute) {
-					var valRegion = attribute.ValueSpan;
-					if (ContainsSelection (valRegion)) {
+				if (newNode is XAttribute attribute && attribute.HasValue) {
+					var valueSpan = attribute.ValueSpan.Value;
+					if (ContainsSelection (valueSpan)) {
 						level = SelectionLevel.Content;
 						return true;
 					}

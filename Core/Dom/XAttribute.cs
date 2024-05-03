@@ -26,26 +26,38 @@
 
 #nullable enable
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace MonoDevelop.Xml.Dom
 {
 	public class XAttribute : XObject, INamedXObject
 	{
-
-		public XAttribute (int startOffset, XName name, string value) : base (startOffset)
+		public XAttribute (int startOffset, XName name, string value, int valueOffset) : base (startOffset)
 		{
 			Name = name;
 			Value = value;
+			ValueOffset = valueOffset;
 		}
 
 		public XAttribute (int startOffset) : base (startOffset) { }
 
 		public XName Name { get; set; }
 
-		public override bool IsComplete => base.IsComplete && IsNamed;
+		[MemberNotNullWhen (true, nameof (Value), nameof (ValueOffset), nameof (ValueSpan))]
+		public override bool IsComplete => base.IsComplete && IsNamed && HasValue;
 
 		public bool IsNamed => Name.IsValid;
 
-		public string? Value { get; set; }
+		public string? Value { get; private set; }
+
+		public int? ValueOffset { get; private set; }
+
+		[MemberNotNull(nameof(Value), nameof(ValueOffset))]
+		internal void SetValue (int offset, string value)
+		{
+			ValueOffset = offset;
+			Value = value;
+		}
 
 		public XAttribute? NextSibling { get; internal protected set; }
 
@@ -59,6 +71,7 @@ namespace MonoDevelop.Xml.Dom
 			//immutable types
 			Name = copyFromAtt.Name;
 			Value = copyFromAtt.Value;
+			ValueOffset = copyFromAtt.ValueOffset;
 		}
 
 		public override string ToString () => $"[XAttribute Name='{Name.FullName}' Location='{Span}' Value='{Value}']";
@@ -67,10 +80,28 @@ namespace MonoDevelop.Xml.Dom
 
 		public TextSpan NameSpan => new (Span.Start, Name.Length);
 
-		int ValueLength => Value?.Length ?? 0;
+		public TextSpan? ValueSpan => HasValue? new (ValueOffset.Value, Value.Length) : null;
 
-		public int ValueOffset => Span.End - ValueLength - 1;
+		// value nullability helpers
 
-		public TextSpan ValueSpan => new (Span.End - ValueLength - 1, ValueLength);
+		[MemberNotNullWhen (true, nameof (Value), nameof (ValueOffset), nameof (ValueSpan))]
+		public bool HasValue => Value is not null;
+
+		[MemberNotNullWhen (true, nameof (Value), nameof (ValueOffset), nameof (ValueSpan))]
+		public bool HasNonEmptyValue => !string.IsNullOrEmpty (Value);
+
+		[MemberNotNullWhen (true, nameof (Value), nameof (ValueOffset), nameof (ValueSpan))]
+		public bool TryGetValue ([NotNullWhen (true)] out string? value)
+		{
+			value = Value;
+			return HasValue;
+		}
+
+		[MemberNotNullWhen (true, nameof (Value), nameof (ValueOffset), nameof (ValueSpan))]
+		public bool TryGetNonEmptyValue ([NotNullWhen (true)] out string? value)
+		{
+			value = Value;
+			return HasNonEmptyValue;
+		}
 	}
 }

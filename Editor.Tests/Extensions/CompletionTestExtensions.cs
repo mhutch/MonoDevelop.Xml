@@ -18,8 +18,7 @@ namespace MonoDevelop.Xml.Editor.Tests.Extensions
 			this EditorTest test,
 			string documentText, CompletionTriggerReason reason = default, char triggerChar = '\0', char caretMarker = '$', string filename = default, CancellationToken cancellationToken = default)
 		{
-			int caretOffset;
-			(documentText, caretOffset) = SelectionHelper.ExtractCaret (documentText, caretMarker);
+			(documentText, var caretOffset) = TextWithMarkers.ExtractSinglePosition (documentText, caretMarker);
 
 			var textView = test.CreateTextView (documentText, filename);
 

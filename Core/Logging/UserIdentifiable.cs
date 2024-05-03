@@ -42,12 +42,12 @@ public readonly struct UserIdentifiable<TValue> : IUserIdentifiable<TValue>
 /// Loggers that strip PII must hash this value unless it can be reliably determined
 /// to be a non-identifiable value such a filename that is part of the app itself.
 /// </summary>
-public readonly struct UserIdentifiableFileName : IUserIdentifiable<string>
+public readonly struct UserIdentifiableFileName : IUserIdentifiable<string?>
 {
-	public string Value { get; }
-	public UserIdentifiableFileName (string filename) { Value = filename; }
-	public static implicit operator UserIdentifiableFileName (string filename) => new (filename);
-	public override readonly string ToString () => Value;
+	public string? Value { get; }
+	public UserIdentifiableFileName (string? filename) { Value = filename; }
+	public static implicit operator UserIdentifiableFileName (string? filename) => new (filename);
+	public override readonly string ToString () => Value ?? "[null]";
 
 	object? IUserIdentifiableValue.Value => Value;
 }

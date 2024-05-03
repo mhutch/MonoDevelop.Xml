@@ -82,11 +82,11 @@ namespace MonoDevelop.Xml.Dom
 			}
 		}
 
-		public XAttribute? Get (XName name, bool ignoreCase)
+		public XAttribute? Get (XName name, bool ignoreCase = false)
 		{
 			XAttribute? current = First;
 			while (current is not null) {
-				if (XName.Equals (current.Name, name, ignoreCase))
+				if (current.Name.Equals (name, ignoreCase))
 					return current;
 				current = current.NextSibling;
 			}

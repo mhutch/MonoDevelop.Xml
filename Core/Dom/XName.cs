@@ -31,7 +31,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace MonoDevelop.Xml.Dom
 {
-	public struct XName : IEquatable<XName>
+	public readonly struct XName : IEquatable<XName>, IComparable<XName>
 	{
 		public XName (string prefix, string name)
 		{
@@ -53,38 +53,56 @@ namespace MonoDevelop.Xml.Dom
 
 		public string? FullName => Prefix == null ? Name : Prefix + ':' + Name;
 
-		[MemberNotNullWhen(true, nameof(Name), nameof (FullName))]
+		[MemberNotNullWhen (true, nameof (Name), nameof (FullName))]
 		public bool IsValid { get { return !string.IsNullOrEmpty (Name); } }
 
-		[MemberNotNullWhen(true, nameof(Prefix))]
+		[MemberNotNullWhen (true, nameof (Prefix))]
 		public bool HasPrefix { get { return !string.IsNullOrEmpty (Prefix); } }
 
 		public int Length => (Name?.Length ?? 0) + (Prefix != null ? Prefix.Length + 1 : 0);
-
-		#region Equality
 
 		public static bool operator == (XName x, XName y) => x.Equals (y);
 
 		public static bool operator != (XName x, XName y) => !x.Equals (y);
 
-		public bool Equals (XName other) => Prefix == other.Prefix && Name == other.Name;
+		public bool Equals (XName other) => Equals (other, false);
+
+		public bool Equals (XName other, bool ignoreCase)
+		{
+			var comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+			return string.Equals (Prefix, other.Prefix, comparison) && string.Equals (Name, other.Name, comparison);
+		}
 
 		public override bool Equals (object? obj) => (obj is not XName other) || Equals (other);
 
 		public override int GetHashCode ()
 		{
-			int hash = 0;
-			if (Prefix != null) hash += Prefix.GetHashCode ();
-			if (Name != null) hash += Name.GetHashCode ();
-			return hash;
+			int prefixHash = Prefix is null ? 0 : Prefix.GetHashCode ();
+			int nameHash = Name is null ? 0 : Name.GetHashCode ();
+			return HashCode.Combine (prefixHash, nameHash);
 		}
 
-		#endregion
+		// exposed via XNameComparer but implemented here so all GetHashCode impls are in one place
+		internal int GetHashCode (bool ignoreCase) => ignoreCase ? GetHashCodeIgnoreCase () : GetHashCode ();
 
-		public static bool Equals (XName a, XName b, bool ignoreCase)
+		readonly int GetHashCodeIgnoreCase ()
 		{
-			var comp = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-			return string.Equals (a.Prefix, b.Prefix, comp) && string.Equals (a.Name, b.Name, comp);
+			var comparer = StringComparer.OrdinalIgnoreCase;
+			int prefixHash = Prefix is null ? 0 : comparer.GetHashCode (Prefix);
+			int nameHash = Name is null ? 0 : comparer.GetHashCode (Name);
+			return HashCode.Combine (prefixHash, nameHash);
+		}
+
+		public int CompareTo (XName other) => CompareTo (other, false);
+
+		public int CompareTo (XName other, bool ignoreCase)
+		{
+			var comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+			var prefix = string.Compare (Prefix, other.Prefix, comparison);
+			if (prefix != 0) {
+				return prefix;
+			}
+			return string.Compare (Name, other.Name, comparison);
 		}
 
 		public override string ToString ()
@@ -94,6 +112,6 @@ namespace MonoDevelop.Xml.Dom
 			return Prefix + ":" + Name;
 		}
 
-		public static implicit operator XName (string name) => new(name);
+		public static implicit operator XName (string name) => new (name);
 	}
 }

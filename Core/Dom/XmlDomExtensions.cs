@@ -16,12 +16,6 @@ namespace MonoDevelop.Xml.Dom
 			return node is XElement el ? el.NameSpan : node.NextSibling?.Span ?? node.Span;
 		}
 
-		public static bool NameEquals (this INamedXObject obj, string name, bool ignoreCase)
-		{
-			var comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-			return !obj.Name.HasPrefix && string.Equals (obj.Name.Name, name, comparison);
-		}
-
 		public static bool IsTrue (this XAttributeCollection attributes, string name)
 		{
 			var att = attributes.Get (name, true);

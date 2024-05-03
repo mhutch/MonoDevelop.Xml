@@ -73,7 +73,7 @@ class XmlCompletionCommitManager (ILogger logger, JoinableTaskContext joinableTa
 
 		switch (itemKind) {
 		case XmlCompletionItemKind.SelfClosingElement: {
-				//comitting self-closing element with > makes it non-self-closing
+				//committing self-closing element with > makes it non-self-closing
 				if (typedChar == '>') {
 					goto case XmlCompletionItemKind.Element;
 				}

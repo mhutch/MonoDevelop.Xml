@@ -59,13 +59,15 @@ namespace MonoDevelop.Xml.Editor.Tests.Completion
 			var item = new CompletionItem (includeBracket? "<Hello" : "Hello", this)
 				.AddKind (XmlCompletionItemKind.Element);
 			var items = new List<CompletionItem> () { item };
-			items.AddRange (GetMiscellaneousTags (context.TriggerLocation, context.NodePath, includeBracket));
+			if (context.NodePath is not null) {
+				items.AddRange (GetMiscellaneousTags (context.TriggerLocation, context.NodePath, includeBracket));
+			}
 			return Task.FromResult<IList<CompletionItem>?> (items);
 		}
 
 		protected override Task<IList<CompletionItem>?> GetAttributeCompletionsAsync (XmlCompletionTriggerContext context, IAttributedXObject attributedObject, Dictionary<string, string> existingAtts, CancellationToken token)
 		{
-			if (context.NodePath.LastOrDefault () is XElement xel && xel.NameEquals ("Hello", true)) {
+			if (context.NodePath?.LastOrDefault () is XElement xel && xel.Name.Equals ("Hello", true)) {
 				var item = new CompletionItem ("There", this)
 					.AddKind (XmlCompletionItemKind.Attribute);
 				var items = new List<CompletionItem> () {  item };
