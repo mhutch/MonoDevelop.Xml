@@ -67,7 +67,7 @@ namespace MonoDevelop.Xml.Editor.Tests.Completion
 
 		protected override Task<IList<CompletionItem>?> GetAttributeCompletionsAsync (XmlCompletionTriggerContext context, IAttributedXObject attributedObject, Dictionary<string, string> existingAtts, CancellationToken token)
 		{
-			if (context.NodePath?.LastOrDefault () is XElement xel && xel.NameEquals ("Hello", true)) {
+			if (context.NodePath?.LastOrDefault () is XElement xel && xel.Name.Equals ("Hello", true)) {
 				var item = new CompletionItem ("There", this)
 					.AddKind (XmlCompletionItemKind.Attribute);
 				var items = new List<CompletionItem> () {  item };
