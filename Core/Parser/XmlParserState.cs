@@ -94,9 +94,12 @@ namespace MonoDevelop.Xml.Parser
 	{
 		public InvalidParserGraphException (string message) : base (message) { }
 		public InvalidParserGraphException (string message, Exception inner) : base (message, inner) { }
+
+#if NETFRAMEWORK
 		protected InvalidParserGraphException (
 		  System.Runtime.Serialization.SerializationInfo info,
 		  System.Runtime.Serialization.StreamingContext context) : base (info, context) { }
+#endif
 	}
 
 	/// <summary>
@@ -107,9 +110,12 @@ namespace MonoDevelop.Xml.Parser
 	{
 		public InvalidParserStateException (string message) : base (message) { }
 		public InvalidParserStateException (string message, Exception inner) : base (message, inner) { }
+
+#if NETFRAMEWORK
 		protected InvalidParserStateException (
 		  System.Runtime.Serialization.SerializationInfo info,
 		  System.Runtime.Serialization.StreamingContext context) : base (info, context) { }
+#endif
 
 		[DoesNotReturn]
 		internal static void ThrowExpected<T> (XmlParserContext context) where T : XObject
