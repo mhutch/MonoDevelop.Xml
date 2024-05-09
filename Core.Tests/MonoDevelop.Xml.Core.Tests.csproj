@@ -1,14 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net48;net6.0</TargetFrameworks>
+    <TargetFrameworks>net8.0</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('Windows'))">net481;net8.0</TargetFrameworks>
     <NUnitDisableSupportAssemblies>true</NUnitDisableSupportAssemblies>
     <RootNamespace>MonoDevelop.Xml.Tests</RootNamespace>
   </PropertyGroup>
 
   <PropertyGroup>
     <Nullable>enable</Nullable>
-    <Nullable Condition="$(TargetFramework)=='net48'">annotations</Nullable>
+    <Nullable Condition="$(TargetFramework)=='net481'">annotations</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
