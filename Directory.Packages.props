@@ -1,0 +1,20 @@
+<Project>
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.Bcl.HashCode" Version="1.1.1" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="7.0.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageVersion Include="Microsoft.VisualStudio.ImageCatalog" Version="17.2.32505.113" />
+    <PackageVersion Include="Microsoft.VisualStudio.Language.Intellisense" Version="17.2.3194" />
+    <PackageVersion Include="Microsoft.VisualStudio.Language.StandardClassification" Version="17.2.3194" />
+    <PackageVersion Include="Microsoft.VisualStudio.Threading" Version="17.2.32" />
+    <PackageVersion Include="NUnit" Version="3.14.0" />
+    <PackageVersion Include="NUnit.Analyzers" Version="3.10.0" />
+    <PackageVersion Include="NUnit3TestAdapter" Version="4.5.0" />
+    <PackageVersion Include="System.Collections.Immutable" Version="7.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <GlobalPackageReference Include="Nerdbank.GitVersioning" Version="3.6.133" PrivateAssets="all" />
+    <GlobalPackageReference Include="DotNet.ReproducibleBuilds" Version="1.1.1" PrivateAssets="All"/>
+  </ItemGroup>
+</Project>
