@@ -38,7 +38,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task RootHasTwoChildElements()
 		{
 			await Init ();
-			Assert.AreEqual(2, rootChildElements.Items.Length, "Should be two child elements.");
+			Assert.AreEqual(2, rootChildElements.ItemList.Count, "Should be two child elements.");
 		}
 		
 		[Test]

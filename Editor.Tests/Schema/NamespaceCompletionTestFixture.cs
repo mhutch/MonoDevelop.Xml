@@ -42,7 +42,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		[Test]
 		public void NamespaceCount()
 		{
-			Assert.AreEqual(2, namespaceCompletionData.Items.Length, "Should be 2 namespaces.");
+			Assert.AreEqual(2, namespaceCompletionData.ItemList.Count, "Should be 2 namespaces.");
 		}
 		
 		[Test]

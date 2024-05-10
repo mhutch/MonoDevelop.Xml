@@ -35,7 +35,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task BodyHasFourChildElements()
 		{
 			await Init ();
-			Assert.AreEqual(4, childElements.Items.Length, 
+			Assert.AreEqual(4, childElements.ItemList.Count, 
 			                "Should be 4 child elements.");
 		}
 		

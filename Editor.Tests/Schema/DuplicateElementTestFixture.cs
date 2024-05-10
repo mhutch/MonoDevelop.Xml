@@ -28,7 +28,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task HtmlHasTwoChildElements()
 		{
 			await Init ();
-			Assert.AreEqual(2, htmlChildElements.Items.Length, "Should be 2 child elements.");
+			Assert.AreEqual(2, htmlChildElements.ItemList.Count, "Should be 2 child elements.");
 		}
 		
 		[Test]

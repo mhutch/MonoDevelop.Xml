@@ -30,5 +30,6 @@
     <PackageReference Include="Microsoft.VisualStudio.Language.Intellisense" NoWarn="NU1701" />
     <PackageReference Include="Microsoft.VisualStudio.Language.StandardClassification" NoWarn="NU1701" />
     <PackageReference Include="Microsoft.VisualStudio.Threading" />
+    <PackageReference Include="Microsoft.VisualStudio.Imaging.Interop.14.0.DesignTime" />
   </ItemGroup>
 </Project>

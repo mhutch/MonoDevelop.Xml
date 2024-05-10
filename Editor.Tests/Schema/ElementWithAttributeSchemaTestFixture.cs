@@ -23,14 +23,14 @@ namespace MonoDevelop.Xml.Tests.Schema
 			path.Elements.Add(new QualifiedName("note", "http://www.w3schools.com"));
 						
 			attributeCompletionData = await SchemaCompletionData.GetAttributeCompletionDataAsync (DummyCompletionSource.Instance, path, CancellationToken.None);
-			attributeName = attributeCompletionData.Items[0].DisplayText;
+			attributeName = attributeCompletionData.ItemList[0].DisplayText;
 		}
 
 		[Test]
 		public async Task AttributeCount()
 		{
 			await Init ();
-			Assert.AreEqual(1, attributeCompletionData.Items.Length, "Should be one attribute.");
+			Assert.AreEqual(1, attributeCompletionData.ItemList.Count, "Should be one attribute.");
 		}
 		
 		[Test]
@@ -48,7 +48,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 			path.Elements.Add(new QualifiedName("foobar", "http://www.w3schools.com"));
 			var attributes = await SchemaCompletionData.GetAttributeCompletionDataAsync (DummyCompletionSource.Instance, path, CancellationToken.None);
 			
-			Assert.AreEqual(0, attributes.Items.Length, "Should not find attributes for unknown element.");
+			Assert.AreEqual(0, attributes.ItemList.Count, "Should not find attributes for unknown element.");
 		}
 		
 		protected override string GetSchema()

@@ -41,7 +41,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task OneShipOrderAttribute()
 		{
 			await Init ();
-			Assert.AreEqual(1, shipOrderAttributes.Items.Length, "Should only have one shiporder attribute.");
+			Assert.AreEqual(1, shipOrderAttributes.ItemList.Count, "Should only have one shiporder attribute.");
 		}		
 		
 		[Test]
@@ -56,7 +56,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task OneShipToAttribute()
 		{
 			await Init ();
-			Assert.AreEqual(1, shipToAttributes.Items.Length, "Should only have one shipto attribute.");
+			Assert.AreEqual(1, shipToAttributes.ItemList.Count, "Should only have one shipto attribute.");
 		}
 		
 		[Test]
@@ -71,7 +71,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task ShipOrderChildElementsCount()
 		{
 			await Init ();
-			Assert.AreEqual(1, (await SchemaCompletionData.GetChildElementCompletionDataAsync (DummyCompletionSource.Instance, shipOrderPath, CancellationToken.None)).Items.Length, 
+			Assert.AreEqual(1, (await SchemaCompletionData.GetChildElementCompletionDataAsync (DummyCompletionSource.Instance, shipOrderPath, CancellationToken.None)).ItemList.Count, 
 			                "Should be one child element.");
 		}
 		
@@ -88,7 +88,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task ShipToChildElementsCount()
 		{
 			await Init ();
-			Assert.AreEqual(2, (await SchemaCompletionData.GetChildElementCompletionDataAsync (DummyCompletionSource.Instance, shipToPath, CancellationToken.None)).Items.Length, 
+			Assert.AreEqual(2, (await SchemaCompletionData.GetChildElementCompletionDataAsync (DummyCompletionSource.Instance, shipToPath, CancellationToken.None)).ItemList.Count, 
 			                "Should be 2 child elements.");
 		}		
 		

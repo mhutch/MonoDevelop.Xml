@@ -128,7 +128,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task ChoiceHasAttributes()
 		{
 			await Init ();
-			Assert.IsTrue(choiceAttributes.Items.Length > 0, "Should have at least one attribute.");
+			Assert.IsTrue(choiceAttributes.ItemList.Count > 0, "Should have at least one attribute.");
 		}
 		
 		[Test]

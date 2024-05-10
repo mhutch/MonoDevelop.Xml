@@ -29,7 +29,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task AttributeCount()
 		{
 			await Init ();
-			Assert.AreEqual(10, attributes.Items.Length, "Should be one attribute.");
+			Assert.AreEqual(10, attributes.ItemList.Count, "Should be one attribute.");
 		}
 		
 		[Test]

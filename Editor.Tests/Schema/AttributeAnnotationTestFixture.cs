@@ -38,14 +38,14 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task FooAttributeDocumentation()
 		{
 			await Init ();
-			await AssertDescription("Documentation for foo attribute.", fooAttributeCompletionData.Items[0]);
+			await AssertDescription("Documentation for foo attribute.", fooAttributeCompletionData.ItemList[0]);
 		}
 		
 		[Test]
 		public async Task BarAttributeDocumentation()
 		{
 			await Init ();
-			await AssertDescription("Documentation for bar attribute.", barAttributeCompletionData.Items[0]);
+			await AssertDescription("Documentation for bar attribute.", barAttributeCompletionData.ItemList[0]);
 		}
 
 		protected override string GetSchema()

@@ -27,7 +27,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task HtmlAttributeCount()
 		{
 			await Init ();
-			Assert.AreEqual(4, attributes.Items.Length, "Should be 4 attributes.");
+			Assert.AreEqual(4, attributes.ItemList.Count, "Should be 4 attributes.");
 		}
 		
 		[Test]

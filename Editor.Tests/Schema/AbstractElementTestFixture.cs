@@ -42,7 +42,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task ItemsElementHasTwoChildElements()
 		{
 			await Init ();
-			Assert.AreEqual (2, itemsElementChildren.Items.Length, "Should be 2 child elements.");
+			Assert.AreEqual (2, itemsElementChildren.ItemList.Count, "Should be 2 child elements.");
 		}
 		
 		[Test]
@@ -70,7 +70,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task FileElementHasTwoChildElements()
 		{
 			await Init ();
-			Assert.AreEqual(2, fileElementChildren.Items.Length, "Should be 2 child elements.");
+			Assert.AreEqual(2, fileElementChildren.ItemList.Count, "Should be 2 child elements.");
 		}
 		
 		protected override string GetSchema()

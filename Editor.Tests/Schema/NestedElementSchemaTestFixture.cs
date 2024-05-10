@@ -27,7 +27,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task NoteHasOneChildElementCompletionDataItem()
 		{
 			await Init ();
-			Assert.AreEqual(1, elementData.Items.Length, "Should be one child element completion data item.");
+			Assert.AreEqual(1, elementData.ItemList.Count, "Should be one child element completion data item.");
 		}
 		
 		[Test]

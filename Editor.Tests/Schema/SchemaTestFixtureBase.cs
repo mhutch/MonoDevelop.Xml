@@ -52,7 +52,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		{
 			bool Contains = false;
 			
-			foreach (var data in items.Items) {
+			foreach (var data in items.ItemList) {
 				if (data.DisplayText == name) {
 					Contains = true;
 					break;
@@ -70,7 +70,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		{
 			bool Contains = false;
 			
-			foreach (var data in items.Items) {
+			foreach (var data in items.ItemList) {
 				if (data.DisplayText == name) {
 					var descEl = await data.GetDocumentationAsync (null, default) as ClassifiedTextElement;
 					if (descEl != null && descEl.Runs.FirstOrDefault()?.Text == description) {
@@ -91,7 +91,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		{
 			int count = 0;
 			
-			foreach (var data in items.Items) {
+			foreach (var data in items.ItemList) {
 				if (data.DisplayText == name) {
 					++count;
 				}

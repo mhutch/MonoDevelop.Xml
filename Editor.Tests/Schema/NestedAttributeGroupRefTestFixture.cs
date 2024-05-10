@@ -27,7 +27,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task AttributeCount()
 		{
 			await Init ();
-			Assert.AreEqual(7, attributeCompletionData.Items.Length, "Should be 7 attributes.");
+			Assert.AreEqual(7, attributeCompletionData.ItemList.Count, "Should be 7 attributes.");
 		}
 		
 		[Test]

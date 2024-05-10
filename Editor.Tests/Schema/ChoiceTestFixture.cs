@@ -32,7 +32,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 			XmlElementPath path = new XmlElementPath();
 			path.Elements.Add(new QualifiedName("note", "http://www.w3schools.com"));
 			path.Elements.Add(new QualifiedName("title", "http://www.w3schools.com"));
-			Assert.AreEqual(0, (await SchemaCompletionData.GetChildElementCompletionDataAsync (DummyCompletionSource.Instance, path, CancellationToken.None)).Items.Length, 
+			Assert.AreEqual(0, (await SchemaCompletionData.GetChildElementCompletionDataAsync (DummyCompletionSource.Instance, path, CancellationToken.None)).ItemList.Count, 
 			                "Should be no child elements.");
 		}
 		
@@ -43,7 +43,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 			XmlElementPath path = new XmlElementPath();
 			path.Elements.Add(new QualifiedName("note", "http://www.w3schools.com"));
 			path.Elements.Add(new QualifiedName("text", "http://www.w3schools.com"));
-			Assert.AreEqual(0, (await SchemaCompletionData.GetChildElementCompletionDataAsync (DummyCompletionSource.Instance, path, CancellationToken.None)).Items.Length, 
+			Assert.AreEqual(0, (await SchemaCompletionData.GetChildElementCompletionDataAsync (DummyCompletionSource.Instance, path, CancellationToken.None)).ItemList.Count, 
 			                "Should be no child elements.");
 		}		
 		
@@ -51,7 +51,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task NoteHasTwoChildElements()
 		{
 			await Init ();
-			Assert.AreEqual(2, noteChildElements.Items.Length, 
+			Assert.AreEqual(2, noteChildElements.ItemList.Count, 
 			                "Should be two child elements.");
 		}
 		

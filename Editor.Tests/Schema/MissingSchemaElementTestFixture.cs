@@ -27,7 +27,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task BarHasOneAttribute()
 		{
 			await Init ();
-			Assert.AreEqual(1, barElementAttributes.Items.Length, "Should have 1 attribute.");
+			Assert.AreEqual(1, barElementAttributes.ItemList.Count, "Should have 1 attribute.");
 		}
 		
 		protected override string GetSchema()
