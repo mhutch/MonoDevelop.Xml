@@ -58,7 +58,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task SchemaHasSevenChildElements()
 		{
 			await Init ();
-			Assert.AreEqual(7, schemaChildElements.Items.Length, "Should be 7 child elements.");
+			Assert.AreEqual(7, schemaChildElements.ItemList.Count, "Should be 7 child elements.");
 		}
 		
 		[Test]
@@ -100,7 +100,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task AnnotationElementHasOneAttribute()
 		{
 			await Init ();
-			Assert.AreEqual(1, annotationAttributes.Items.Length, "Should be one attribute.");
+			Assert.AreEqual(1, annotationAttributes.ItemList.Count, "Should be one attribute.");
 		}
 		
 		[Test]
@@ -115,7 +115,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task AnnotationHasTwoChildElements()
 		{
 			await Init ();
-			Assert.AreEqual(2, annotationChildElements.Items.Length, 
+			Assert.AreEqual(2, annotationChildElements.ItemList.Count, 
 			                "Should be 2 child elements.");
 		}
 		
@@ -139,7 +139,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task IncludeElementHasOneAttribute()
 		{
 			await Init ();
-			Assert.AreEqual(1, includeAttributes.Items.Length, "Should be one attribute.");
+			Assert.AreEqual(1, includeAttributes.ItemList.Count, "Should be one attribute.");
 		}
 		
 		[Test]
@@ -154,7 +154,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task AppInfoElementHasOneAttribute()
 		{
 			await Init ();
-			Assert.AreEqual(1, appInfoAttributes.Items.Length, "Should be one attribute.");
+			Assert.AreEqual(1, appInfoAttributes.ItemList.Count, "Should be one attribute.");
 		}
 		
 		[Test]

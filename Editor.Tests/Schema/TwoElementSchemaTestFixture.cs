@@ -33,7 +33,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		{
 			var attributesCompletionData = await SchemaCompletionData.GetAttributeCompletionDataAsync (DummyCompletionSource.Instance, textElementPath, CancellationToken.None);
 			
-			Assert.AreEqual (1, attributesCompletionData.Items.Length, "Should have 1 text attribute.");
+			Assert.AreEqual (1, attributesCompletionData.ItemList.Count, "Should have 1 text attribute.");
 		}
 		
 		[Test]
@@ -48,7 +48,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		{
 			var childElementCompletionData = await SchemaCompletionData.GetChildElementCompletionDataAsync (DummyCompletionSource.Instance, noteElementPath, CancellationToken.None);
 			
-			Assert.AreEqual(1, childElementCompletionData.Items.Length, "Should be one child.");
+			Assert.AreEqual(1, childElementCompletionData.ItemList.Count, "Should be one child.");
 		}
 		
 		[Test]
@@ -56,7 +56,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		{	
 			var attributeCompletionData = await SchemaCompletionData.GetAttributeCompletionDataAsync (DummyCompletionSource.Instance, noteElementPath, CancellationToken.None);
 			
-			Assert.AreEqual(0, attributeCompletionData.Items.Length, "Should no attributes.");
+			Assert.AreEqual(0, attributeCompletionData.ItemList.Count, "Should no attributes.");
 		}
 
 		[Test]
@@ -64,7 +64,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		{
 			var elementCompletionData = await SchemaCompletionData.GetElementCompletionDataAsync (DummyCompletionSource.Instance, CancellationToken.None);
 			
-			Assert.AreEqual(1, elementCompletionData.Items.Length, "Should be 1 root element.");
+			Assert.AreEqual(1, elementCompletionData.ItemList.Count, "Should be 1 root element.");
 		}
 		
 		[Test]

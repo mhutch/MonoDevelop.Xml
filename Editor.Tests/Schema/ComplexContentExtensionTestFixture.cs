@@ -34,7 +34,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 			path.Elements.Add(new QualifiedName("body", "http://www.w3schools.com")); 
 			path.Elements.Add(new QualifiedName("title", "http://www.w3schools.com")); 
 
-			Assert.AreEqual(0, (await SchemaCompletionData.GetChildElementCompletionDataAsync (DummyCompletionSource.Instance, path, CancellationToken.None)).Items.Length,
+			Assert.AreEqual(0, (await SchemaCompletionData.GetChildElementCompletionDataAsync (DummyCompletionSource.Instance, path, CancellationToken.None)).ItemList.Count,
 			                "Should be no child elements.");
 		}
 		
@@ -46,7 +46,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 			path.Elements.Add(new QualifiedName("body", "http://www.w3schools.com")); 
 			path.Elements.Add(new QualifiedName("text", "http://www.w3schools.com")); 
 
-			Assert.AreEqual(0, (await SchemaCompletionData.GetChildElementCompletionDataAsync (DummyCompletionSource.Instance, path, CancellationToken.None)).Items.Length,
+			Assert.AreEqual(0, (await SchemaCompletionData.GetChildElementCompletionDataAsync (DummyCompletionSource.Instance, path, CancellationToken.None)).ItemList.Count,
 			                "Should be no child elements.");
 		}		
 		
@@ -54,7 +54,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task BodyHasTwoChildElements()
 		{
 			await Init ();
-			Assert.AreEqual(2, bodyChildElements.Items.Length, 
+			Assert.AreEqual(2, bodyChildElements.ItemList.Count, 
 			                "Should be two child elements.");
 		}
 		
@@ -78,7 +78,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task BodyAttributeCount()
 		{
 			await Init ();
-			Assert.AreEqual(1, bodyAttributes.Items.Length, 
+			Assert.AreEqual(1, bodyAttributes.ItemList.Count, 
 			                "Should be one attribute.");
 		}
 		

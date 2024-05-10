@@ -49,7 +49,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task H1HasAttributes()
 		{
 			await Init ();
-			Assert.IsTrue(h1Attributes.Items.Length > 0, "Should have at least one attribute.");
+			Assert.IsTrue (h1Attributes.ItemList.Count > 0, "Should have at least one attribute.");
 		}
 	}
 }

@@ -11,19 +11,19 @@ namespace MonoDevelop.Xml.Editor.Tests.Extensions
 	{
 		public static void AssertContains (this CompletionContext context, string name)
 		{
-			var item = context.Items.FirstOrDefault (i => i.DisplayText == name);
+			var item = context.ItemList.FirstOrDefault (i => i.DisplayText == name);
 			Assert.NotNull (item, "Completion result is missing item '{0}'", name);
 		}
 
 		public static void AssertNonEmpty (this CompletionContext context)
-			=> Assert.NotZero (context.Items.Length);
+			=> Assert.NotZero (context.ItemList.Count);
 
 		public static void AssertItemCount (this CompletionContext context, int expectedCount)
-			=> Assert.AreEqual (expectedCount, context.Items.Length);
+			=> Assert.AreEqual (expectedCount, context.ItemList.Count);
 
 		public static void AssertDoesNotContain (this CompletionContext context, string name)
 		{
-			var item = context.Items.FirstOrDefault (i => i.DisplayText == name);
+			var item = context.ItemList.FirstOrDefault (i => i.DisplayText == name);
 			Assert.IsNull (item, "Completion result has unexpected item '{0}'", name);
 		}
 	}

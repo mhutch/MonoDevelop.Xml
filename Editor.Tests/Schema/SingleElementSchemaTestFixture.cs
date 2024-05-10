@@ -42,14 +42,14 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task NoteElementHasNoAttributes()
 		{
 			await Init ();
-			Assert.AreEqual(0, attributeCompletionData.Items.Length, "Not expecting any attributes.");
+			Assert.AreEqual(0, attributeCompletionData.ItemList.Count, "Not expecting any attributes.");
 		}
 		
 		[Test]
 		public async Task NoteElementHasNoChildElements()
 		{
 			await Init ();
-			Assert.AreEqual(0, childElementCompletionData.Items.Length, "Not expecting any child elements.");
+			Assert.AreEqual(0, childElementCompletionData.ItemList.Count, "Not expecting any child elements.");
 		}
 		
 		protected override string GetSchema()

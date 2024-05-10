@@ -43,7 +43,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task IdAttributeValueCount()
 		{
 			await Init ();
-			Assert.AreEqual(2, attributeValues.Items.Length, "Expecting 2 attribute values.");
+			Assert.AreEqual (2, attributeValues.ItemList.Count, "Expecting 2 attribute values.");
 		}
 		
 		protected override string GetSchema()

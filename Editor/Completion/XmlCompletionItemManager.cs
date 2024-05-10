@@ -78,7 +78,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			var filterText = session.ApplicableToSpan.GetText (data.Snapshot);
 			if (string.IsNullOrWhiteSpace (filterText)) {
 				// There is no text filtering. Just apply user filters, sort alphabetically and return.
-				IEnumerable<CompletionItem> listFiltered = data.InitialSortedList;
+				IEnumerable<CompletionItem> listFiltered = data.InitialSortedItemList;
 				if (data.SelectedFilters.Any (n => n.IsSelected)) {
 					listFiltered = listFiltered.Where (n => ShouldBeInCompletionList (n, data.SelectedFilters));
 				}
@@ -95,7 +95,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 				filterText,
 				new PatternMatcherCreationOptions (System.Globalization.CultureInfo.CurrentCulture, PatternMatcherCreationFlags.IncludeMatchedSpans));
 
-			var matches = data.InitialSortedList
+			var matches = data.InitialSortedItemList
 				// Perform pattern matching
 				.Select (completionItem => (completionItem, patternMatcher.TryMatch (completionItem.FilterText)))
 				// Pick only items that were matched, unless length of filter text is 1
@@ -187,19 +187,23 @@ namespace MonoDevelop.Xml.Editor.Completion
 		/// <remarks>Exceptions from this method are caught and logged to <see cref="Logger"/></remarks>
 		protected virtual ImmutableArray<CompletionItem> SortCompletionList (IAsyncCompletionSession session, AsyncCompletionSessionInitialDataSnapshot data, CancellationToken token)
 		{
-			var sortComparer = GetSortComparer (token);
-			return data.InitialList.Sort (sortComparer);
+			var sortComparer = new CompletionItemComparer (token);
+			return data.InitialItemList.OrderBy (item => item, sortComparer).ToImmutableArray ();
 		}
 
-		Comparison<CompletionItem> GetSortComparer (CancellationToken token) => (x, y) => {
-			int cancelCount = 0;
-			if (++cancelCount == 1000) {
-				token.ThrowIfCancellationRequested ();
-				cancelCount = 0;
-			}
+		class CompletionItemComparer (CancellationToken token) : IComparer<CompletionItem>
+		{
+			public int Compare (CompletionItem x, CompletionItem y)
+			{
+				int cancelCount = 0;
+				if (++cancelCount == 1000) {
+					token.ThrowIfCancellationRequested ();
+					cancelCount = 0;
+				}
 
-			return string.Compare (x.SortText, y.SortText, StringComparison.Ordinal);
-		};
+				return string.Compare (x.SortText, y.SortText, StringComparison.Ordinal);
+			}
+		}
 
 		#region Filtering
 

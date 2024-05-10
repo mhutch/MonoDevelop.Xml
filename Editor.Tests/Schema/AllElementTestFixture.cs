@@ -38,7 +38,7 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task PersonElementHasTwoChildElements()
 		{
 			await Init ();
-			Assert.AreEqual(2, personElementChildren.Items.Length, 
+			Assert.AreEqual(2, personElementChildren.ItemList.Count, 
 			                "Should be 2 child elements.");
 		}
 		
@@ -46,14 +46,14 @@ namespace MonoDevelop.Xml.Tests.Schema
 		public async Task FirstNameElementHasAttribute()
 		{
 			await Init ();
-			Assert.AreEqual(1, firstNameAttributes.Items.Length, "Should have one attribute.");
+			Assert.AreEqual(1, firstNameAttributes.ItemList.Count, "Should have one attribute.");
 		}
 		
 		[Test]
 		public async Task FirstNameElementHasChildren()
 		{
 			await Init ();
-			Assert.AreEqual(2, firstNameElementChildren.Items.Length, 
+			Assert.AreEqual(2, firstNameElementChildren.ItemList.Count, 
 			                "Should be 2 child elements.");
 		}
 		
