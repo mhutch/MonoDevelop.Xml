@@ -105,13 +105,14 @@ public class TextWithMarkers
 	/// Gets the single span marked with the specified <paramref name="markerChar"/>.
 	/// </summary>
 	/// <param name="markerChar">Which marker character to use. May be null if only one marker character was specified when creating the <see cref="TextWithMarkers"/></param>
+	/// <param name="allowZeroWidthSingleMarker">Whether to allow use of a single marker character when the span is zero-width</param>
 	/// <returns>The <see cref="TextSpan"/> representing the marked span</returns>
 	/// <exception cref="TextWithMarkersMismatchException">Did not find exactly one span (two markers) for <paramref name="markerChar"/></exception>
 	/// <exception cref="ArgumentException">The <paramref name="markerChar"/> was not specified when creating the <see cref="TextWithMarkers"/></exception>
 	/// <exception cref="ArgumentException">The <paramref name="markerChar"/> was null but multiple markers were specified when creating the <see cref="TextWithMarkers"/></exception>
-	public TextSpan GetMarkedSpan (char? markerChar = null)
+	public TextSpan GetMarkedSpan (char? markerChar = null, bool allowZeroWidthSingleMarker = false)
 	{
-		if (!TryGetMarkedSpan (out var span, markerChar)) {
+		if (!TryGetMarkedSpan (out var span, markerChar, allowZeroWidthSingleMarker)) {
 			ThrowExactMismatchException (markerChar, 2, "span");
 		}
 		return span;
@@ -122,19 +123,25 @@ public class TextWithMarkers
 	/// </summary>
 	/// <param name="markerChar">Which marker character to use. May be null if only one marker character was specified when creating the <see cref="TextWithMarkers"/></param>
 	/// <param name="span">The <see cref="TextSpan"/> representing the marked span, if this method returned <c>true</c>, otherwise <c>default</c></param>
+	/// <param name="allowZeroWidthSingleMarker">Whether to allow use of a single marker character when the span is zero-width</param>
 	/// <returns>Whether a single span was found for <paramref name="markerChar"/></returns>
 	/// <exception cref="TextWithMarkersMismatchException">Did not find exactly zero or one spans (zero or two markers) for <paramref name="markerChar"/></exception>
 	/// <exception cref="ArgumentException">The <paramref name="markerChar"/> was not specified when creating the <see cref="TextWithMarkers"/></exception>
 	/// <exception cref="ArgumentException">The <paramref name="markerChar"/> was null but multiple markers were specified when creating the <see cref="TextWithMarkers"/></exception>
-	public bool TryGetMarkedSpan (out TextSpan span, char? markerChar = null)
+	public bool TryGetMarkedSpan (out TextSpan span, char? markerChar = null, bool allowZeroWidthSingleMarker = false)
 	{
 		var id = GetMarkerId (markerChar);
 		var positions = markedPositionsById[id];
 
+		if (allowZeroWidthSingleMarker && positions.Count == 1) {
+			span = new TextSpan (positions[0], 0);
+			return true;
+		}
+
 		if (positions.Count == 2) {
 			int start = positions[0];
 			int end = positions[1];
-			span = new TextSpan (start, end);
+			span = TextSpan.FromBounds (start, end);
 			return true;
 		} else if (positions.Count > 2) {
 			ThrowZeroOrNMismatchException(markerChar, 2, "span");
@@ -154,8 +161,8 @@ public class TextWithMarkers
 	/// <summary>
 	/// Gets the single span marked with the specified <paramref name="markerChar"/>.
 	/// </summary>
-	/// <param name="spanStartMarker">Which marker character to use at the start of the span</param>
-	/// <param name="spanEndMarker">Which marker character to use at the end of the span</param>
+	/// <param name="spanStartMarker">The marker character that indicates the start of the span</param>
+	/// <param name="spanEndMarker">The marker character that indicates the end of the span</param>
 	/// <returns>The <see cref="TextSpan"/> representing the marked span</returns>
 	/// <exception cref="TextWithMarkersMismatchException">Did not find exactly one span</exception>
 	/// <exception cref="TextWithMarkersMismatchException">The number of <paramref name="spanStartMarker"/> characters did not match the number of <paramref name="spanEndMarker"/> characters</exception>
@@ -173,8 +180,8 @@ public class TextWithMarkers
 	/// <summary>
 	/// Tries to get the span marked with the specified <paramref name="spanStartMarker"/> and <paramref name="spanEndMarker"/>
 	/// </summary>
-	/// <param name="spanStartMarker">Which marker character to use at the start of the span</param>
-	/// <param name="spanEndMarker">Which marker character to use at the end of the span</param>
+	/// <param name="spanStartMarker">The marker character that indicates the start of the span</param>
+	/// <param name="spanEndMarker">The marker character that indicates the end of the span</param>
 	/// <returns>Whether a single span was found for the <paramref name="spanStartMarker"/> and <paramref name="spanEndMarker"/></returns>
 	/// <exception cref="TextWithMarkersMismatchException">Multiple spans were found, must be zero or one</exception>
 	/// <exception cref="TextWithMarkersMismatchException">The number of <paramref name="spanStartMarker"/> characters did not match the number of <paramref name="spanEndMarker"/> characters</exception>
@@ -204,7 +211,7 @@ public class TextWithMarkers
 		if (end < start) {
 			ThrowEndBeforeStartMismatchException (spanStartMarker, start, spanEndMarker, end);
 		}
-		span = new TextSpan (start, end);
+		span = TextSpan.FromBounds (start, end);
 		return true;
 	}
 
@@ -262,7 +269,7 @@ public class TextWithMarkers
 			if (end < start) {
 				ThrowEndBeforeStartMismatchException (spanStartMarker, start, spanEndMarker, end);
 			}
-			spans[i] = new TextSpan (start, end);
+			spans[i] = TextSpan.FromBounds (start, end);
 		}
 
 		return spans;
@@ -368,13 +375,14 @@ public class TextWithMarkers
 	/// </summary>
 	/// <param name="textWithMarkers">The text with marker characters</param>
 	/// <param name="markerChar">The marker character</param>
+	/// <param name="allowZeroWidthSingleMarker">Whether to allow use of a single marker character when the span is zero-width</param>
 	/// <returns>A tuple with the marker-free text and the marked span</returns>
 	/// <exception cref="TextWithMarkersMismatchException">Did not find exactly one span (two markers) for <paramref name="markerChar"/></exception>
 	/// <exception cref="ArgumentNullException">The <paramref name="textWithMarkers"/> was null</exception>
-	public static (string text, TextSpan span) ExtractSingleSpan (string textWithMarkers, char markerChar = '|')
+	public static (string text, TextSpan span) ExtractSingleSpan (string textWithMarkers, char markerChar = '|', bool allowZeroWidthSingleMarker = false)
 	{
 		var parsed = Parse (textWithMarkers, markerChar);
-		var span = parsed.GetMarkedSpan (markerChar);
+		var span = parsed.GetMarkedSpan (markerChar, allowZeroWidthSingleMarker);
 		return (parsed.Text, span);
 	}
 
@@ -382,7 +390,8 @@ public class TextWithMarkers
 	/// Extract a single marked span and marker-free text from a string with exactly two marker characters
 	/// </summary>
 	/// <param name="textWithMarkers">The text with marker characters</param>
-	/// <param name="markerChar">The marker character</param>
+	/// <param name="spanStartMarker">The marker character that indicates the start of the span</param>
+	/// <param name="spanEndMarker">The marker character that indicates the end of the span</param>
 	/// <returns>A tuple with the marker-free text and the marked span</returns>
 	/// <exception cref="TextWithMarkersMismatchException">Did not find exactly one span</exception>
 	/// <exception cref="TextWithMarkersMismatchException">The number of <paramref name="spanStartMarker"/> characters did not match the number of <paramref name="spanEndMarker"/> characters</exception>
