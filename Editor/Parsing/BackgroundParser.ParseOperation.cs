@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#nullable enable
+
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,7 +12,7 @@ namespace MonoDevelop.Xml.Editor.Parsing
 	{
 		class Operation
 		{
-			CancellationTokenSource tokenSource;
+			CancellationTokenSource? tokenSource;
 
 			// if this ever reaches zero, the task gets cancelled
 			int ownerCount;
@@ -34,7 +36,7 @@ namespace MonoDevelop.Xml.Editor.Parsing
 			public TInput Input { get; }
 
 			#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
-			public TOutput Output => Task.IsCompleted ? Task.Result : default;
+			public TOutput? Output => Task.IsCompleted ? Task.Result : default;
 			#pragma warning restore VSTHRD002
 
 			public void Cancel ()
