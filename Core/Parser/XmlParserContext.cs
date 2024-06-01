@@ -149,7 +149,7 @@ namespace MonoDevelop.Xml.Parser
 				builder.AppendLine ("Errors=");
 				foreach (XmlDiagnostic err in Diagnostics) {
 					builder.Append (' ', 4);
-					builder.AppendLine ($"[{err.Descriptor.Severity}@{err.Span}: {err.GetFormattedMessage ()}");
+					builder.AppendLine ($"[{err.Descriptor.Severity}@{err.Span}: {err.GetFormattedMessageWithTitle ()}");
 				}
 			}
 

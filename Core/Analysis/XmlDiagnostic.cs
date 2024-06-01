@@ -27,6 +27,6 @@ namespace MonoDevelop.Xml.Analysis
 		{
 		}
 
-		public string GetFormattedMessage () => Descriptor.GetFormattedMessage (messageArgs);
+		public string GetFormattedMessageWithTitle () => Descriptor.GetFormattedMessageWithTitle (messageArgs);
 	}
 }
