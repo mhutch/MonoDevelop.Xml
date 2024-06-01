@@ -65,7 +65,7 @@ namespace MonoDevelop.Xml.Editor.Parsing
 		{
 		}
 
-		void LastDitchLog (Exception ex)
+		static void LastDitchLog (Exception ex)
 		{
 			if (System.Diagnostics.Debugger.IsAttached) {
 				System.Diagnostics.Debugger.Break ();
@@ -80,7 +80,7 @@ namespace MonoDevelop.Xml.Editor.Parsing
 		/// </summary>
 		protected virtual void OnUnhandledParseError (Exception ex)
 		{
-			LastDitchLog (ex);
+			BackgroundProcessor<TInput, TOutput>.LastDitchLog (ex);
 		}
 
 		Operation? currentOperation;
