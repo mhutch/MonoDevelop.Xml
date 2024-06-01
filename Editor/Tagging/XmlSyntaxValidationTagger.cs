@@ -79,7 +79,7 @@ namespace MonoDevelop.MSBuild.Editor
 
 					if (diagSpan.IntersectsWith (taggingSpan)) {
 						var errorType = GetErrorTypeName (diag.Descriptor.Severity);
-						yield return new TagSpan<ErrorTag> (diagSpan, new ErrorTag (errorType, diag.GetFormattedMessage ()));
+						yield return new TagSpan<ErrorTag> (diagSpan, new ErrorTag (errorType, diag.GetFormattedMessageWithTitle ()));
 					}
 				}
 			}

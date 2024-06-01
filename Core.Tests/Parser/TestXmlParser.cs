@@ -216,7 +216,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 				var sb = new System.Text.StringBuilder ();
 				sb.AppendLine ($"Expected {count} diagnostics, got {actualCount}:");
 				foreach (var err in filter is null? diagnostics : diagnostics.Where (filter)) {
-					sb.AppendLine ($"{err.Descriptor.Severity}@{err.Span}: {err.GetFormattedMessage ()}");
+					sb.AppendLine ($"{err.Descriptor.Severity}@{err.Span}: {err.GetFormattedMessageWithTitle ()}");
 				}
 				Assert.AreEqual (count, actualCount, sb.ToString ());
 			}
