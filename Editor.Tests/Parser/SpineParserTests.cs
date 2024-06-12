@@ -19,23 +19,57 @@ namespace MonoDevelop.Xml.Tests.Parser;
 [TestFixture]
 public class SpineParserTests : XmlEditorTest
 {
-	[Test]
-	[TestCase ("<a><b>", "")]
-	[TestCase ("<a><b>foo", "foo")]
-	[TestCase ("<a><b>    foo", "foo")]
-	[TestCase ("<a><b bar='", "")]
-	[TestCase ("<a><b bar='xyz", "xyz")]
-	[TestCase ("<a><b bar='  xyz", "  xyz")]
-	public void TestGetIncompleteValue (string doc, string expected)
+	[TestCase ("<a><b>|", null)]
+	[TestCase ("<a><b>fo|o", "foo")]
+	[TestCase ("<a><b>foo|_123", "foo_123")]
+	[TestCase ("<a><b>fo|o.abc", "foo.abc")]
+	[TestCase ("<a><b>fo|o.abc ", "foo.abc")]
+	[TestCase ("<a><b>fo|o.abc\\", "foo.abc\\")]
+	[TestCase ("<a><b>fo|o.abc\\qwerty", "foo.abc\\qwerty")]
+	[TestCase ("<a><b>fo|o.abc/", "foo.abc/")]
+	[TestCase ("<a><b>fo|o.abc#123", "foo.abc#123")]
+	[TestCase ("<a><b>fo|o.abc<", "foo.abc")]
+	[TestCase ("<a><b>fo|o.abc  <", "foo.abc")]
+	[TestCase ("<a><b>    fo|o", "foo")]
+	[TestCase ("<a><b>    foo|123 ", "foo123")]
+	[TestCase ("<a><b>  hello\n  foo|123 \n bye", "hello\n  foo123 \n bye")]
+	[TestCase ("<a><b>  hello\n  foo|123 \n bye", "hello\n  foo123", false, true)]
+	[TestCase ("<a><b>  hello\n  foo|123 \n bye", "foo123 \n bye", true, false)]
+	[TestCase ("<a><b bar='|", "")]
+	[TestCase ("<a><b bar='|xyz", "xyz")]
+	[TestCase ("<a><b bar='  x|yz", "  xyz")]
+	[TestCase ("<a><b bar='  xy|zabc ", "  xyzabc ")]
+	[TestCase ("<a><b bar='  xy|zabc\\", "  xyzabc\\")]
+	[TestCase ("<a><b bar='  xy|z.abc", "  xyz.abc")]
+	[TestCase ("<a><b bar='xy|z_  ", "xyz_  ")]
+	[TestCase ("<a><b bar='xy|z_a", "xyz_a")]
+	[TestCase ("<a><b bar='xyz|_a", "xyz_a")]
+	[TestCase ("<a><b bar='xyz|_a'", "xyz_a")]
+	[TestCase ("<a><b bar=\"xyz|_a\"", "xyz_a")]
+	[TestCase ("<a><b bar=xy|z ", "xyz")]
+	public void TestGetIncompleteValue (string documentWithMarkers, string expected, bool startAtLineBreak = false, bool stopAtLineBreak = false)
 	{
-		var buffer = CreateTextBuffer (doc);
+		char caretMarker = '|';
+		var doc = TextWithMarkers.Parse (documentWithMarkers, caretMarker);
+		var caretPos = doc.GetMarkedPosition (caretMarker);
+
+		var buffer = CreateTextBuffer (doc.Text);
 		var snapshot = buffer.CurrentSnapshot;
-		var caretPoint = new SnapshotPoint (snapshot, snapshot.Length);
-
+		var caretPoint = new SnapshotPoint (snapshot, caretPos);
 		var spine = GetParser (buffer).GetSpineParser (caretPoint);
-		var actual = spine.GetIncompleteValue (snapshot);
 
-		Assert.AreEqual (expected, actual);
+		spine.TryGetIncompleteValue (snapshot, out string actualValue, out SnapshotSpan? maybeExpressionSpan, startAtLineBreak, stopAtLineBreak);
+
+		if (expected is null) {
+			Assert.IsNull (actualValue);
+			return;
+		}
+
+		Assert.AreEqual (expected, actualValue);
+
+		var valueSpanText = maybeExpressionSpan.Value.GetText ();
+		Assert.AreEqual (expected, valueSpanText);
+
 	}
 
 	[Test]
