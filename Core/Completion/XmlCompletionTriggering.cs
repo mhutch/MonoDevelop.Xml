@@ -10,7 +10,7 @@ using MonoDevelop.Xml.Parser;
 
 namespace MonoDevelop.Xml.Editor.Completion
 {
-	class XmlCompletionTriggering
+	public class XmlCompletionTriggering
 	{
 		public static XmlCompletionTrigger GetTrigger (XmlSpineParser parser, XmlTriggerReason reason, char typedCharacter) => GetTriggerAndIncompleteSpan (parser, reason, typedCharacter).kind;
 
@@ -200,7 +200,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 		};
 	}
 
-	enum XmlCompletionTrigger
+	public enum XmlCompletionTrigger
 	{
 		None,
 
