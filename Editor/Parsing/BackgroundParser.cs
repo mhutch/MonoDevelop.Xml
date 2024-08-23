@@ -43,7 +43,7 @@ namespace MonoDevelop.Xml.Editor.Parsing
 				Operation op = (Operation)state!;
 				try {
 					// op.Output accesses the task.Result, throwing any exceptions
-					op.Processor.OnOperationCompleted (op.Input, op.Output);
+					op.Processor.OnOperationCompleted (op.Input, op.Output!); // output only returns null if task is not completed
 					op.Processor.lastSuccessfulOperation = op;
 				} catch (Exception eventException) {
 					op.Processor.OnUnhandledParseError (eventException);
