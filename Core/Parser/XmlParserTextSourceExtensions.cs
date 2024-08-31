@@ -286,7 +286,7 @@ namespace MonoDevelop.Xml.Parser
 			if (path.Count > 0) {
 				var leaf = path[path.Count-1];
 				if (!(leaf is XDocument)) {
-					if (!AdvanceUntilEnded (parser, leaf, text, maximumReadahead - (parser.Position - startOffset))) {
+					if (!AdvanceUntilEnded (parser, leaf, text, maximumReadahead - (parser.Position - startOffset), cancellationToken)) {
 						nodePath = null;
 						return false;
 					}
@@ -299,6 +299,97 @@ namespace MonoDevelop.Xml.Parser
 
 			nodePath = path;
 			return true;
+		}
+
+		/// <summary>
+		/// If the parser is within an attribute value or XText node, determine the full value and span of that value.
+		/// </summary>
+		/// <param name="parser">A spine parser. Its position will not be modified.</param>
+		/// <param name="text">The text snapshot corresponding to the parser.</param>
+		/// <param name="value">The full value of the attribute or text, or as much as could be recovered before hitting the readahead limit.</param>
+		/// <param name="valueSpan">The span of the <paramref name="value"/>.</param>
+		/// <param name="stopAtLineBreak">Whether to truncate the value upon reaching a line break.</param>
+		/// <param name="maximumReadahead">Maximum number of characters to advance before giving up.</param>
+		/// <returns>Whether the parser is in a value state and the full value could be read. If <c>false</c>, and the parser was in a value state, the <paramref name="value"/> may be non-null but incomplete.</returns>
+		public static bool TryGetIncompleteValue (
+			this XmlSpineParser parser, ITextSource text, [NotNullWhen (true)] out string? value, [NotNullWhen (true)] out TextSpan? valueSpan,
+			bool stopAtLineBreak = false, int maximumReadahead = DEFAULT_READAHEAD_LIMIT, CancellationToken cancellationToken = default)
+		{
+			if (parser.IsInAttributeValue ()) {
+				int length = parser.CurrentStateLength;
+				var cloneParser = parser.Clone ();
+
+				bool success = cloneParser.TryAdvanceUntilStateChange (text, stopAtLineBreak, out var deepestNode, maximumReadahead, cancellationToken);
+
+				if (cancellationToken.IsCancellationRequested) {
+					value = null;
+					valueSpan = null;
+					return false;
+				}
+
+				// this should always succeed, as a value state can only begin when an attribute state is on the stack already
+				var attributeNode = (XAttribute)deepestNode;
+
+				if (success) {
+					valueSpan = attributeNode.ValueSpan!.Value;
+					value = attributeNode.Value ?? "";
+				} else {
+					value = cloneParser.GetContext().KeywordBuilder.ToString ();
+					valueSpan = new TextSpan (cloneParser.Position - value.Length, value.Length);
+				}
+				return success;
+			}
+
+			if (parser.IsInText ()) {
+				int length = parser.CurrentStateLength;
+				var cloneParser = parser.Clone ();
+				bool success = cloneParser.TryAdvanceUntilStateChange (text, stopAtLineBreak, out var deepestNode, maximumReadahead, cancellationToken);
+
+				// deepestNode may not be XText if it was at the start of the state and no chars were pushed due to cancellation
+				if (cancellationToken.IsCancellationRequested || deepestNode is not XText textNode) {
+					value = null;
+					valueSpan = null;
+					return false;
+				}
+
+				// if we did not reach the end of the node, force it to end anyways
+				if (!success) {
+					cloneParser.Push ('<');
+				}
+
+				valueSpan = textNode.Span;
+				value = textNode.Text;
+
+				return success;
+			}
+
+			value = null;
+			valueSpan = null;
+			return false;
+		}
+
+		static bool TryAdvanceUntilStateChange (this XmlSpineParser parser, ITextSource text, bool stopAtLineBreak, out XObject captureDeepestNode, int maximumReadahead = DEFAULT_READAHEAD_LIMIT, CancellationToken cancellationToken = default)
+		{
+			var nodeStack = parser.GetContext ().Nodes;
+			captureDeepestNode = nodeStack.Peek ();
+			int deepestStack = nodeStack.Count;
+
+			int readaheadLimit = parser.Position + maximumReadahead;
+			int limit = Math.Min (text.Length, readaheadLimit);
+			var startingState = parser.CurrentState;
+
+			while (parser.Position < limit && parser.CurrentState == startingState && !cancellationToken.IsCancellationRequested) {
+				char c = text[parser.Position];
+				if (stopAtLineBreak && (c == '\n' || c == '\r')) {
+					break;
+				}
+				parser.Push (c);
+				if (nodeStack.Count > deepestStack) {
+					captureDeepestNode = nodeStack.Peek ();
+				}
+			}
+
+			return parser.CurrentState != startingState;
 		}
 	}
 }
