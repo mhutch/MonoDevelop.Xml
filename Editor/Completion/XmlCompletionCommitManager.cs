@@ -51,11 +51,16 @@ class XmlCompletionCommitManager (ILogger logger, JoinableTaskContext joinableTa
 		switch (trigger) {
 		case XmlCompletionTrigger.Tag:
 		case XmlCompletionTrigger.ElementName:
+		case XmlCompletionTrigger.ElementValue:
 			// allow using / as a commit char for elements as self-closing elements, but special case disallowing it
 			// in the cases where that could conflict with typing the / at the start of a closing tag
 			if (typedChar == '/') {
 				var span = session.ApplicableToSpan.GetSpan (snapshot);
-				if (span.Length == (trigger == XmlCompletionTrigger.ElementName ? 0 : 1)) {
+				if (trigger switch {
+					XmlCompletionTrigger.ElementName => span.Length == 0,
+					// XmlCompletionTrigger.ElementValue may have values that are not tags so check the < as well
+					_ => span.Length == 1 && snapshot[span.Start] == '<'
+				}) {
 					return false;
 				}
 			}
