@@ -33,7 +33,7 @@ namespace MonoDevelop.Xml.Editor.Tests
 		/// <returns>Enumeration of objects of requested type</returns>
 		public IEnumerable<T> GetServices<T> () where T : class => host.GetServices<T> ();
 
-		public ITextViewFactoryService TextViewFactory => GetService<ITextViewFactoryService> ();
+		public ITextEditorFactoryService TextEditorFactory => GetService<ITextEditorFactoryService> ();
 		public ITextDocumentFactoryService TextDocumentFactoryService => GetService<ITextDocumentFactoryService> ();
 		public IFileToContentTypeService FileToContentTypeService => GetService<IFileToContentTypeService> ();
 		public ITextBufferFactoryService BufferFactoryService => GetService<ITextBufferFactoryService> ();

@@ -47,11 +47,14 @@ namespace MonoDevelop.Xml.Editor.Tests.Utils
 		{
 			var readyTask = new TaskCompletionSource<bool> ();
 			MainThread = new Thread (Run) { IsBackground = true };
+			MainThread.SetApartmentState (ApartmentState.STA);
 			MainThread.Start (readyTask);
 
+#pragma warning disable VSSDK005 // Avoid instantiating JoinableTaskContext
 			JoinableTaskContext = new JoinableTaskContext (MainThread, this);
+#pragma warning restore VSSDK005 // Avoid instantiating JoinableTaskContext
 
-			#pragma warning disable VSTHRD002 // This just signals the thread was started
+#pragma warning disable VSTHRD002 // This just signals the thread was started
 			readyTask.Task.Wait ();
 			#pragma warning restore VSTHRD002
 		}

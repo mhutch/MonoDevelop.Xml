@@ -13,7 +13,7 @@ namespace MonoDevelop.Xml.Editor.Tests.Extensions
 {
 	public static class QuickInfoTestExtensions
 	{
-		public static Task<QuickInfoItemsCollection> GetQuickInfoItems (
+		public static async Task<QuickInfoItemsCollection> GetQuickInfoItems (
 			this EditorTest test,
 			string documentText,
 			char caretMarker = '$')
@@ -24,8 +24,9 @@ namespace MonoDevelop.Xml.Editor.Tests.Extensions
 			}
 			documentText = documentText.Substring (0, caretOffset) + documentText.Substring (caretOffset + 1);
 
-			var textView = test.CreateTextView (documentText);
-			return test.GetQuickInfoItems (textView, caretOffset);
+			await test.Catalog.JoinableTaskContext.Factory.SwitchToMainThreadAsync ();
+			var textView = test.CreateTextView(documentText);
+			return await test.GetQuickInfoItems (textView, caretOffset);
 		}
 
 		public static async Task<QuickInfoItemsCollection> GetQuickInfoItems (
@@ -36,8 +37,6 @@ namespace MonoDevelop.Xml.Editor.Tests.Extensions
 		{
 			var broker = test.Catalog.AsyncQuickInfoBroker;
 			var snapshot = textView.TextBuffer.CurrentSnapshot;
-
-			await test.Catalog.JoinableTaskContext.Factory.SwitchToMainThreadAsync ();
 
 			var items = await broker.GetQuickInfoItemsAsync (
 				textView,

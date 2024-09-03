@@ -6,16 +6,19 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ ubuntu-latest, windows-latest ]
+        os:
+          - name: windows-latest
+            sln: MonoDevelop.Xml.sln
+          - name: ubuntu-latest
+            sln: NoVSEditor.slnf
         config: [ Debug ]
       fail-fast: false
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os.name }}
 
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0 # GitVersioning needs deep clone
-        submodules: recursive
 
     - uses: actions/setup-dotnet@v4
       with:
@@ -23,10 +26,10 @@ jobs:
           8.0.x
 
     - name: Restore
-      run: dotnet restore MonoDevelop.Xml.sln
+      run: dotnet restore ${{ matrix.os.sln }}
 
     - name: Build
-      run: dotnet build MonoDevelop.Xml.sln -c ${{ matrix.config }} --no-restore
+      run: dotnet build ${{ matrix.os.sln }} -c ${{ matrix.config }} --no-restore
 
     - name: Test
-      run: dotnet test -c ${{ matrix.config }} --no-build
+      run: dotnet test -c ${{ matrix.config }} --no-build ${{ matrix.os.sln }}

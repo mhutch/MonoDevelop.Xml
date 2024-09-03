@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net48;net8.0</TargetFrameworks>
+    <TargetFrameworks>net48</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,6 +11,10 @@
     <PackageReference Include="Microsoft.VisualStudio.Language.StandardClassification" ExcludeAssets="runtime" NoWarn="NU1701" />
     <PackageReference Include="Microsoft.VisualStudio.Threading" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.VisualStudio.Imaging.Interop.14.0.DesignTime" ExcludeAssets="runtime" />
+    <!-- fix issue where Microsoft.VisualStudio.Language.Intellisense depends on StreamJsonRpc version not present in public feeds -->
+    <PackageReference Include="StreamJsonRpc" ExcludeAssets="runtime" />
+    <!-- upgrade vulnerable transitive dependencies -->
+    <PackageReference Include="System.Text.Json" />
   </ItemGroup>
 
   <ItemGroup>

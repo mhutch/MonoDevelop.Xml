@@ -63,6 +63,9 @@ a comment-->";
 
 		const string TextNode = "this is some text";
 
+		const string TextNodeWithWhitespace = @"	this is some text
+";
+
 		const string AttributesFoo = @"hello=""hi"" goodbye=""bye""";
 
 		const string AttributeHello = @"hello=""hi""";
@@ -91,6 +94,9 @@ a comment-->";
 
 		const string CommentBar = @"<!--another comment-->";
 
+		const string CommentBarWithWhitespace = @"		<!--another comment-->
+";
+
 		//args are document, line, col, then the expected sequence of expansions
 		[Test]
 		[TestCase (Document, 1, 2, CommentDoc)]
@@ -98,9 +104,9 @@ a comment-->";
 		[TestCase (Document, 3, 3, "foo", ElementFoo, ElementWithBodyFoo)]
 		[TestCase (Document, 3, 15, "hi", AttributeHello, AttributesFoo, ElementFoo, ElementWithBodyFoo)]
 		[TestCase (Document, 3, 7, "hello", AttributeHello, AttributesFoo, ElementFoo, ElementWithBodyFoo)]
-		[TestCase (Document, 4, 7, TextNode, BodyFoo, ElementWithBodyFoo)]
+		[TestCase (Document, 4, 7, "is", TextNode, TextNodeWithWhitespace, BodyFoo, ElementWithBodyFoo)]
 		[TestCase (Document, 5, 22, "done", AttributeThing, ElementBaz, BodyBar, ElementWithBodyBar, BodyFoo, ElementWithBodyFoo)]
-		[TestCase (Document, 6, 12, CommentBar, BodyBar, ElementWithBodyBar, BodyFoo, ElementWithBodyFoo)]
+		[TestCase (Document, 6, 12, CommentBar, CommentBarWithWhitespace, BodyBar, ElementWithBodyBar, BodyFoo, ElementWithBodyFoo)]
 		public async Task TestExpandShrink (object[] args)
 		{
 			var buffer = CreateTextBuffer ((string)args[0]);

@@ -4,5 +4,6 @@
     <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)private.snk</AssemblyOriginatorKeyFile>
     <LangVersion>latest</LangVersion>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <UseArtifactsOutput>True</UseArtifactsOutput>
   </PropertyGroup>
 </Project>
