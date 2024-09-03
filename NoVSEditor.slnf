@@ -1,0 +1,9 @@
+{
+  "solution": {
+    "path": "MonoDevelop.Xml.sln",
+    "projects": [
+      "Core.Tests\\MonoDevelop.Xml.Core.Tests.csproj",
+      "Core\\MonoDevelop.Xml.Core.csproj"
+    ]
+  }
+}
