@@ -50,5 +50,8 @@
     <PackageReference Include="Microsoft.VisualStudio.Text.Internal" />
     <PackageReference Include="BasicUndo" />
     <PackageReference Include="Microsoft.VisualStudio.Language" />
+    <!-- upgrade vulnerable transitive dependencies -->
+    <PackageReference Include="System.Text.Json" />
+    <PackageReference Include="Microsoft.IO.Redist" />
   </ItemGroup>
 </Project>

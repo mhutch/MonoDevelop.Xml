@@ -31,5 +31,7 @@
     <PackageReference Include="NUnit.Analyzers" />
     <PackageReference Include="NUnit3TestAdapter" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+    <!-- upgrade vulnerable transitive dependencies -->
+    <PackageReference Include="System.Text.Json" />
   </ItemGroup>
 </Project>
