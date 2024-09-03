@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
+using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 
@@ -14,15 +15,16 @@ namespace MonoDevelop.Xml.Editor.Tests.Extensions
 {
 	public static class CompletionTestExtensions
 	{
-		public static Task<CompletionContext> GetCompletionContext (
+		public static async Task<CompletionContext> GetCompletionContext (
 			this EditorTest test,
 			string documentText, CompletionTriggerReason reason = default, char triggerChar = '\0', char caretMarker = '$', string filename = default, CancellationToken cancellationToken = default)
 		{
 			(documentText, var caretOffset) = TextWithMarkers.ExtractSinglePosition (documentText, caretMarker);
 
+			await test.Catalog.JoinableTaskContext.Factory.SwitchToMainThreadAsync ();
 			var textView = test.CreateTextView (documentText, filename);
 
-			return test.GetCompletionContext (textView, caretOffset, reason, triggerChar, cancellationToken);
+			return await test.GetCompletionContext (textView, caretOffset, reason, triggerChar, cancellationToken);
 		}
 
 		public static async Task<CompletionContext> GetCompletionContext (

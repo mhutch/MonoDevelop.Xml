@@ -10,6 +10,7 @@ using MonoDevelop.Xml.Tests;
 using MonoDevelop.Xml.Tests.Utils;
 
 using NUnit.Framework;
+using NUnit.Framework.Internal;
 
 namespace MonoDevelop.Xml.Editor.Tests.Tagging;
 
@@ -22,7 +23,8 @@ public class HighlightEndTagTaggerTests : HighlightTaggerTest<NavigableHighlight
 		var text = TextWithMarkers.Parse ("<^foo^><></^foo^>", '^');
 		var spans = text.GetMarkedSpans ('^');
 
-		var textView = CreateTextView (text.Text);
+		await Catalog.JoinableTaskContext.Factory.SwitchToMainThreadAsync ();
+		var textView = CreateTextView(text.Text);
 
 		var logger = TestLoggerFactory.CreateTestMethodLogger ().RethrowExceptions ();
 

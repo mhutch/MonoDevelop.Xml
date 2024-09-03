@@ -1,8 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
+using System.Threading.Tasks;
 
 using Microsoft.VisualStudio.Text.Editor;
 
@@ -27,7 +26,7 @@ namespace MonoDevelop.Xml.Editor.Tests.Commands
 		[TestCase ("<a>w|</a>", 0)] // no indent for closing tag
 		[TestCase ("<a>w| </a>", 0)] // no indent for closing tag preceded by whitespace
 		[TestCase ("<a>|w</a>", 4)] // indent when content is present
-		public void TestSmartIndent (string doc, int expectedIndent)
+		public async Task TestSmartIndent (string doc, int expectedIndent)
 		{
 			var caretPos = doc.IndexOf ('|');
 			if (caretPos > -1) {
@@ -38,7 +37,9 @@ namespace MonoDevelop.Xml.Editor.Tests.Commands
 				doc += "\n";
 			}
 
+			await Catalog.JoinableTaskContext.Factory.SwitchToMainThreadAsync ();
 			var textView = CreateTextView (doc);
+
 			var line = textView.TextBuffer.CurrentSnapshot.GetLineFromPosition (caretPos);
 			GetParser (textView.TextBuffer);
 

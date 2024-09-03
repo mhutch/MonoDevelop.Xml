@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Threading.Tasks;
 
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -26,11 +27,15 @@ namespace MonoDevelop.Xml.Editor.Tests
 
 		public virtual ITextView CreateTextView (string documentText, string filename = null)
 		{
+			if (!Catalog.JoinableTaskContext.IsOnMainThread) {
+				throw new InvalidOperationException ("Must be on main thread");
+			}
+
 			var buffer = CreateTextBuffer (documentText);
 			if (filename != null) {
 				Catalog.TextDocumentFactoryService.CreateTextDocument (buffer, filename);
 			}
-			return Catalog.TextViewFactory.CreateTextView (buffer);
+			return Catalog.TextEditorFactory.CreateTextView (buffer);
 		}
 
 		public virtual ITextBuffer CreateTextBuffer (string documentText)

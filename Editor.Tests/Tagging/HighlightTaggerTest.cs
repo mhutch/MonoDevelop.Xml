@@ -25,7 +25,7 @@ public abstract class HighlightTaggerTest<TTag, TKind> : XmlEditorTest where TTa
 
 	protected async Task<List<Highlight>> GetAllHighlights (ITextView textView, HighlightTagger<TTag, TKind> tagger)
 	{
-		var highlights = await GetAllHighlightsInner (textView, tagger).ConfigureAwait (false);
+		var highlights = await GetAllHighlightsInner (textView, tagger);
 
 		return highlights.Select (kv => new Highlight (
 				new TextSpan (kv.Key.Start, kv.Key.Length),
@@ -43,7 +43,7 @@ public abstract class HighlightTaggerTest<TTag, TKind> : XmlEditorTest where TTa
 			textView.Caret.MoveTo (new SnapshotPoint (textView.TextBuffer.CurrentSnapshot, i));
 
 			// return null if it was cancelled or nothing changed
-			var updateResult = await UpdateHighlightsAsync (tagger).ConfigureAwait (false);
+			var updateResult = await UpdateHighlightsAsync (tagger);
 			if (updateResult is null) {
 				continue;
 			}

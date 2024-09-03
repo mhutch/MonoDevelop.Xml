@@ -65,9 +65,8 @@ namespace MonoDevelop.Xml.Editor.Tests.Extensions
 			Func<ITextView,Task> initialize = null,
 			CancellationToken cancellationToken = default)
 		{
-			await test.Catalog.JoinableTaskContext.Factory.SwitchToMainThreadAsync (cancellationToken);
-
-			var textView = test.CreateTextView (beforeDocumentText, filename);
+			await test.Catalog.JoinableTaskContext.Factory.SwitchToMainThreadAsync ();
+			var textView = test.CreateTextView(beforeDocumentText, filename);
 			textView.Caret.MoveTo (new SnapshotPoint (textView.TextBuffer.CurrentSnapshot, beforeCaretOffset));
 
 			if (initialize is not null) {
