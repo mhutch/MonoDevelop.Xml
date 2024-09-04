@@ -115,7 +115,7 @@ public class TextWithMarkers
 
 	public bool TryGetMarkedPosition (out int position, char? markerChar = null)
 	{
-		if (TryGetMarkedLineColPosition(out var p)) {
+		if (TryGetMarkedLineColPosition(out var p, markerChar)) {
 			position = p;
 			return true;
 		}
