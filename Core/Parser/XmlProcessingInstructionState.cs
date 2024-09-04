@@ -82,6 +82,11 @@ namespace MonoDevelop.Xml.Parser
 					parents.Push (new XProcessingInstruction (pi.Span.Start));
 				}
 
+				// still in RootState
+				if (length == 1) {
+					return null;
+				}
+
 				return new (
 					currentState: this,
 					position: position,
