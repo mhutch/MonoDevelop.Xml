@@ -446,6 +446,12 @@ public class TextWithMarkers
 		for (int i = 0; i < textWithMarkers.Length; i++) {
 			var c = textWithMarkers[i];
 
+			int markerId = Array.IndexOf (markerChars, c);
+			if (markerId > -1) {
+				markerIndices[markerId].Add (new (sb.Length, line, col));
+				continue;
+			}
+
 			if (c == '\n') {
 				line++;
 				col = 0;
@@ -453,12 +459,7 @@ public class TextWithMarkers
 				col++;
 			}
 
-			int markerId = Array.IndexOf (markerChars, c);
-			if (markerId > -1) {
-				markerIndices[markerId].Add (new (sb.Length, line, col));
-			} else {
-				sb.Append (c);
-			}
+			sb.Append (c);
 		}
 
 		return new (sb.ToString (), markerChars, markerIndices);
@@ -487,18 +488,19 @@ public class TextWithMarkers
 		for (int i = 0; i < textWithMarkers.Length; i++) {
 			var c = textWithMarkers[i];
 
-			if(c == '\n') {
+			if (c == markerChar) {
+				markerIndices.Add (new (sb.Length, line, col));
+				continue;
+			}
+
+			if (c == '\n') {
 				line++;
 				col = 0;
 			} else {
 				col++;
 			}
 
-			if (c == markerChar) {
-				markerIndices.Add (new (sb.Length, line, col));
-			} else {
-				sb.Append (c);
-			}
+			sb.Append (c);
 		}
 
 		return new (sb.ToString (), [markerChar], [markerIndices]);
