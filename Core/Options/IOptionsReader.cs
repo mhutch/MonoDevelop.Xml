@@ -5,5 +5,5 @@ namespace MonoDevelop.Xml.Options;
 
 public interface IOptionsReader
 {
-	bool TryGetOption<T> (Option<T> option, out T value);
+	bool TryGetOption<T> (Option<T> option, out T? value);
 }

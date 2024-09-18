@@ -13,9 +13,9 @@ namespace MonoDevelop.Xml.Options;
 /// </summary>
 public sealed record class TextFormattingOptionValues ()
 {
-	public readonly TextFormattingOptionValues Default = new ();
+	public static readonly TextFormattingOptionValues Default = new ();
 
-	public bool UseTabs { get; init; } = false;
+	public bool ConvertTabsToSpaces { get; init; } = false;
 	public int TabSize { get; init; } = 4;
 	public int IndentSize { get; init; } = 4;
 	public string NewLine { get; init; } = Environment.NewLine;
@@ -24,7 +24,7 @@ public sealed record class TextFormattingOptionValues ()
 	public TextFormattingOptionValues (IOptionsReader options)
 	   : this ()
 	{
-		UseTabs = options.GetOption (TextFormattingOptions.UseTabs);
+		ConvertTabsToSpaces = options.GetOption (TextFormattingOptions.ConvertTabsToSpaces);
 		TabSize = options.GetOption (TextFormattingOptions.TabSize);
 		IndentSize = options.GetOption (TextFormattingOptions.IndentSize);
 		NewLine = options.GetOption (TextFormattingOptions.NewLine);

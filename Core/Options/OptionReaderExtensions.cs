@@ -7,8 +7,8 @@ public static class OptionReaderExtensions
 {
 	public static T GetOption<T>(this IOptionsReader options, Option<T> option)
 	{
-		if (options.TryGetOption<T> (option, out T value)) {
-			return value;
+		if (options.TryGetOption<T> (option, out T? value)) {
+			return value!;
 		}
 		return option.DefaultValue;
 	}
