@@ -14,6 +14,11 @@ namespace MonoDevelop.Xml.Editor.Tests.Extensions
 {
 	public static class CommandServiceExtensions
 	{
+		/// <summary>
+		/// Enables logging of additional trace information to debug nondeterministic test failures
+		/// </summary>
+		public static bool EnableDebugTrace { get; set; }
+
 		public static void Type (this IEditorCommandHandlerService commandService, string text)
 		{
 			foreach (var c in text) {
@@ -22,6 +27,9 @@ namespace MonoDevelop.Xml.Editor.Tests.Extensions
 					Enter (commandService);
 					break;
 				default:
+					if (EnableDebugTrace) {
+						LogTrace ($"Typing '{c}'");
+					}
 					commandService.CheckAndExecute ((v, b) => new TypeCharCommandArgs (v, b, c));
 					break;
 				}
@@ -29,10 +37,20 @@ namespace MonoDevelop.Xml.Editor.Tests.Extensions
 		}
 
 		public static void Enter (this IEditorCommandHandlerService commandService)
-			=> commandService.CheckAndExecute ((v, b) => new ReturnKeyCommandArgs (v, b));
+		{
+			if (EnableDebugTrace) {
+				LogTrace ("Invoking return key");
+			}
+			commandService.CheckAndExecute ((v, b) => new ReturnKeyCommandArgs (v, b));
+		}
 
 		public static void InvokeCompletion (this IEditorCommandHandlerService commandService)
-			=> commandService.CheckAndExecute ((v, b) => new InvokeCompletionListCommandArgs (v, b));
+		{
+			if (EnableDebugTrace) {
+				LogTrace ("Invoking completion");
+			}
+			commandService.CheckAndExecute ((v, b) => new InvokeCompletionListCommandArgs (v, b));
+		}
 
 		public static void CheckAndExecute<T> (
 			this IEditorCommandHandlerService commandService,
@@ -46,12 +64,42 @@ namespace MonoDevelop.Xml.Editor.Tests.Extensions
 				throw new InvalidOperationException ($"No handler available for `{typeof (T)}`");
 			}
 
-			//ensure the computation is completed before we continue typing
 			if (textView != null) {
 				if (textView.Properties.TryGetProperty (typeof (IAsyncCompletionSession), out IAsyncCompletionSession session)) {
+					if (EnableDebugTrace) {
+						LogTrace ("Session open");
+						RegisterTraceHandlers (session);
+					}
+					//ensure the computation is completed before we continue typing
 					session.GetComputedItems (CancellationToken.None);
+					LogTrace ("Session open");
 				}
+			} else{
+				LogTrace ("Session not open");
 			}
+		}
+
+		const string TraceID = "CommandServiceExtensions.Trace";
+
+		static void LogTrace(string message) => Console.WriteLine ($"{TraceID}: {message}");
+
+		static void RegisterTraceHandlers (IAsyncCompletionSession session)
+		{
+			if (session.Properties.TryGetProperty (TraceID, out bool hasHandler)) {
+				return;
+			}
+
+			session.Properties.AddProperty (TraceID, true);
+			session.Dismissed += (s, e) => {
+				LogTrace ($"Session dismissed:\n{Environment.StackTrace}");
+				LogTrace (Environment.StackTrace);
+			};
+			session.ItemCommitted += (s, e) => {
+				LogTrace ($"Session committed '{e.Item.InsertText}':\n{Environment.StackTrace}");
+			};
+			session.ItemsUpdated += (s, e) => {
+				LogTrace ($"Session updated");
+			};
 		}
 
 		static Action Noop { get; } = new Action (() => { });

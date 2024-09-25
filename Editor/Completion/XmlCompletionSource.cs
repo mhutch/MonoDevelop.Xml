@@ -32,6 +32,15 @@ namespace MonoDevelop.Xml.Editor.Completion
 {
 	public abstract partial class XmlCompletionSource<TCompletionTriggerContext> : IAsyncCompletionSource where TCompletionTriggerContext : XmlCompletionTriggerContext
 	{
+		/// <summary>
+		/// Enables logging of additional trace information to debug nondeterministic test failures
+		/// </summary>
+		public static bool EnableDebugTrace { get; set; }
+
+		const string TraceID = "XmlCompletionSource.Trace";
+
+		protected static void LogTrace(string message) => Console.WriteLine ($"{TraceID}: {message}");
+
 		protected XmlParserProvider XmlParserProvider { get; }
 
 		protected ITextView TextView { get; }
@@ -60,10 +69,21 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 		async Task<CompletionContext> GetCompletionContextAsyncInternal (IAsyncCompletionSession session, CompletionTrigger trigger, SnapshotPoint triggerLocation, SnapshotSpan applicableToSpan, CancellationToken token)
 		{
+			if (EnableDebugTrace) {
+				LogTrace ($"GetCompletionContextAsyncInternal entered'");
+			}
+
 			var spineParser = GetSpineParser (triggerLocation);
 			var triggerContext = CreateTriggerContext (session, trigger, spineParser, triggerLocation, applicableToSpan);
 
+			if (EnableDebugTrace) {
+				LogTrace ($"GetCompletionContextAsyncInternal got trigger {triggerContext.XmlTriggerKind}");
+			}
+
 			if (!triggerContext.IsSupportedTriggerReason) {
+				if (EnableDebugTrace) {
+					LogTrace ($"GetCompletionContextAsyncInternal exited with unsupported trigger reason");
+				}
 				return CompletionContext.Empty;
 			}
 
@@ -71,19 +91,33 @@ namespace MonoDevelop.Xml.Editor.Completion
 
 			var tasks = GetCompletionTasks (triggerContext, token).ToList ();
 
+			if (EnableDebugTrace) {
+				LogTrace ($"GetCompletionContextAsyncInternal got {tasks.Count} completion tasks");
+			}
+
 			await Task.WhenAll (tasks).ConfigureAwait (false);
 
 			var allItems = ImmutableArray<CompletionItem>.Empty;
 			foreach (var task in tasks) {
 #pragma warning disable VSTHRD103 // Call async methods when in an async method
 				if (task.Result is IList<CompletionItem> taskItems && taskItems.Count > 0) {
+					if (EnableDebugTrace) {
+						LogTrace ($"GetCompletionContextAsyncInternal: task returned {taskItems.Count} items");
+					}
 					allItems = allItems.AddRange (taskItems);
 				}
 #pragma warning restore VSTHRD103 // Call async methods when in an async method
 			}
 
 			if (allItems.IsEmpty) {
+				if (EnableDebugTrace) {
+					LogTrace ($"GetCompletionContextAsyncInternal Exited: no items");
+				}
 				return CompletionContext.Empty;
+			}
+
+			if (EnableDebugTrace) {
+				LogTrace ($"GetCompletionContextAsyncInternal Exited with {allItems.Length} items");
 			}
 
 			return new CompletionContext (allItems, null, InitialSelectionHint.SoftSelection);
