@@ -117,6 +117,7 @@ namespace MonoDevelop.Xml.Editor.Parsing
 
 		protected virtual void Dispose (bool disposing)
 		{
+			currentOperation?.Cancel();
 		}
 
 		~BackgroundProcessor () => Dispose (false);
