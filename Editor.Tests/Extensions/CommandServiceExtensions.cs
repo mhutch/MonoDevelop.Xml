@@ -64,15 +64,34 @@ namespace MonoDevelop.Xml.Editor.Tests.Extensions
 				throw new InvalidOperationException ($"No handler available for `{typeof (T)}`");
 			}
 
+			// There is a race here where a completion session may have triggered on the UI thread
+			// but the task to compute the completion items is still running. This can cause the
+			// completion to be dismissed before the items are computed.
+			//
+			// We mitigate this by checking if a session is open and attempting to wait for it.
 			if (textView != null) {
 				if (textView.Properties.TryGetProperty (typeof (IAsyncCompletionSession), out IAsyncCompletionSession session)) {
 					if (EnableDebugTrace) {
 						LogTrace ("Session open");
 						RegisterTraceHandlers (session);
 					}
-					//ensure the computation is completed before we continue typing
+
+					// The first time we see the session, wait for a short time to allow it to initialize,
+					// otherwise completion will dismiss via TryDismissSafelyAsync if the snapshot is updated
+					// before the session is initialized.
+					//
+					// This wait is not necessary on my local machine, but it mitigates nondeterministic
+					// failures on GitHub Actions CI.
+					//
+					// Note that polling IAsyncCompletionSessionOperations.IsStarted does not help.
+					if (IsGithubActions && !session.Properties.TryGetProperty (HasWaitedForCompletionToInitializeKey, out bool hasWaited)) {
+						session.Properties.AddProperty (HasWaitedForCompletionToInitializeKey, true);
+						Thread.Sleep (500);
+					}
+
+					// Block until the computation is updated before we run more actions. This makes the
+					// test reliable on my local machine.
 					session.GetComputedItems (CancellationToken.None);
-					LogTrace ("Session open");
 				}
 			} else{
 				LogTrace ("Session not open");
@@ -80,6 +99,10 @@ namespace MonoDevelop.Xml.Editor.Tests.Extensions
 		}
 
 		const string TraceID = "CommandServiceExtensions.Trace";
+
+		static readonly object HasWaitedForCompletionToInitializeKey = new();
+
+		static readonly bool IsGithubActions = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") != null;
 
 		static void LogTrace(string message) => Console.WriteLine ($"{TraceID}: {message}");
 
