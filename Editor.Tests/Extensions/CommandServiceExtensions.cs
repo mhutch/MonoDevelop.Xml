@@ -22,6 +22,7 @@ namespace MonoDevelop.Xml.Editor.Tests.Extensions
 					Enter (commandService);
 					break;
 				default:
+					System.Console.WriteLine($"Typing '{c}'");
 					commandService.CheckAndExecute ((v, b) => new TypeCharCommandArgs (v, b, c));
 					break;
 				}
@@ -50,7 +51,10 @@ namespace MonoDevelop.Xml.Editor.Tests.Extensions
 			if (textView != null) {
 				if (textView.Properties.TryGetProperty (typeof (IAsyncCompletionSession), out IAsyncCompletionSession session)) {
 					session.GetComputedItems (CancellationToken.None);
+					Console.WriteLine("Session open");
 				}
+			} else{
+				Console.WriteLine("Session not open");
 			}
 		}
 
