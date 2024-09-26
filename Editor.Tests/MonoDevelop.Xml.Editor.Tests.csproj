@@ -5,6 +5,16 @@
     <NUnitDisableSupportAssemblies>true</NUnitDisableSupportAssemblies>
   </PropertyGroup>
 
+  <!-- always build tests on net48, but only try to run tests on net48 when on windows -->
+  <PropertyGroup Condition="'$(TargetFramework)'=='net48' and !$([MSBuild]::IsOSPlatform('Windows'))">
+    <TestProject>False</TestProject>
+    <IsTestProject>False</IsTestProject>
+  </PropertyGroup>
+
+  <!-- build the VS Editor tests on all platforms, but only run them on windows -->
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Core\MonoDevelop.Xml.Core.csproj" />
     <ProjectReference Include="..\Core.Tests\MonoDevelop.Xml.Core.Tests.csproj" />
@@ -22,11 +32,11 @@
     <None Include="Schema\XmlSchemaNamespaceTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="NUnit3TestAdapter" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" />
     <PackageReference Include="NUnit" />
     <PackageReference Include="NUnit.Analyzers" />
-    <PackageReference Include="NUnit3TestAdapter" />
     <PackageReference Include="Microsoft.VisualStudio.ImageCatalog" />
     <PackageReference Include="Microsoft.VisualStudio.Language.Intellisense" />
     <PackageReference Include="Microsoft.VisualStudio.Language.StandardClassification" />

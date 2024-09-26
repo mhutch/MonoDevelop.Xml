@@ -515,6 +515,13 @@ namespace MonoDevelop.Xml.Tests.Parser
 			using var sr = new StreamReader (ResourceManager.GetXhtmlStrictSchema ());
 			var docTxt = sr.ReadToEnd ();
 
+			SpineParserRecovery (docTxt, 1127391);
+		}
+
+		[TestCase("<eee>foo\\</eee>", 25)]
+		[TestCase("<eee bar=\"1\" baz=\"hello\" />", 130)]
+		public void SpineParserRecovery (string docTxt, int expectedDelta)
+		{
 			var rootState = CreateRootState ();
 			var treeParser = new XmlTreeParser (rootState);
 			foreach (char c in docTxt) {
@@ -530,7 +537,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 				char c = docTxt[i];
 				spineParser.Push (c);
 
-				var recoveredParser = XmlSpineParser.FromDocumentPosition (rootState, doc, i).AssertNotNull ();
+				var recoveredParser = XmlSpineParser.FromDocumentPosition (rootState, doc, spineParser.Position).AssertNotNull ();
 				var delta = i - recoveredParser.Position;
 				totalNotRecovered += delta;
 
@@ -542,12 +549,14 @@ namespace MonoDevelop.Xml.Tests.Parser
 				AssertEqual (spineParser.GetContext (), recoveredParser.GetContext ());
 			}
 
+			/*
 			int total = docTxt.Length * docTxt.Length / 2;
 			float recoveryRate = 1f - totalNotRecovered / (float)total;
 			TestContext.WriteLine ($"Recovered {(recoveryRate * 100f):F2}%");
+			*/
 
 			// check it never regresses
-			Assert.LessOrEqual (totalNotRecovered, 1118088);
+			Assert.LessOrEqual (totalNotRecovered, expectedDelta);
 		}
 
 		[TestCase ("<r>\r\n<a e='v' />\r\n</r>", "<r>\r\n<a e='v' /\r\n</r>")]
@@ -574,7 +583,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 				char c = docTxt[i];
 				spineParser.Push (c);
 
-				var recoveredParser = XmlSpineParser.FromDocumentPosition (rootState, doc, Math.Min (i, maxCompat)).AssertNotNull ();
+				var recoveredParser = XmlSpineParser.FromDocumentPosition (rootState, doc, Math.Min (i, maxCompat));
 
 				var end = Math.Min (i + 1, docTxt.Length);
 				for (int j = recoveredParser.Position; j < end; j++) {

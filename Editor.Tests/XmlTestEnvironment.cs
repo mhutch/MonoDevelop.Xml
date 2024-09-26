@@ -114,7 +114,18 @@ namespace MonoDevelop.Xml.Editor.Tests
 			typeof (XmlTestEnvironment).Assembly.Location
 		};
 
-		protected virtual bool ShouldIgnoreCompositionError (string error) => false;
+		// ignore errors we expect to happen in the test composition
+		protected virtual bool ShouldIgnoreCompositionError (string error)
+			=> error.IndexOf ("Contract name: Microsoft.VisualStudio.Text.SpellChecker.ISpellCheckService", StringComparison.Ordinal) > -1
+				|| error.IndexOf ("Contract name: Microsoft.VisualStudio.Shell.ServiceBroker.SVsFullAccessServiceBroker", StringComparison.Ordinal) > -1
+				|| error.IndexOf ("Contract name: Microsoft.VisualStudio.Text.Editor.IObscuringTipManager", StringComparison.Ordinal) > -1
+				|| error.IndexOf ("Contract name: Microsoft.VisualStudio.Text.Editor.IAudioProvider", StringComparison.Ordinal) > -1
+				|| error.IndexOf ("Contract name: Microsoft.VisualStudio.Audio.IAudioPlayer", StringComparison.Ordinal) > -1
+				|| error.IndexOf ("Contract name: Microsoft.VisualStudio.Text.Editor.ErrorList.ITaskList", StringComparison.Ordinal) > -1
+				|| error.IndexOf ("Contract name: Microsoft.VisualStudio.Text.Editor.ErrorList.IErrorList", StringComparison.Ordinal) > -1
+				|| error.IndexOf ("Contract name: Microsoft.ServiceHub.Framework.ServiceMoniker", StringComparison.Ordinal) > -1
+				|| error.IndexOf ("Contract name: Microsoft.VisualStudio.Text.Structure.StructureContextFactory", StringComparison.Ordinal) > -1
+				|| error.IndexOf ("Contract name: Microsoft.VisualStudio.Text.BrokeredServices.Implementation.Diagnostics.DiagnosticReporter", StringComparison.Ordinal) > -1;
 
 		protected virtual void HandleError (object? source, Exception ex)
 		{

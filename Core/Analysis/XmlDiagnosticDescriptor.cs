@@ -13,35 +13,34 @@ namespace MonoDevelop.Xml.Analysis
 		public string Title { get; }
 
 		[StringSyntax (StringSyntaxAttribute.CompositeFormat)]
-		public string? Message { get; }
+		public string? MessageFormat { get; }
 		public XmlDiagnosticSeverity Severity { get; }
 
-		public XmlDiagnosticDescriptor (string id, string title, [StringSyntax (StringSyntaxAttribute.CompositeFormat)] string? message, XmlDiagnosticSeverity severity)
+		public XmlDiagnosticDescriptor (string id, string title, [StringSyntax (StringSyntaxAttribute.CompositeFormat)] string? messageFormat, XmlDiagnosticSeverity severity)
 		{
 			Title = title ?? throw new ArgumentNullException (nameof (title));
 			Id = id ?? throw new ArgumentNullException (nameof (id));
-			Message = message;
+			MessageFormat = messageFormat;
 			Severity = severity;
 		}
 
 		public XmlDiagnosticDescriptor (string id, string title, XmlDiagnosticSeverity severity)
 			: this (id, title, null, severity) { }
 
-		string? combinedMsg;
-
-		internal string GetFormattedMessage (object[]? args)
+		internal string GetFormattedMessageWithTitle (object[]? messageArgs)
 		{
 			try {
-				combinedMsg ??= (combinedMsg = Title + Environment.NewLine + Message);
-				if (args != null && args.Length > 0) {
-					return string.Format (combinedMsg, args);
-				}
+				string? message = messageArgs?.Length > 0 && MessageFormat is string format
+					? string.Format (MessageFormat, messageArgs)
+					: MessageFormat;
+				return string.IsNullOrEmpty (message)
+					? Title
+					: Title + Environment.NewLine + message;
 			} catch (FormatException ex) {
 				// this is likely to be called from somewhere other than where the diagnostic was constructed
 				// so ensure the error has enough info to track it down
 				throw new FormatException ($"Error formatting message for diagnostic {Id}", ex);
 			}
-			return combinedMsg;
 		}
 	}
 }

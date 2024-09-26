@@ -29,7 +29,7 @@ namespace MonoDevelop.Xml.Editor.Tests.Commands
 			return this.TestCommands (
 				sourceText,
 				expectedText,
-				(s) => s.Type (typeChars),
+				EditorAction.Type (typeChars),
 				caretMarkerChar: '|',
 				initialize: (ITextView tv) => {
 					tv.Options.SetOptionValue (XmlOptions.AutoInsertClosingTag, true);

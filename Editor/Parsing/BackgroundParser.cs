@@ -43,7 +43,7 @@ namespace MonoDevelop.Xml.Editor.Parsing
 				Operation op = (Operation)state!;
 				try {
 					// op.Output accesses the task.Result, throwing any exceptions
-					op.Processor.OnOperationCompleted (op.Input, op.Output);
+					op.Processor.OnOperationCompleted (op.Input, op.Output!); // output only returns null if task is not completed
 					op.Processor.lastSuccessfulOperation = op;
 				} catch (Exception eventException) {
 					op.Processor.OnUnhandledParseError (eventException);
@@ -65,7 +65,7 @@ namespace MonoDevelop.Xml.Editor.Parsing
 		{
 		}
 
-		void LastDitchLog (Exception ex)
+		static void LastDitchLog (Exception ex)
 		{
 			if (System.Diagnostics.Debugger.IsAttached) {
 				System.Diagnostics.Debugger.Break ();
@@ -80,7 +80,7 @@ namespace MonoDevelop.Xml.Editor.Parsing
 		/// </summary>
 		protected virtual void OnUnhandledParseError (Exception ex)
 		{
-			LastDitchLog (ex);
+			BackgroundProcessor<TInput, TOutput>.LastDitchLog (ex);
 		}
 
 		Operation? currentOperation;
@@ -117,6 +117,7 @@ namespace MonoDevelop.Xml.Editor.Parsing
 
 		protected virtual void Dispose (bool disposing)
 		{
+			currentOperation?.Cancel();
 		}
 
 		~BackgroundProcessor () => Dispose (false);

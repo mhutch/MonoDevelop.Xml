@@ -225,22 +225,23 @@ namespace MonoDevelop.Xml.Parser
 		/// </summary>
 		/// <param name="parser">A spine parser. Its state will not be modified.</param>
 		/// <param name="text">The text snapshot corresponding to the parser.</param>
-		public static bool TryGetNodePath (this XmlSpineParser parser, ITextSource text, [NotNullWhen (true)] out List<XObject>? nodePath, int maximumReadahead = DEFAULT_READAHEAD_LIMIT, CancellationToken cancellationToken = default)
+		/// <param name="nodePath">The node path. If the method returns false, the maximum readahead was reached, and the deepest node will have an incomplete name.</param>
+		/// <param name="maximumReadahead">The maximum number of characters to read ahead when completing the name of the deepest node.</param>
+		/// <returns>True if the name of the deepest node could be completed</returns>
+		public static bool TryGetNodePath (this XmlSpineParser parser, ITextSource text, out List<XObject> nodePath, int maximumReadahead = DEFAULT_READAHEAD_LIMIT, CancellationToken cancellationToken = default)
 		{
-			var path = parser.GetPath ();
+			nodePath = parser.GetPath ();
 
 			//complete last node's name without altering the parser state
-			int lastIdx = path.Count - 1;
-			if (parser.CurrentState is XmlNameState && path[lastIdx] is INamedXObject) {
+			int lastIdx = nodePath.Count - 1;
+			if (parser.CurrentState is XmlNameState && nodePath[lastIdx] is INamedXObject) {
 				if (!TryGetCompleteName (parser, text, out XName completeName, maximumReadahead, cancellationToken)) {
-					nodePath = null;
 					return false;
 				}
-				var obj = path[lastIdx] = path[lastIdx].ShallowCopy ();
+				var obj = nodePath[lastIdx] = nodePath[lastIdx].ShallowCopy ();
 				((INamedXObject)obj).Name = completeName;
 			}
 
-			nodePath = path;
 			return true;
 		}
 

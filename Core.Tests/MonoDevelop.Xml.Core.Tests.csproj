@@ -1,9 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0</TargetFrameworks>
-    <!-- conditionally only build net48 on !windows so nunit doesn't try to run them -->
-    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('Windows'))">net48;net8.0</TargetFrameworks>
+    <TargetFrameworks>net48;net8.0</TargetFrameworks>
     <NUnitDisableSupportAssemblies>true</NUnitDisableSupportAssemblies>
     <RootNamespace>MonoDevelop.Xml.Tests</RootNamespace>
   </PropertyGroup>
@@ -11,6 +9,12 @@
   <PropertyGroup>
     <Nullable>enable</Nullable>
     <Nullable Condition="$(TargetFramework)=='net48'">annotations</Nullable>
+  </PropertyGroup>
+
+  <!-- always build tests on net48, but only try to run tests on net48 when on windows -->
+  <PropertyGroup Condition="'$(TargetFramework)'=='net48' and !$([MSBuild]::IsOSPlatform('Windows'))">
+    <TestProject>False</TestProject>
+    <IsTestProject>False</IsTestProject>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,11 +30,12 @@
   <ItemGroup>
     <ProjectReference Include="..\Core\MonoDevelop.Xml.Core.csproj" />
   </ItemGroup>
+
   <ItemGroup>
+    <PackageReference Include="NUnit3TestAdapter" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="NUnit" />
     <PackageReference Include="NUnit.Analyzers" />
-    <PackageReference Include="NUnit3TestAdapter" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" />
     <!-- upgrade vulnerable transitive dependencies -->
     <PackageReference Include="System.Text.Json" />

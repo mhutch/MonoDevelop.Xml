@@ -58,10 +58,15 @@ namespace MonoDevelop.Xml.Parser
 		/// the parser is not guaranteed but will not exceed <paramref name="maximumPosition" />.
 		/// </summary>
 		/// <returns></returns>
-		public static XmlSpineParser? FromDocumentPosition (XmlRootState stateMachine, XDocument xdocument, int maximumPosition)
-			=> xdocument.FindAtOrBeforeOffset (maximumPosition) is XObject obj
-				&& stateMachine.TryRecreateState (ref obj, maximumPosition) is XmlParserContext ctx
-			? new XmlSpineParser (ctx, stateMachine)
-			: null;
+		public static XmlSpineParser FromDocumentPosition (XmlRootState stateMachine, XDocument xdocument, int maximumPosition)
+		{
+			// Recovery must be based on the node before the target position.
+			// The state for the node at the position won't be entered until the character at (i.e. after) the position is processed.
+			var node = maximumPosition == 0? xdocument : xdocument.FindAtOrBeforeOffset (maximumPosition - 1);
+			if (node is XObject obj && stateMachine.TryRecreateState (ref obj, maximumPosition) is XmlParserContext ctx) {
+				return new XmlSpineParser (ctx, stateMachine);
+			}
+			return new XmlSpineParser (stateMachine); ;
+		}
 	}
 }

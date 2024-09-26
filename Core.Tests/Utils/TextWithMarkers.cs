@@ -4,6 +4,7 @@
 #nullable enable
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
@@ -12,12 +13,18 @@ using MonoDevelop.Xml.Dom;
 
 namespace MonoDevelop.Xml.Tests.Utils;
 
+public record struct TextMarkerPosition(int Offset, int Line, int Column)
+{
+	public static implicit operator int (TextMarkerPosition p) => p.Offset;
+	public static implicit operator TextSpan (TextMarkerPosition p) => new (p.Offset, 0);
+}
+
 /// <summary>
 /// Represents text with marked spans and/or positions
 /// </summary>
 public class TextWithMarkers
 {
-	TextWithMarkers (string text, char[] markerChars, List<int>[] markedPositionsById)
+	TextWithMarkers (string text, char[] markerChars, List<TextMarkerPosition>[] markedPositionsById)
 	{
 		Text = text;
 		this.markerChars = markerChars;
@@ -25,7 +32,7 @@ public class TextWithMarkers
 	}
 
 	readonly char[] markerChars;
-	readonly List<int>[] markedPositionsById;
+	readonly List<TextMarkerPosition>[] markedPositionsById;
 
 	/// <summary>
 	/// The text with the marker characters removed
@@ -53,7 +60,13 @@ public class TextWithMarkers
 	/// Gets all the marked positions for the specified <paramref name="markerChar"/>
 	/// </summary>
 	/// <param name="markerChar">Which marker character to use. May be null if only one marker character was specified when creating the <see cref="TextWithMarkers"/></param>
-	public IList<int> GetMarkedPositions (char? markerChar = null) => markedPositionsById[GetMarkerId (markerChar)];
+	public IReadOnlyList<TextMarkerPosition> GetMarkedLineColPositions (char? markerChar = null) => markedPositionsById[GetMarkerId (markerChar)];
+
+	/// <summary>
+	/// Gets all the marked positions for the specified <paramref name="markerChar"/>
+	/// </summary>
+	/// <param name="markerChar">Which marker character to use. May be null if only one marker character was specified when creating the <see cref="TextWithMarkers"/></param>
+	public IReadOnlyList<int> GetMarkedPositions (char? markerChar = null) => new PositionList(markedPositionsById[GetMarkerId (markerChar)]);
 
 	/// <summary>
 	/// Gets the single position marked with the specified <paramref name="markerChar"/>
@@ -73,10 +86,27 @@ public class TextWithMarkers
 	}
 
 	/// <summary>
+	/// Gets the single position marked with the specified <paramref name="markerChar"/>
+	/// </summary>
+	/// <param name="markerChar">Which marker character to use. May be null if only one marker character was specified when creating the <see cref="TextWithMarkers"/></param>
+	/// <returns>The position</returns>
+	/// <exception cref="TextWithMarkersMismatchException">Did not find exactly one marker for <paramref name="markerChar"/></exception>
+	/// <exception cref="ArgumentException">The <paramref name="markerChar"/> was not specified when creating the <see cref="TextWithMarkers"/></exception>
+	/// <exception cref="ArgumentException">The <paramref name="markerChar"/> was null but multiple markers were specified when creating the <see cref="TextWithMarkers"/></exception>
+
+	public TextMarkerPosition GetMarkedLineColPosition (char? markerChar = null)
+	{
+		if (!TryGetMarkedLineColPosition (out TextMarkerPosition position, markerChar)) {
+			ThrowExactMismatchException (markerChar, 1, "position");
+		}
+		return position;
+	}
+
+	/// <summary>
 	/// Tries to get the single position marked with the specified <paramref name="markerChar"/>.
 	/// </summary>
 	/// <param name="markerChar">Which marker character to use. May be null if only one marker character was specified when creating the <see cref="TextWithMarkers"/></param>
-	/// <param name="span">The position, if this method returned <c>true</c>, otherwise <c>default</c></param>
+	/// <param name="position">The position, if this method returned <c>true</c>, otherwise <c>default</c></param>
 	/// <returns>Whether a single position was found for <paramref name="markerChar"/>. More than one marker will cause an exception to be thrown</returns>
 	/// <remarks>The presence of more than one marker will cause an exception to be thrown</remarks>
 	/// <exception cref="TextWithMarkersMismatchException">More than one marker was found for <paramref name="markerChar"/></exception>
@@ -84,6 +114,27 @@ public class TextWithMarkers
 	/// <exception cref="ArgumentException">The <paramref name="markerChar"/> was null but multiple markers were specified when creating the <see cref="TextWithMarkers"/></exception>
 
 	public bool TryGetMarkedPosition (out int position, char? markerChar = null)
+	{
+		if (TryGetMarkedLineColPosition(out var p, markerChar)) {
+			position = p;
+			return true;
+		}
+		position = default;
+		return false;
+	}
+
+	/// <summary>
+	/// Tries to get the single position marked with the specified <paramref name="markerChar"/>.
+	/// </summary>
+	/// <param name="markerChar">Which marker character to use. May be null if only one marker character was specified when creating the <see cref="TextWithMarkers"/></param>
+	/// <param name="position">The position, if this method returned <c>true</c>, otherwise <c>default</c></param>
+	/// <returns>Whether a single position was found for <paramref name="markerChar"/>. More than one marker will cause an exception to be thrown</returns>
+	/// <remarks>The presence of more than one marker will cause an exception to be thrown</remarks>
+	/// <exception cref="TextWithMarkersMismatchException">More than one marker was found for <paramref name="markerChar"/></exception>
+	/// <exception cref="ArgumentException">The <paramref name="markerChar"/> was not specified when creating the <see cref="TextWithMarkers"/></exception>
+	/// <exception cref="ArgumentException">The <paramref name="markerChar"/> was null but multiple markers were specified when creating the <see cref="TextWithMarkers"/></exception>
+
+	public bool TryGetMarkedLineColPosition (out TextMarkerPosition position, char? markerChar = null)
 	{
 		var id = GetMarkerId (markerChar);
 		var positions = markedPositionsById[id];
@@ -119,10 +170,27 @@ public class TextWithMarkers
 	}
 
 	/// <summary>
-	/// Tries to get the span marked with the specified <paramref name="markerChar"/>.
+	/// Gets the single span marked with the specified <paramref name="markerChar"/>.
 	/// </summary>
 	/// <param name="markerChar">Which marker character to use. May be null if only one marker character was specified when creating the <see cref="TextWithMarkers"/></param>
+	/// <param name="allowZeroWidthSingleMarker">Whether to allow use of a single marker character when the span is zero-width</param>
+	/// <returns>The <see cref="TextMarkerPosition"/> representing the start and end of the marked span</returns>
+	/// <exception cref="TextWithMarkersMismatchException">Did not find exactly one span (two markers) for <paramref name="markerChar"/></exception>
+	/// <exception cref="ArgumentException">The <paramref name="markerChar"/> was not specified when creating the <see cref="TextWithMarkers"/></exception>
+	/// <exception cref="ArgumentException">The <paramref name="markerChar"/> was null but multiple markers were specified when creating the <see cref="TextWithMarkers"/></exception>
+	public (TextMarkerPosition start, TextMarkerPosition end) GetMarkedLineColSpan (char? markerChar = null, bool allowZeroWidthSingleMarker = false)
+	{
+		if (!TryGetMarkedLineColSpan (out var start, out var end, markerChar, allowZeroWidthSingleMarker)) {
+			ThrowExactMismatchException (markerChar, 2, "span");
+		}
+		return (start, end);
+	}
+
+	/// <summary>
+	/// Tries to get the span marked with the specified <paramref name="markerChar"/>.
+	/// </summary>
 	/// <param name="span">The <see cref="TextSpan"/> representing the marked span, if this method returned <c>true</c>, otherwise <c>default</c></param>
+	/// <param name="markerChar">Which marker character to use. May be null if only one marker character was specified when creating the <see cref="TextWithMarkers"/></param>
 	/// <param name="allowZeroWidthSingleMarker">Whether to allow use of a single marker character when the span is zero-width</param>
 	/// <returns>Whether a single span was found for <paramref name="markerChar"/></returns>
 	/// <exception cref="TextWithMarkersMismatchException">Did not find exactly zero or one spans (zero or two markers) for <paramref name="markerChar"/></exception>
@@ -130,24 +198,45 @@ public class TextWithMarkers
 	/// <exception cref="ArgumentException">The <paramref name="markerChar"/> was null but multiple markers were specified when creating the <see cref="TextWithMarkers"/></exception>
 	public bool TryGetMarkedSpan (out TextSpan span, char? markerChar = null, bool allowZeroWidthSingleMarker = false)
 	{
+		if (TryGetMarkedLineColSpan(out var start, out var end, markerChar, allowZeroWidthSingleMarker)) {
+			span = TextSpan.FromBounds (start, end);
+			return true;
+		}
+
+		span = default;
+		return false;
+	}
+
+	/// <summary>
+	/// Tries to get the span marked with the specified <paramref name="markerChar"/>.
+	/// </summary>
+	/// <param name="start">The <see cref="TextMarkerPosition"/> representing the start of the marked span, if this method returned <c>true</c>, otherwise <c>default</c></param>
+	/// <param name="end">The <see cref="TextMarkerPosition"/> representing the end of the marked span, if this method returned <c>true</c>, otherwise <c>default</c></param>
+	/// <param name="markerChar">Which marker character to use. May be null if only one marker character was specified when creating the <see cref="TextWithMarkers"/></param>
+	/// <param name="allowZeroWidthSingleMarker">Whether to allow use of a single marker character when the span is zero-width</param>
+	/// <returns>Whether a single span was found for <paramref name="markerChar"/></returns>
+	/// <exception cref="TextWithMarkersMismatchException">Did not find exactly zero or one spans (zero or two markers) for <paramref name="markerChar"/></exception>
+	/// <exception cref="ArgumentException">The <paramref name="markerChar"/> was not specified when creating the <see cref="TextWithMarkers"/></exception>
+	/// <exception cref="ArgumentException">The <paramref name="markerChar"/> was null but multiple markers were specified when creating the <see cref="TextWithMarkers"/></exception>
+	public bool TryGetMarkedLineColSpan (out TextMarkerPosition start, out TextMarkerPosition end, char? markerChar = null, bool allowZeroWidthSingleMarker = false)
+	{
 		var id = GetMarkerId (markerChar);
 		var positions = markedPositionsById[id];
 
 		if (allowZeroWidthSingleMarker && positions.Count == 1) {
-			span = new TextSpan (positions[0], 0);
+			start = end = positions[0];
 			return true;
 		}
 
 		if (positions.Count == 2) {
-			int start = positions[0];
-			int end = positions[1];
-			span = TextSpan.FromBounds (start, end);
+			start = positions[0];
+			end = positions[1];
 			return true;
 		} else if (positions.Count > 2) {
-			ThrowZeroOrNMismatchException(markerChar, 2, "span");
+			ThrowZeroOrNMismatchException (markerChar, 2, "span");
 		}
 
-		span = default;
+		start = end = default;
 		return false;
 	}
 
@@ -178,6 +267,25 @@ public class TextWithMarkers
 	}
 
 	/// <summary>
+	/// Gets the single span marked with the specified <paramref name="markerChar"/>.
+	/// </summary>
+	/// <param name="spanStartMarker">The marker character that indicates the start of the span</param>
+	/// <param name="spanEndMarker">The marker character that indicates the end of the span</param>
+	/// <returns>The <see cref="TextSpan"/> representing the marked span</returns>
+	/// <exception cref="TextWithMarkersMismatchException">Did not find exactly one span</exception>
+	/// <exception cref="TextWithMarkersMismatchException">The number of <paramref name="spanStartMarker"/> characters did not match the number of <paramref name="spanEndMarker"/> characters</exception>
+	/// <exception cref="TextWithMarkersMismatchException">The span end marker was found before the start marker</exception>
+	/// <exception cref="ArgumentException">The <paramref name="spanStartMarker"/> or <paramref name="spanEndMarker"/> was not specified when creating the <see cref="TextWithMarkers"/></exception>
+	/// <exception cref="ArgumentException">Cannot use same character as both start and end markers with this overload</exception>
+	public (TextMarkerPosition start, TextMarkerPosition end) GetMarkedLineColSpan (char spanStartMarker, char spanEndMarker)
+	{
+		if (!TryGetMarkedLineColSpan (out var start, out var end, spanStartMarker, spanEndMarker)) {
+			ThrowExactSpanMismatchException (spanStartMarker, spanEndMarker, 1);
+		}
+		return (start, end);
+	}
+
+	/// <summary>
 	/// Tries to get the span marked with the specified <paramref name="spanStartMarker"/> and <paramref name="spanEndMarker"/>
 	/// </summary>
 	/// <param name="spanStartMarker">The marker character that indicates the start of the span</param>
@@ -190,13 +298,35 @@ public class TextWithMarkers
 	/// <exception cref="ArgumentException">Cannot use same character as both start and end markers with this overload</exception>
 	public bool TryGetMarkedSpan (out TextSpan span, char spanStartMarker, char spanEndMarker)
 	{
+		if (TryGetMarkedLineColSpan (out var start, out var end, spanStartMarker, spanEndMarker)) {
+			span = TextSpan.FromBounds (start, end);
+			return true;
+		}
+
+		span = default;
+		return false;
+	}
+
+	/// <summary>
+	/// Tries to get the span marked with the specified <paramref name="spanStartMarker"/> and <paramref name="spanEndMarker"/>
+	/// </summary>
+	/// <param name="spanStartMarker">The marker character that indicates the start of the span</param>
+	/// <param name="spanEndMarker">The marker character that indicates the end of the span</param>
+	/// <returns>Whether a single span was found for the <paramref name="spanStartMarker"/> and <paramref name="spanEndMarker"/></returns>
+	/// <exception cref="TextWithMarkersMismatchException">Multiple spans were found, must be zero or one</exception>
+	/// <exception cref="TextWithMarkersMismatchException">The number of <paramref name="spanStartMarker"/> characters did not match the number of <paramref name="spanEndMarker"/> characters</exception>
+	/// <exception cref="TextWithMarkersMismatchException">A span end marker was found before the corresponding start marker</exception>
+	/// <exception cref="ArgumentException">The <paramref name="spanStartMarker"/> or <paramref name="spanEndMarker"/> was not specified when creating the <see cref="TextWithMarkers"/></exception>
+	/// <exception cref="ArgumentException">Cannot use same character as both start and end markers with this overload</exception>
+	public bool TryGetMarkedLineColSpan (out TextMarkerPosition start, out TextMarkerPosition end, char spanStartMarker, char spanEndMarker)
+	{
 		CheckStartEndMarkersDifferent (spanStartMarker, spanEndMarker);
 
-		var startPositions = GetMarkedPositions (spanStartMarker);
-		var endPositions = GetMarkedPositions (spanEndMarker);
+		var startPositions = GetMarkedLineColPositions (spanStartMarker);
+		var endPositions = GetMarkedLineColPositions (spanEndMarker);
 
 		if (startPositions.Count == 0 && endPositions.Count == 0) {
-			span = default;
+			start = end = default;
 			return false;
 		}
 
@@ -206,12 +336,11 @@ public class TextWithMarkers
 			ThrowZeroOrOneSpanMismatchException (spanStartMarker, spanEndMarker, startPositions);
 		}
 
-		int start = startPositions[0];
-		int end = endPositions[0];
+		start = startPositions[0];
+		end = endPositions[0];
 		if (end < start) {
 			ThrowEndBeforeStartMismatchException (spanStartMarker, start, spanEndMarker, end);
 		}
-		span = TextSpan.FromBounds (start, end);
 		return true;
 	}
 
@@ -254,8 +383,8 @@ public class TextWithMarkers
 	/// <exception cref="ArgumentException">The <paramref name="spanStartMarker"/> or <paramref name="spanEndMarker"/> was not specified when creating the <see cref="TextWithMarkers"/></exception>
 	public TextSpan[] GetMarkedSpans (char spanStartMarker, char spanEndMarker)
 	{
-		var startPositions = GetMarkedPositions (spanStartMarker);
-		var endPositions = GetMarkedPositions (spanEndMarker);
+		var startPositions = GetMarkedLineColPositions (spanStartMarker);
+		var endPositions = GetMarkedLineColPositions (spanEndMarker);
 
 		if (startPositions.Count != endPositions.Count) {
 			ThrowNonEqualMismatchException (spanStartMarker, startPositions, spanEndMarker, endPositions);
@@ -308,18 +437,29 @@ public class TextWithMarkers
 			}
 		}
 
-		var markerIndices = Array.ConvertAll (markerChars, c => new List<int> ());
+		var markerIndices = Array.ConvertAll (markerChars, c => new List<TextMarkerPosition> ());
 
 		var sb = new StringBuilder (textWithMarkers.Length);
 
+		int line = 0, col = 0;
+
 		for (int i = 0; i < textWithMarkers.Length; i++) {
 			var c = textWithMarkers[i];
+
 			int markerId = Array.IndexOf (markerChars, c);
 			if (markerId > -1) {
-				markerIndices[markerId].Add (sb.Length);
-			} else {
-				sb.Append (c);
+				markerIndices[markerId].Add (new (sb.Length, line, col));
+				continue;
 			}
+
+			if (c == '\n') {
+				line++;
+				col = 0;
+			} else {
+				col++;
+			}
+
+			sb.Append (c);
 		}
 
 		return new (sb.ToString (), markerChars, markerIndices);
@@ -339,17 +479,28 @@ public class TextWithMarkers
 			throw new ArgumentNullException (nameof (textWithMarkers));
 		}
 
-		var markerIndices = new List<int> ();
+		var markerIndices = new List<TextMarkerPosition> ();
 
 		var sb = new StringBuilder (textWithMarkers.Length);
 
+		int line = 0, col = 0;
+
 		for (int i = 0; i < textWithMarkers.Length; i++) {
 			var c = textWithMarkers[i];
+
 			if (c == markerChar) {
-				markerIndices.Add (sb.Length);
-			} else {
-				sb.Append (c);
+				markerIndices.Add (new (sb.Length, line, col));
+				continue;
 			}
+
+			if (c == '\n') {
+				line++;
+				col = 0;
+			} else {
+				col++;
+			}
+
+			sb.Append (c);
 		}
 
 		return new (sb.ToString (), [markerChar], [markerIndices]);
@@ -371,6 +522,21 @@ public class TextWithMarkers
 	}
 
 	/// <summary>
+	/// Extract a single marked position and marker-free text from a string with a single marker character
+	/// </summary>
+	/// <param name="textWithMarkers">The text with a marker character</param>
+	/// <param name="markerChar">The marker character</param>
+	/// <returns>A tuple with the marker-free text and the marked position</returns>
+	/// <exception cref="TextWithMarkersMismatchException">Did not find exactly one marker for <paramref name="markerChar"/></exception>
+	/// <exception cref="ArgumentNullException">The <paramref name="textWithMarker"/> was null</exception>
+	public static (string text, TextMarkerPosition position) ExtractSingleLineColPosition (string textWithMarker, char markerChar = '|')
+	{
+		var parsed = Parse (textWithMarker, markerChar);
+		var caret = parsed.GetMarkedLineColPosition (markerChar);
+		return (parsed.Text, caret);
+	}
+
+	/// <summary>
 	/// Extract a single marked span and marker-free text from a string with exactly two marker characters
 	/// </summary>
 	/// <param name="textWithMarkers">The text with marker characters</param>
@@ -384,6 +550,22 @@ public class TextWithMarkers
 		var parsed = Parse (textWithMarkers, markerChar);
 		var span = parsed.GetMarkedSpan (markerChar, allowZeroWidthSingleMarker);
 		return (parsed.Text, span);
+	}
+
+	/// <summary>
+	/// Extract a single marked span and marker-free text from a string with exactly two marker characters
+	/// </summary>
+	/// <param name="textWithMarkers">The text with marker characters</param>
+	/// <param name="markerChar">The marker character</param>
+	/// <param name="allowZeroWidthSingleMarker">Whether to allow use of a single marker character when the span is zero-width</param>
+	/// <returns>A tuple with the marker-free text and the marked span</returns>
+	/// <exception cref="TextWithMarkersMismatchException">Did not find exactly one span (two markers) for <paramref name="markerChar"/></exception>
+	/// <exception cref="ArgumentNullException">The <paramref name="textWithMarkers"/> was null</exception>
+	public static (string text, TextMarkerPosition start, TextMarkerPosition end) ExtractSingleLineColSpan (string textWithMarkers, char markerChar = '|', bool allowZeroWidthSingleMarker = false)
+	{
+		var parsed = Parse (textWithMarkers, markerChar);
+		var span = parsed.GetMarkedLineColSpan (markerChar, allowZeroWidthSingleMarker);
+		return (parsed.Text, span.start, span.end);
 	}
 
 	/// <summary>
@@ -430,9 +612,9 @@ public class TextWithMarkers
 	}
 
 	[DoesNotReturn]
-	void ThrowZeroOrOneSpanMismatchException (char startMarker, char endMarker, IList<int> startPositions)
+	void ThrowZeroOrOneSpanMismatchException (char startMarker, char endMarker, IReadOnlyList<TextMarkerPosition> startPositions)
 	{
-		throw new TextWithMarkersMismatchException ($"Expected zerone or one '{startMarker}' start marker and '{endMarker}' end marker characters for span, found {startPositions.Count}");
+		throw new TextWithMarkersMismatchException ($"Expected zero or one '{startMarker}' start marker and '{endMarker}' end marker characters for span, found {startPositions.Count}");
 	}
 
 	[DoesNotReturn]
@@ -450,9 +632,25 @@ public class TextWithMarkers
 	}
 
 	[DoesNotReturn]
-	void ThrowNonEqualMismatchException (char spanStartMarker, IList<int> startPositions, char spanEndMarker, IList<int> endPositions)
+	void ThrowNonEqualMismatchException (char spanStartMarker, IReadOnlyList<TextMarkerPosition> startPositions, char spanEndMarker, IReadOnlyList<TextMarkerPosition> endPositions)
 	{
 		throw new TextWithMarkersMismatchException ($"Expected number of '{spanStartMarker}' span start markers to equal number of '{spanEndMarker}' span end markers, found {startPositions.Count} != {endPositions.Count}");
+	}
+
+	struct PositionList (IReadOnlyList<TextMarkerPosition> inner) : IReadOnlyList<int>
+	{
+		public int this[int index] => inner[index].Offset;
+
+		public int Count => inner.Count;
+
+		public IEnumerator<int> GetEnumerator ()
+		{
+			foreach(var item in inner) {
+				yield return item.Offset;
+			}
+		}
+
+		IEnumerator IEnumerable.GetEnumerator () => GetEnumerator ();
 	}
 }
 
