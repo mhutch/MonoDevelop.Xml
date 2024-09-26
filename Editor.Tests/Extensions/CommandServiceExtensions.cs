@@ -3,12 +3,12 @@
 
 using System;
 using System.Threading;
+
 using Microsoft.VisualStudio.Commanding;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Editor.Commanding;
-using Microsoft.VisualStudio.Text.Editor.Commanding.Commands;
 
 namespace MonoDevelop.Xml.Editor.Tests.Extensions
 {
@@ -18,39 +18,6 @@ namespace MonoDevelop.Xml.Editor.Tests.Extensions
 		/// Enables logging of additional trace information to debug nondeterministic test failures
 		/// </summary>
 		public static bool EnableDebugTrace { get; set; }
-
-		public static void Type (this IEditorCommandHandlerService commandService, string text)
-		{
-			foreach (var c in text) {
-				switch (c) {
-				case '\n':
-					Enter (commandService);
-					break;
-				default:
-					if (EnableDebugTrace) {
-						LogTrace ($"Typing '{c}'");
-					}
-					commandService.CheckAndExecute ((v, b) => new TypeCharCommandArgs (v, b, c));
-					break;
-				}
-			}
-		}
-
-		public static void Enter (this IEditorCommandHandlerService commandService)
-		{
-			if (EnableDebugTrace) {
-				LogTrace ("Invoking return key");
-			}
-			commandService.CheckAndExecute ((v, b) => new ReturnKeyCommandArgs (v, b));
-		}
-
-		public static void InvokeCompletion (this IEditorCommandHandlerService commandService)
-		{
-			if (EnableDebugTrace) {
-				LogTrace ("Invoking completion");
-			}
-			commandService.CheckAndExecute ((v, b) => new InvokeCompletionListCommandArgs (v, b));
-		}
 
 		public static void CheckAndExecute<T> (
 			this IEditorCommandHandlerService commandService,
@@ -84,7 +51,7 @@ namespace MonoDevelop.Xml.Editor.Tests.Extensions
 					// failures on GitHub Actions CI.
 					//
 					// Note that polling IAsyncCompletionSessionOperations.IsStarted does not help.
-					if (IsGithubActions && !session.Properties.TryGetProperty (HasWaitedForCompletionToInitializeKey, out bool hasWaited)) {
+					if (IsGitHubActions && !session.Properties.TryGetProperty (HasWaitedForCompletionToInitializeKey, out bool hasWaited)) {
 						session.Properties.AddProperty (HasWaitedForCompletionToInitializeKey, true);
 						Thread.Sleep (500);
 					}
@@ -102,7 +69,7 @@ namespace MonoDevelop.Xml.Editor.Tests.Extensions
 
 		static readonly object HasWaitedForCompletionToInitializeKey = new();
 
-		static readonly bool IsGithubActions = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") != null;
+		static readonly bool IsGitHubActions = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") != null;
 
 		static void LogTrace(string message) => Console.WriteLine ($"{TraceID}: {message}");
 

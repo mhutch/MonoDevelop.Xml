@@ -77,6 +77,10 @@ namespace MonoDevelop.Xml.Editor.Tests.Extensions
 
 			foreach (var c in commands) {
 				c (commandService);
+
+				// yield to let things catch up
+				// and so we don't block the UI thread between the commands
+				await Task.Delay (20);
 			}
 
 			Assert.AreEqual (afterDocumentText, textView.TextBuffer.CurrentSnapshot.GetText ());
