@@ -32,6 +32,7 @@ using System.Xml.Schema;
 
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion;
+using Microsoft.VisualStudio.Text.Adornments;
 
 namespace MonoDevelop.Xml.Editor.Completion
 {
@@ -42,6 +43,8 @@ namespace MonoDevelop.Xml.Editor.Completion
 		readonly HashSet<string> names = new ();
 		readonly XmlNamespacePrefixMap nsMap;
 		readonly IAsyncCompletionSource source;
+
+		public bool IncludeBracket { get; set; }
 
 		public XmlSchemaCompletionBuilder (IAsyncCompletionSource source, XmlNamespacePrefixMap nsMap)
 		{
@@ -120,7 +123,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			if (!names.Add (name))
 				return this;
 
-			var item = new CompletionItem (name, source, XmlImages.Element);
+			var item = CreateItem (name, XmlImages.Element);
 			item.AddDocumentation (documentation);
 			items.Add (item);
 			return this;
@@ -139,7 +142,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 			if (!names.Add (name))
 				return this;
 
-			var item = new CompletionItem (name, source, XmlImages.Element);
+			var item = CreateItem (name, XmlImages.Element);
 			if (annotation is not null) {
 				item.AddDocumentation (annotation);
 			}
@@ -148,6 +151,22 @@ namespace MonoDevelop.Xml.Editor.Completion
 		}
 
 		public ImmutableArray<CompletionItem> GetItems () => ImmutableArray<CompletionItem>.Empty.AddRange (items);
+
+		CompletionItem CreateItem(string name, ImageElement image)
+		{
+			var item = new CompletionItem(
+				displayText: name,
+				source: source,
+				icon: image,
+				filters: [],
+				suffix: string.Empty,
+				insertText: IncludeBracket ? "<" + name : name,
+				sortText: name,
+				filterText: name,
+				attributeIcons: [])
+				.AddKind(XmlCompletionItemKind.Element);
+			return item;
+		}
 	}
 }
 
