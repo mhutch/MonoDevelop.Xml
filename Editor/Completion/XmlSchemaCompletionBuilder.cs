@@ -123,7 +123,6 @@ namespace MonoDevelop.Xml.Editor.Completion
 			if (!names.Add (name))
 				return this;
 
-			var item = new CompletionItem (name, source, XmlImages.Element);
 			var item = CreateItem (name, XmlImages.Element);
 			item.AddDocumentation (documentation);
 			items.Add (item);
@@ -143,7 +142,6 @@ namespace MonoDevelop.Xml.Editor.Completion
 			if (!names.Add (name))
 				return this;
 
-			var item = new CompletionItem (name, source, XmlImages.Element);
 			var item = CreateItem (name, XmlImages.Element);
 			if (annotation is not null) {
 				item.AddDocumentation (annotation);
