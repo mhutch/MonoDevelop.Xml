@@ -108,7 +108,7 @@ namespace MonoDevelop.Xml.Editor.Completion
 						foreach (XmlNode node in schemaDocumentation.Markup) {
 							var textNode = node as XmlText;
 							if (textNode != null && !string.IsNullOrEmpty (textNode.Data))
-								documentationBuilder.Append (textNode.Data);
+								documentationBuilder.Append (textNode.Data.Trim ());
 						}
 					}
 				}
