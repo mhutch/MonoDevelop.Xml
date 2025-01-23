@@ -20,7 +20,7 @@ public static class XmlFormattingOptions
 	public static readonly Option<int> SpacesBeforeAssignment = new ("xml_spaces_before_assignment", 0, true);
 	public static readonly Option<int> SpacesAfterAssignment = new ("xml_spaces_after_assignment", 0, true);
 
-	public static readonly Option<char> QuoteChar = new ("xml_quote_style", '"', new EditorConfigSerializer<char> (
+	public static readonly Option<char> QuoteChar = new ("xml_quote_style", '"', true, EditorConfigSerializer.Create (
 		str => str == "single" ? '\'' : '"',
 		val => val == '\'' ? "single" : "double"
 		));

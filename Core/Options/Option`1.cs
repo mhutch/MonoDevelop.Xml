@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace MonoDevelop.Xml.Options;
 
@@ -10,24 +11,17 @@ namespace MonoDevelop.Xml.Options;
 /// Some of these are read from .editorconfig, and others may be mapped to equivalent settings
 /// of the host IDE.
 /// </summary>
-public class Option<T>
+public class Option<T> : IOption
 {
-	public Option(string name, T defaultValue, bool isEditorConfigOption)
+	public Option(string name, T value, bool isEditorConfigOption, IEditorConfigSerializer<T>? serializer = null)
 	{
 		Name = name;
-		DefaultValue = defaultValue;
+		DefaultValue = value;
 		IsEditorConfigOption = isEditorConfigOption;
+		Serializer = serializer ?? EditorConfigSerializer.Default<T>();
 	}
 
-	public Option(string name, T value, EditorConfigSerializer<T>? serializer = null) : this(name, value, true)
-	{
-		Serializer = serializer;
-	}
-
-	/// <summary>
-	/// A unique name for the option. If this is an editorconfig option, this will be used as the name
-	/// in .editorconfig.
-	/// </summary>
+	/// <<inheritdoc/>
 	public string Name { get; }
 
 	/// <summary>
@@ -36,15 +30,15 @@ public class Option<T>
 	/// </summary>
 	public T DefaultValue { get; }
 
-	/// <summary>
-	/// Whether this option will be read from .editorconfig.
-	/// </summary>
+	/// <inheritdoc/>
 	public bool IsEditorConfigOption { get; }
 
 	/// <summary>
-	/// Optionally override the EditorConfig serialization behavior
+	/// Deserialize the option value to/from an editorconfig string
 	/// </summary>
-	public EditorConfigSerializer<T>? Serializer { get; }
-}
+	public IEditorConfigSerializer<T> Serializer { get; }
 
-public record EditorConfigSerializer<T> (Func<string, T> Deserialize, Func<T, string> Serialize);
+	public Type Type => typeof(T);
+
+	IEditorConfigSerializer IOption.Serializer => Serializer;
+}

@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
+using System.Text;
 
 namespace MonoDevelop.Xml.Options;
 
@@ -15,17 +17,19 @@ public class TextFormattingOptions
 	public static readonly Option<bool> ConvertTabsToSpaces = new (
 		"indent_style",
 		TextFormattingOptionValues.Default.ConvertTabsToSpaces,
-		new EditorConfigSerializer<bool> (str => str != "tab", value => value ? "space" : "tab")
+		true,
+		EditorConfigSerializer.Create<bool> (str => str != "tab", value => value ? "space" : "tab")
 	);
 
-	public static readonly Option<int> TabSize = new ("tab_size", TextFormattingOptionValues.Default.TabSize, true);
-
 	public static readonly Option<int> IndentSize = new ("indent_size", TextFormattingOptionValues.Default.IndentSize, true);
+
+	public static readonly Option<int> TabSize = new ("tab_width", TextFormattingOptionValues.Default.TabSize, true);
 
 	public static readonly Option<string> NewLine = new (
 		"end_of_line",
 		TextFormattingOptionValues.Default.NewLine,
-		new EditorConfigSerializer<string> (
+		true,
+		EditorConfigSerializer.Create (
 			str => str switch {
 				"lf" => "\n",
 				"cr" => "\r",
@@ -39,13 +43,31 @@ public class TextFormattingOptions
 				_ => "unset"
 		}));
 
+	public static readonly Option<Encoding> Encoding = new (
+		"charset",
+		EditorConfigCharSetSerializer.Utf8NoBom,
+		true,
+		new EditorConfigCharSetSerializer ()
+	);
 
 	public static readonly Option<bool> InsertFinalNewline = new ("insert_final_newline", true, true);
 
 	public static readonly Option<bool> TrimTrailingWhitespace = new ("trim_trailing_whitespace", TextFormattingOptionValues.Default.TrimTrailingWhitespace, true);
 
-	public static readonly Option<int?> MaxLineLength = new ("max_line_length", null, new EditorConfigSerializer<int?> (
+	public static readonly Option<int?> MaxLineLength = new ("max_line_length", null, true, EditorConfigSerializer.Create<int?> (
 		str => str != "off" && int.TryParse (str, out var val) && val > 0 ? val : null,
 		val => val.HasValue && val.Value > 0 ? val.Value.ToString () : "off"
-		));
+	));
+
+	public static IEnumerable<IOption> GetAll ()
+	{
+		yield return ConvertTabsToSpaces;
+		yield return IndentSize;
+		yield return TabSize;
+		yield return NewLine;
+		yield return Encoding;
+		yield return InsertFinalNewline;
+		yield return TrimTrailingWhitespace;
+		yield return MaxLineLength;
+	}
 }
