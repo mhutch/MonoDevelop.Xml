@@ -68,7 +68,11 @@ namespace MonoDevelop.Xml.Parser
 				}
 			} else {
 				// not any part of a '-->', so make sure matching is reset
+				if (context.StateTag == SINGLE_DASH)
+					context.KeywordBuilder.Append ('-');
+
 				context.StateTag = NOMATCH;
+				context.KeywordBuilder.Append (c);
 			}
 			
 			return null;
@@ -76,7 +80,7 @@ namespace MonoDevelop.Xml.Parser
 			XmlParserState? EndAndPop ()
 			{
 				var comment = (XComment)context.Nodes.Pop ();
-
+				comment.InnerText = context.KeywordBuilder.ToString ();
 				comment.End (context.PositionAfterCurrentChar);
 				if (context.BuildTree) {
 					((XContainer)context.Nodes.Peek ()).AddChildNode (comment);

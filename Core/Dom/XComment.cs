@@ -36,6 +36,8 @@ namespace MonoDevelop.Xml.Dom
 		protected XComment () {}
 		protected override XObject NewInstance () { return new XComment (); }
 
+		public string? InnerText { get; internal set; }
+
 		public override string FriendlyPathRepresentation {
 			get { return "<!-- -->"; }
 		}
