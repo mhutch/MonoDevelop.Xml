@@ -39,6 +39,9 @@ namespace MonoDevelop.Xml.Dom
 
 		public XObject? Parent { get; internal protected set; }
 
+		// supports attaching arbitrary nodes
+		public XNode? Node { get; set; }
+
 		public IEnumerable<XNode> Parents {
 			get {
 				var next = Parent as XNode;
