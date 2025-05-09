@@ -36,7 +36,16 @@ namespace MonoDevelop.Xml.Dom
 		protected XComment () {}
 		protected override XObject NewInstance () { return new XComment (); }
 
-		public string? InnerText { get; internal set; }
+		public string InnerText { get; private set; } = "";
+
+		public void End (string text)
+		{
+			int startLen = "<!--".Length;
+			int endLen = "-->".Length;
+
+			InnerText = text;
+			Span = new TextSpan (Span.Start, startLen + text.Length + endLen);
+		}
 
 		public override string FriendlyPathRepresentation {
 			get { return "<!-- -->"; }

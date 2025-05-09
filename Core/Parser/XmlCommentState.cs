@@ -80,8 +80,7 @@ namespace MonoDevelop.Xml.Parser
 			XmlParserState? EndAndPop ()
 			{
 				var comment = (XComment)context.Nodes.Pop ();
-				comment.InnerText = context.KeywordBuilder.ToString ();
-				comment.End (context.PositionAfterCurrentChar);
+				comment.End (context.KeywordBuilder.ToString());
 				if (context.BuildTree) {
 					((XContainer)context.Nodes.Peek ()).AddChildNode (comment);
 				}
