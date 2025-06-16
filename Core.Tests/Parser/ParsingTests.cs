@@ -223,6 +223,18 @@ namespace MonoDevelop.Xml.Tests.Parser
 		}
 
 		[Test]
+		public void MalformedSelfClosingTag ()
+		{
+			var parser = new XmlTreeParser (CreateRootState ());
+			var result = parser.Parse (@"<root / >");
+
+			parser.AssertDiagnostics (
+				(XmlCoreDiagnostics.MalformedSelfClosingTag, 7, 0),
+				(XmlCoreDiagnostics.IncompleteTagEof, 9, 0)
+				);
+		}
+
+		[Test]
 		public void MismatchedElementNameWithNamespace ()
 		{
 			var docTxt = "<X><n:></a><b></X>";
@@ -417,8 +429,8 @@ namespace MonoDevelop.Xml.Tests.Parser
 			result.AssertNoDiagnostics ();
 
 			var el = result.doc
-				.RootElement.AssertNotNull()
-				.FirstChild.AssertCast<XElement>();
+				.RootElement.AssertNotNull ()
+				.FirstChild.AssertCast<XElement> ();
 			Assert.AreEqual (2, el.Nodes.Count ());
 			var b = el.FirstChild as XElement;
 			Assert.NotNull (b);
@@ -438,7 +450,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 </foo>
 ";
 			var parser = new XmlTreeParser (CreateRootState ());
-			var result = parser.Parse(docTxt, preserveWindowsNewlines: true);
+			var result = parser.Parse (docTxt, preserveWindowsNewlines: true);
 
 			var rootElement = result.doc.RootElement.AssertNotNull ();
 
@@ -446,13 +458,13 @@ namespace MonoDevelop.Xml.Tests.Parser
 
 			AssertSubstring (@"<foo someAtt=""SomeVal"">", rootElement);
 			AssertSubstring (@"someAtt=""SomeVal""", rootElement.Attributes.First.AssertNotNull ());
-			AssertSubstring (@"<!-- blah -->", rootElement.Nodes.OfType<XComment>().First ());
-			AssertSubstring (@"<![CDATA[ dfdfdf ]]>", rootElement.Nodes.OfType<XCData>().First ());
+			AssertSubstring (@"<!-- blah -->", rootElement.Nodes.OfType<XComment> ().First ());
+			AssertSubstring (@"<![CDATA[ dfdfdf ]]>", rootElement.Nodes.OfType<XCData> ().First ());
 			AssertSubstring (@"</foo>", rootElement.ClosingTag.AssertNotNull ());
 		}
 
 		[Test]
-		public void ProcessingInstruction()
+		public void ProcessingInstruction ()
 		{
 			var docTxt = @"<?x?>";
 
@@ -603,7 +615,7 @@ namespace MonoDevelop.Xml.Tests.Parser
 			AssertEqual (a.KeywordBuilder, b.KeywordBuilder);
 
 			Assert.AreEqual (a.Nodes.Count, b.Nodes.Count);
-			Assert.AreEqual (a.Nodes.Peek().GetType(), b.Nodes.Peek().GetType());
+			Assert.AreEqual (a.Nodes.Peek ().GetType (), b.Nodes.Peek ().GetType ());
 		}
 
 		// avoid allocating strings unless they're not equal

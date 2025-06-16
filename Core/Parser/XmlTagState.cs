@@ -41,16 +41,16 @@ namespace MonoDevelop.Xml.Parser
 
 		const int ATTEMPT_RECOVERY = 1;
 		const int RECOVERY_FOUND_WHITESPACE = 2;
-		const int MAYBE_SELF_CLOSING = 2;
+		const int MAYBE_SELF_CLOSING = 3;
 		const int FREE = 0;
 
 		readonly XmlAttributeState AttributeState;
 		readonly XmlNameState NameState;
 
-		public XmlTagState () : this (new XmlAttributeState ()) {}
+		public XmlTagState () : this (new XmlAttributeState ()) { }
 
-		public XmlTagState  (XmlAttributeState attributeState)
-			: this (attributeState, new XmlNameState ()) {}
+		public XmlTagState (XmlAttributeState attributeState)
+			: this (attributeState, new XmlNameState ()) { }
 
 		public XmlTagState (XmlAttributeState attributeState, XmlNameState nameState)
 		{
@@ -63,7 +63,7 @@ namespace MonoDevelop.Xml.Parser
 
 		public override XmlParserState? PushChar (char c, XmlParserContext context, ref bool replayCharacter, bool isEndOfFile)
 		{
-			var peekedNode = (XContainer) context.Nodes.Peek ();
+			var peekedNode = (XContainer)context.Nodes.Peek ();
 			var element = peekedNode as XElement;
 
 			// if the current node on the stack is ended or not an element, then it's the parent
@@ -87,8 +87,7 @@ namespace MonoDevelop.Xml.Parser
 				}
 				if (isEndOfFile) {
 					context.Diagnostics?.Add (XmlCoreDiagnostics.IncompleteTagEof, context.PositionBeforeCurrentChar);
-				}
-				else if (element.Name.IsValid) {
+				} else if (element.Name.IsValid) {
 					context.Diagnostics?.Add (XmlCoreDiagnostics.MalformedNamedTag, context.PositionBeforeCurrentChar, element.Name.FullName, '<');
 				} else {
 					context.Diagnostics?.Add (XmlCoreDiagnostics.UnnamedTag, context.PositionBeforeCurrentChar);
@@ -137,6 +136,11 @@ namespace MonoDevelop.Xml.Parser
 			if (c == '/') {
 				context.StateTag = MAYBE_SELF_CLOSING;
 				return null;
+			}
+
+			if (context.StateTag == MAYBE_SELF_CLOSING) {
+				context.Diagnostics?.Add (XmlCoreDiagnostics.MalformedSelfClosingTag, context.Position, c);
+				return Parent;
 			}
 
 			if (context.StateTag == ATTEMPT_RECOVERY) {
