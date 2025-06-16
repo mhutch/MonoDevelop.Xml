@@ -226,11 +226,14 @@ namespace MonoDevelop.Xml.Tests.Parser
 		public void MalformedSelfClosingTag ()
 		{
 			var parser = new XmlTreeParser (CreateRootState ());
-			var result = parser.Parse (@"<root / >");
+			var result = parser.Parse (@"<root / $>",
+
+				() => {
+					parser.AssertStateIs<XmlTagState> ();
+				});
 
 			parser.AssertDiagnostics (
-				(XmlCoreDiagnostics.MalformedSelfClosingTag, 7, 0),
-				(XmlCoreDiagnostics.IncompleteTagEof, 9, 0)
+				(XmlCoreDiagnostics.MalformedSelfClosingTag, 7, 0)
 				);
 		}
 
