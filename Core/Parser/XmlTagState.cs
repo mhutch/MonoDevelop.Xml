@@ -141,7 +141,7 @@ namespace MonoDevelop.Xml.Parser
 
 			if (context.StateTag == MAYBE_SELF_CLOSING) {
 				context.Diagnostics?.Add (XmlCoreDiagnostics.MalformedSelfClosingTag, context.Position, c);
-				return this;
+				return null;
 			}
 
 			if (context.StateTag == ATTEMPT_RECOVERY) {
