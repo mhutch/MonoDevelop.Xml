@@ -41,7 +41,7 @@ namespace MonoDevelop.Xml.Parser
 
 		const int ATTEMPT_RECOVERY = 1;
 		const int RECOVERY_FOUND_WHITESPACE = 2;
-		const int MAYBE_SELF_CLOSING = 2;
+		const int MAYBE_SELF_CLOSING = 3;
 		const int FREE = 0;
 
 		readonly XmlAttributeState AttributeState;
@@ -136,6 +136,11 @@ namespace MonoDevelop.Xml.Parser
 
 			if (c == '/') {
 				context.StateTag = MAYBE_SELF_CLOSING;
+				return null;
+			}
+
+			if (context.StateTag == MAYBE_SELF_CLOSING) {
+				context.Diagnostics?.Add (XmlCoreDiagnostics.MalformedSelfClosingTag, context.Position, c);
 				return null;
 			}
 

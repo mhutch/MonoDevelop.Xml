@@ -223,6 +223,21 @@ namespace MonoDevelop.Xml.Tests.Parser
 		}
 
 		[Test]
+		public void MalformedSelfClosingTag ()
+		{
+			var parser = new XmlTreeParser (CreateRootState ());
+			var result = parser.Parse (@"<root / $>",
+
+				() => {
+					parser.AssertStateIs<XmlTagState> ();
+				});
+
+			parser.AssertDiagnostics (
+				(XmlCoreDiagnostics.MalformedSelfClosingTag, 7, 0)
+				);
+		}
+
+		[Test]
 		public void MismatchedElementNameWithNamespace ()
 		{
 			var docTxt = "<X><n:></a><b></X>";
